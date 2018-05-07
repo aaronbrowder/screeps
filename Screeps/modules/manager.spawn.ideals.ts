@@ -1,5 +1,7 @@
 import * as util from './util';
 import * as cache from './cache';
+import * as rooms from './rooms';
+import * as sourceManager from './manager.sources';
 
 export interface Ideals {
     upgraderPotency: number;
@@ -9,7 +11,10 @@ export interface Ideals {
     harvesterPotencyPerMineral: number;
 }
 
-export function getIdeals(roomName: string, doClaim: boolean, wartime: boolean) {
+export function getIdeals(roomName: string) {
+    const room = Game.rooms[roomName];
+    const wartime = room ? util.isWartime(room) : false;
+    const doClaim = rooms.getDoClaim(roomName);
     const key = '5621016b-1eae-4322-950d-e51a2043a0d5.' + roomName + '.' + doClaim + '.' + wartime;
     return cache.get(key, 93, () => getIdealsInternal(roomName, doClaim, wartime));
 }
@@ -18,8 +23,6 @@ function getIdealsInternal(roomName: string, doClaim: boolean, wartime: boolean)
 
     const room = Game.rooms[roomName];
     if (!room) return null;
-
-    var roomMemory = Memory.rooms[roomName] || {};
 
     const hubFlag = util.findHubFlag(room);
 
@@ -33,7 +36,8 @@ function getIdealsInternal(roomName: string, doClaim: boolean, wartime: boolean)
     const containers = room.find<Container>(FIND_STRUCTURES, { filter: o => util.isContainer(o) });
     const storageUnits = room.find<Storage>(FIND_MY_STRUCTURES, { filter: o => util.isStorage(o) });
 
-    const totalTransportDistanceForSources: number = _.sum(activeSources.map(o => Memory.sourceMetrics[o.id].transportDistance));
+    const totalTransportDistanceForSources: number = _.sum(activeSources.map(o =>
+        sourceManager.getSourceMetrics(o).transportDistance || 10));
 
     const idealHarvesterPotencyPerSource = 7;
     const idealHarvesterPotencyPerMineral = 18;
@@ -100,7 +104,7 @@ function getIdealsInternal(roomName: string, doClaim: boolean, wartime: boolean)
     }
 
     if (room && room.storage) {
-        var consumptionMode = roomMemory.consumptionMode;
+        var consumptionMode = util.getRoomMemory(roomName).consumptionMode;
         if (!consumptionMode && _.sum(room.storage.store) > 950000) {
             consumptionMode = true;
         }
@@ -111,8 +115,7 @@ function getIdealsInternal(roomName: string, doClaim: boolean, wartime: boolean)
             idealTransporterPotency += 5;
             idealUpgraderPotency += 14;
         }
-        roomMemory.consumptionMode = consumptionMode;
-        Memory.rooms[roomName] = roomMemory;
+        util.modifyRoomMemory(roomName, o => o.consumptionMode = consumptionMode);
     }
 
     if (!doClaim && room && !room.find(FIND_MY_CONSTRUCTION_SITES).length) {

@@ -12,6 +12,7 @@ import * as roleMedic from './role.siege.medic';
 import * as roleHunter from './role.siege.hunter';
 
 import * as structureTower from './structure.tower';
+
 import * as util from './util';
 
 export function run() {
@@ -27,8 +28,14 @@ export function run() {
         if (creep.spawning) continue;
 
         // if the creep is dying, tell the spawn to run the spawn script on the next tick
+        // LEGACY
         if (creep.ticksToLive <= 1) {
             util.refreshSpawn(creep.memory.homeRoomName);
+        }
+
+        if (creep.ticksToLive < 100 && !creep.memory.isElderly) {
+            creep.memory.isElderly = true;
+            util.refreshOrders(creep.memory.assignedRoomName);
         }
 
         if (creep.memory.markedForRecycle) {

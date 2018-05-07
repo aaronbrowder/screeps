@@ -158,12 +158,35 @@ function isWartime(room) {
     return !!hostiles.length;
 }
 exports.isWartime = isWartime;
+// LEGACY
 function refreshSpawn(roomName) {
-    var roomMemory = Memory.rooms[roomName] || {};
-    roomMemory.doRefreshSpawn = true;
-    Memory.rooms[roomName] = roomMemory;
+    modifyRoomMemory(roomName, o => o.doRefreshSpawn = true);
 }
 exports.refreshSpawn = refreshSpawn;
+function refreshOrders(roomName) {
+    modifyRoomMemory(roomName, o => o.order = null);
+}
+exports.refreshOrders = refreshOrders;
+function getRoomMemory(roomName) {
+    return Memory.rooms[roomName] || {};
+}
+exports.getRoomMemory = getRoomMemory;
+function modifyRoomMemory(roomName, fn) {
+    const roomMemory = getRoomMemory(roomName);
+    fn(roomMemory);
+    Memory.rooms[roomName] = roomMemory;
+}
+exports.modifyRoomMemory = modifyRoomMemory;
+function getSpawnMemory(spawn) {
+    return spawn.memory;
+}
+exports.getSpawnMemory = getSpawnMemory;
+function modifySpawnMemory(spawn, fn) {
+    const spawnMemory = getSpawnMemory(spawn);
+    fn(spawnMemory);
+    spawn.memory = spawnMemory;
+}
+exports.modifySpawnMemory = modifySpawnMemory;
 function getEmptySpace(structure) {
     if (isLink(structure) || isTower(structure) || isExtension(structure) || isSpawn(structure)) {
         return structure.energyCapacity - structure.energy;

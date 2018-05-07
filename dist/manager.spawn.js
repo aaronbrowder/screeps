@@ -28,7 +28,6 @@ function run() {
     }
     for (let i in controlDirectives) {
         const d = controlDirectives[i];
-        sourceManager.run(d.roomName);
         runRoomSpawn(d.roomName, d.doClaim);
     }
     if (Memory['siegeMode']) {
@@ -105,7 +104,7 @@ function run() {
         var nonRoadConstructionSites = room.find(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType !== STRUCTURE_ROAD });
         var containers = room.find(FIND_STRUCTURES, { filter: o => o.structureType === STRUCTURE_CONTAINER });
         var storageUnits = room.find(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_STORAGE });
-        var totalTransportDistanceForSources = _.sum(activeSources.map(o => Memory.sourceMetrics[o.id].transportDistance));
+        const totalTransportDistanceForSources = _.sum(activeSources.map(o => sourceManager.getSourceMetrics(o).transportDistance || 10));
         var idealHarvesterWorkPartsPerSource = 7;
         var idealHarvesterWorkPartsPerMineral = 18;
         var idealTotalTransporterCarryParts = Math.max(0, Math.ceil(Math.pow(totalTransportDistanceForSources, .7) * 1.9) - 4)

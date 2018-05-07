@@ -75,7 +75,7 @@ export function run(creep: Creep) {
         function getStoreValue(store: Container | Storage) {
             var value = getCollectTargetValue(store, o => o.store[RESOURCE_ENERGY]) + 5;
             // don't collect from storage except when there are construction sites or in consumption mode
-            var consumptionMode = (Memory.rooms[creep.memory.assignedRoomName] || {}).consumptionMode;
+            var consumptionMode = util.getRoomMemory(creep.memory.assignedRoomName).consumptionMode;
             if (store.structureType === STRUCTURE_STORAGE && !constructionSites.length && !consumptionMode) {
                 value -= 100000;
             }

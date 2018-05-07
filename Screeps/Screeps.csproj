@@ -64,16 +64,19 @@
     <TypeScriptCompile Include="definitions\lodash.d.ts" />
     <TypeScriptCompile Include="definitions\screeps.d.ts" />
     <TypeScriptCompile Include="modules\assignment.builder.ts" />
+    <TypeScriptCompile Include="modules\interfaces.ts" />
     <TypeScriptCompile Include="modules\main.ts" />
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="modules\assignment.transporter.ts" />
     <TypeScriptCompile Include="modules\manager.battle.ts" />
+    <TypeScriptCompile Include="modules\manager.spawn.metrics.ts" />
     <TypeScriptCompile Include="modules\manager.sources.ts" />
     <TypeScriptCompile Include="modules\manager.roles.ts" />
-    <TypeScriptCompile Include="modules\manager.spawn - Copy.ts" />
+    <TypeScriptCompile Include="modules\manager.spawn.new.ts" />
     <TypeScriptCompile Include="modules\manager.spawn.bodies.ts" />
     <TypeScriptCompile Include="modules\manager.spawn.ideals.ts" />
+    <TypeScriptCompile Include="modules\manager.spawn.queue.ts" />
     <TypeScriptCompile Include="modules\manager.spawn.orders.ts" />
     <TypeScriptCompile Include="modules\manager.spawn.ts" />
     <TypeScriptCompile Include="modules\manager.spawn.siege.ts" />

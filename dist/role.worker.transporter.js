@@ -89,7 +89,7 @@ function run(creep) {
             }
             else {
                 // only pull from storage under special circumstances
-                var consumptionMode = (Memory.rooms[creep.memory.assignedRoomName] || {}).consumptionMode;
+                var consumptionMode = util.getRoomMemory(creep.memory.assignedRoomName).consumptionMode;
                 if (!wartime && !Memory['siegeMode'] && !consumptionMode && !isSpawnHungry()) {
                     value -= 1000000;
                 }

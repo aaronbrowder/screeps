@@ -1,117 +1,105 @@
+import * as I from './interfaces';
 import * as util from './util';
+import * as potency from './util.potency';
 import * as idealsManager from './manager.spawn.ideals';
+import * as spawnQueue from './manager.spawn.queue';
 
-export interface SpawnQueueItem {
-    role: string;
-    subRole: string;
-    assignmentId: string;
-    assignedRoomName: string;
-    homeRoomName: string;
-    doClaim: boolean;
-    potency: number;
-    energyCost: number;
-    timeCost: number;
+interface SpawnOrder {
+    spawn: Spawn;
+    order: I.RoomOrder;
 }
 
-export interface RoomOrder {
-    roomName: string;
-    wallBuilderPotency: number;
-    upgraderPotency: number;
-    transporterPotency: number;
-    hubPotency: number;
-}
+export function getRoomOrder(roomName: string) {
 
-export interface SourceOrder {
-    sourceOrMineralId: string;
-    harvesterPotency: number;
-}
-
-export function getRoomOrder(roomName: string, doClaim: boolean, wartime: boolean): RoomOrder {
+    const cachedOrder = util.getRoomMemory(roomName).order;
+    if (cachedOrder) return cachedOrder;
 
     const room = Game.rooms[roomName];
     if (!room) return null;
 
     const hubFlag = util.findHubFlag(room);
 
-    const ideals = idealsManager.getIdeals(roomName, doClaim, wartime);
+    const ideals = idealsManager.getIdeals(roomName);
 
     var activeSources = room.find<Source>(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
 
-    const transporterPotency = getPotency(roomName, 'transporter');
+    const transporterPotency = potency.getPotency(roomName, 'transporter');
     const transporterPotencyNeeded = ideals.transporterPotency - transporterPotency;
 
-    const wallBuilderPotency = getPotency(roomName, 'builder', 'wallBuilder');
+    const wallBuilderPotency = potency.getPotency(roomName, 'builder', 'wallBuilder');
     const wallBuilderPotencyNeeded = ideals.wallBuilderPotency - wallBuilderPotency;
 
-    const upgraderPotency = getPotency(roomName, 'builder', 'upgrader');
+    const upgraderPotency = potency.getPotency(roomName, 'builder', 'upgrader');
     const upgraderPotencyNeeded = ideals.upgraderPotency - upgraderPotency;
 
     var hubPotencyNeeded = 0;
-    if (hubFlag && room.storage && getPotency(roomName, 'hub') === 0) {
+    if (hubFlag && room.storage && potency.getPotency(roomName, 'hub') === 0) {
         hubPotencyNeeded = Math.floor(.65 * Math.sqrt(room.energyCapacityAvailable / 50));
     }
 
-    return {
+    const order: I.RoomOrder = {
         roomName: roomName,
         transporterPotency: transporterPotencyNeeded,
         wallBuilderPotency: wallBuilderPotencyNeeded,
         upgraderPotency: upgraderPotencyNeeded,
         hubPotency: hubPotencyNeeded
     }
+
+    util.modifyRoomMemory(roomName, o => o.order = order);
+    return order;
 }
 
-export function getSourceOrder(sourceOrMineralId: string, doClaim: boolean, wartime: boolean): SourceOrder {
+export function getSourceOrder(roomName: string, sourceOrMineralId: string) {
+
+    const sourceOrders = util.getRoomMemory(roomName).sourceOrders || {};
+    const cachedOrder = sourceOrders[sourceOrMineralId];
+    if (cachedOrder) return cachedOrder;
 
     const sourceOrMineral = Game.getObjectById<Source | Mineral>(sourceOrMineralId);
     if (!sourceOrMineral || !sourceOrMineral.room) return null;
 
-    const roomName = sourceOrMineral.room.name;
-    const ideals = idealsManager.getIdeals(roomName, doClaim, wartime);
+    const ideals = idealsManager.getIdeals(roomName);
 
-    const potency = getPotency(roomName, 'harvester', undefined, sourceOrMineralId);
+    const harvesterPotency = potency.getPotency(roomName, 'harvester', undefined, sourceOrMineralId);
 
     const idealPotency = util.isSource(sourceOrMineral)
         ? ideals.harvesterPotencyPerSource
         : ideals.harvesterPotencyPerMineral;
 
-    return {
+    const order: I.SourceOrder = {
         sourceOrMineralId: sourceOrMineralId,
-        harvesterPotency: idealPotency - potency
+        harvesterPotency: idealPotency - harvesterPotency
     };
+
+    sourceOrders[sourceOrMineralId] = order;
+    util.modifyRoomMemory(roomName, o => o.sourceOrders = sourceOrders);
+    return order;
 }
 
-function getPotency(roomName: string, role: string, subRole?: string, assignmentId?: string) {
-    // "Potency" is a measure of how much of a type of worker there is in a room. For example, for transporters,
-    // potency measures the current capacity of that room to transport things, by counting the total number of
-    // carry parts of all transporters working in the room.
-    // * A creep with less than 100 ticks to live does not count towards the potency.
-    // * A creep that is currently spawning or is in a spawn queue DOES count towards the potency.
-    const creeps: Creep[] = _.filter(Game.creeps, (o: Creep) =>
-        o.ticksToLive >= 100 &&
-        o.memory.role === role &&
-        o.memory.assignedRoomName === roomName &&
-        (!subRole || o.memory.subRole === subRole) &&
-        (!assignmentId || o.memory.assignmentId === assignmentId));
-
-    var potency = _.sum(creeps, (o: Creep) => getCreepPotency(o.body.map(p => p.type), role));
-
-    for (let i in Game.spawns) {
-        const spawn = Game.spawns[i];
-        const queue: SpawnQueueItem[] = spawn.memory.queue;
-        const filtered = _.filter(queue, (o: SpawnQueueItem) =>
-            o.role === role &&
-            o.assignedRoomName === roomName &&
-            (!subRole || o.subRole === subRole) &&
-            (!assignmentId || o.assignmentId === assignmentId));
-        potency += _.sum(filtered, (o: SpawnQueueItem) => o.potency);
+export function fulfillRoomOrder(order: I.RoomOrder) {
+    if (!order.upgraderPotency &&
+        !order.wallBuilderPotency &&
+        !order.transporterPotency &&
+        !order.hubPotency) {
+        // the order is empty, so there's nothing to do
+        return;
     }
-
-    return potency;
+    // look at spawns within 2 linear room distance
+    const spawns: Spawn[] = _.filter(Game.spawns, (o: Spawn) =>
+        Game.map.getRoomLinearDistance(o.room.name, order.roomName) <= 2);
+    // split order into sub-orders for each creep that needs to be spawned
+    const spawnOrders = assignOrderToSpawns(order, spawns);
+    for (let i in spawnOrders) {
+        const spawnOrder = spawnOrders[i];
+        spawnQueue.addRoomOrderToQueue(spawnOrder.spawn, spawnOrder.order);
+    }
 }
 
-function getCreepPotency(body: string[], role: string) {
-    if (role === 'builder') return util.countBodyParts(body, WORK);
-    if (role === 'harvester') return util.countBodyParts(body, WORK);
-    if (role === 'transporter') return util.countBodyParts(body, CARRY);
-    if (role === 'hub') return util.countBodyParts(body, CARRY);
+function assignOrderToSpawns(order: I.RoomOrder, spawns: Spawn[]): SpawnOrder[] {
+    // TODO if we are spawning a hub, make sure to assign it to a spawn that is adjacent to the hub flag
+    const bestSpawn = util.getBestValue(spawns.map(getSpawnValue));
+}
+
+function getSpawnValue(spawn: Spawn): util.ValueData<Spawn> {
+
 }

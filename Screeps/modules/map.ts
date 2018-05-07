@@ -1,19 +1,102 @@
+import * as I from './interfaces';
 import * as util from './util';
 import * as rooms from './rooms';
 
-interface SpawnMapInfo {
-    id: string;
-    distance: number;
+export type Route = {
+    exit: number;
+    room: string;
+}[];
+
+export function navigateToRoom(creep: Creep, targetRoomName: string, waitOutside?: boolean) {
+    const flag = rooms.getFlag(targetRoomName);
+    if (!flag) return false;
+    util.setMoveTargetFlag(creep, flag, 100);
+    return true;
 }
 
-export function findNearbySpawns(roomName: string): SpawnMapInfo[] {
+export function measurePathDistance(pointA: RoomPosition, pointB: RoomPosition): number {
+    var route: Route = null;
+    if (pointA.roomName !== pointB.roomName) {
+        const routeResult = Game.map.findRoute(pointA.roomName, pointB.roomName, { routeCallback: routeCallback });
+        // if there's no route between the rooms, pathfinding fails
+        if (util.isNumber(routeResult)) return null;
+        route = routeResult;
+    }
+    return measurePathDistanceByRoute(pointA, pointB, route);
+}
+
+export function measurePathDistanceByRoute(pointA: RoomPosition, pointB: RoomPosition, route: Route): number {
+    var path: PathStep[];
+    var exit: RoomPosition;
+    var startPos = pointA;
+    var distance = 0;
+    if (route && route.length) {
+        for (let i in route) {
+            const routePart = route[i];
+            if (!startPos) {
+                // we don't have eyes in this room. just guess at the distance to traverse it.
+                exit = null;
+                path = null;
+                distance += 50;
+            } else {
+                // measure the distance from the start position to the room exit
+                exit = startPos.findClosestByPath<RoomPosition>(routePart.exit);
+                path = startPos.findPathTo(exit);
+                if (path && path.length) distance += path.length;
+                else return -1;
+            }
+            // the next start pos is in the next room with the exit inverted
+            startPos = getEntrancePosition(Game.rooms[routePart.room], routePart.exit, exit);
+        }
+    }
+    // We are in the repository's room now. Measure the distance from the start position to the repository.
+    path = startPos.findPathTo(pointB);
+    if (path && path.length) distance += path.length;
+    else return -1;
+    return distance;
+}
+
+function getEntrancePosition(room: Room, otherExit: number, otherExitPos: RoomPosition): RoomPosition {
+    if (!room) return null;
+    // in case otherExit is not available, just pick a random exit position
+    const someExitPos = room.find<RoomPosition>(otherExit)[0];
+    if (!otherExitPos && !someExitPos) return null;
+    const otherX = otherExitPos ? otherExitPos.x : someExitPos.x;
+    const otherY = otherExitPos ? otherExitPos.y : someExitPos.y;
+    switch (otherExit) {
+        case FIND_EXIT_BOTTOM: return room.getPositionAt(otherX, 0);
+        case FIND_EXIT_TOP: return room.getPositionAt(otherX, 49);
+        case FIND_EXIT_RIGHT: return room.getPositionAt(0, otherY);
+        case FIND_EXIT_LEFT: return room.getPositionAt(49, otherY);
+        default: return null;
+    }
+}
+
+export function routeCallback(roomName: string, fromRoomName: string): number {
+    const room = Game.rooms[roomName];
+    // it's not ideal to use a room if we don't know what's in there
+    if (!room) return 3;
+    const ctrl = room.controller;
+    if (ctrl) {
+        var username = _.find(Game.structures).owner.username;
+        // avoid rooms owned by other players
+        if (ctrl.owner && !ctrl.my) return Infinity;
+        // prefer rooms owned or reserved by me
+        if (ctrl.my || (ctrl.reservation && ctrl.reservation.username === username)) return 1;
+    }
+    // the room is owned by no one
+    return 2;
+}
+
+// LEGACY
+export function findNearbySpawns(roomName: string) {
     // use cache if it exists and is younger than 100 ticks
-    var roomMemory = Memory.rooms[roomName] || {};
+    var roomMemory = util.getRoomMemory(roomName);
     if (roomMemory.nearbySpawns && roomMemory.lastFoundNearbySpawns > Game.time - 100) {
         return roomMemory.nearbySpawns;
     }
 
-    var spawns: SpawnMapInfo[] = [];
+    var spawns: I.SpawnMapInfo[] = [];
 
     for (var i in Game.spawns) {
         var spawn = Game.spawns[i];
@@ -28,40 +111,10 @@ export function findNearbySpawns(roomName: string): SpawnMapInfo[] {
         }
     }
 
-    roomMemory.nearbySpawns = spawns;
-    roomMemory.lastFoundNearbySpawns = Game.time;
-    Memory.rooms[roomName] = roomMemory;
+    util.modifyRoomMemory(roomName, o => {
+        o.nearbySpawns = spawns;
+        o.lastFoundNearbySpawns = Game.time;
+    });
 
     return spawns;
-}
-
-export function navigateToRoom(creep: Creep, targetRoomName: string, waitOutside?: boolean) {
-    const flag = rooms.getFlag(targetRoomName);
-    if (!flag) return false;
-    util.setMoveTargetFlag(creep, flag, 100);
-    return true;
-    //if (creep.memory.isWaiting) {
-    //    if (waitOutside) return false;
-    //    else creep.memory.isWaiting = false;
-    //}
-    //var route = Game.map.findRoute(creep.room, targetRoomName);
-    //if (route !== ERR_NO_PATH && (route as any).length > 0) {
-    //    var exit = creep.pos.findClosestByPath<RoomPosition>(route[0].exit);
-    //    if (!exit) return false;
-    //    if ((route as any).length === 1 && waitOutside && creep.pos.findPathTo(exit).length < 4) {
-    //        // ideally the creep would move away from the exit a few steps to make room for other creeps that are trying to get out of a hostile room
-    //        // set a flag so we don't have to do this expensive calculation every tick while the creep is waiting
-    //        creep.memory.isWaiting = true;
-    //        return false;
-    //    }
-    //    if (creep.pos === exit) {
-    //        creep.move(route[0].exit);
-    //        util.setMoveTarget(creep, null);
-    //        return true;
-    //    }
-
-    //    util.setMoveTargetExit(creep, exit.x, exit.y, exit.roomName, route[0].room);
-    //    return true;
-    //}
-    //return false;
 }

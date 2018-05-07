@@ -1,3 +1,5 @@
+import * as I from './interfaces';
+
 export interface ValueData<T> {
     target: T;
     value: number;
@@ -161,10 +163,33 @@ export function isWartime(room) {
     return !!hostiles.length;
 }
 
+// LEGACY
 export function refreshSpawn(roomName) {
-    var roomMemory = Memory.rooms[roomName] || {};
-    roomMemory.doRefreshSpawn = true;
+    modifyRoomMemory(roomName, o => o.doRefreshSpawn = true);
+}
+
+export function refreshOrders(roomName: string) {
+    modifyRoomMemory(roomName, o => o.order = null);
+}
+
+export function getRoomMemory(roomName: string): I.RoomMemory {
+    return Memory.rooms[roomName] || {};
+}
+
+export function modifyRoomMemory(roomName: string, fn: (roomMemory: I.RoomMemory) => void) {
+    const roomMemory = getRoomMemory(roomName);
+    fn(roomMemory);
     Memory.rooms[roomName] = roomMemory;
+}
+
+export function getSpawnMemory(spawn: Spawn): I.SpawnMemory {
+    return spawn.memory;
+}
+
+export function modifySpawnMemory(spawn: Spawn, fn: (spawnMemory: I.SpawnMemory) => void) {
+    const spawnMemory = getSpawnMemory(spawn);
+    fn(spawnMemory);
+    spawn.memory = spawnMemory;
 }
 
 export function getEmptySpace(structure: Structure) {
@@ -235,6 +260,6 @@ export function isMineralActive(mineral: Mineral) {
         && _.filter(mineral.pos.lookFor(LOOK_STRUCTURES), o => isExtractor(o)).length;
 }
 
-export function countBodyParts(body: string[], type: string) {
+export function countBodyParts(body: string[], type: string): number {
     return _.filter(body, (o: string) => o.toLowerCase() === type.toLowerCase()).length;
 }

@@ -43,7 +43,6 @@ export function run() {
 
     for (let i in controlDirectives) {
         const d = controlDirectives[i];
-        sourceManager.run(d.roomName);
         runRoomSpawn(d.roomName, d.doClaim);
     }
 
@@ -136,7 +135,8 @@ export function run() {
         var containers = room.find<Container>(FIND_STRUCTURES, { filter: o => o.structureType === STRUCTURE_CONTAINER });
         var storageUnits = room.find<Storage>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_STORAGE });
 
-        var totalTransportDistanceForSources: number = _.sum(activeSources.map(o => Memory.sourceMetrics[o.id].transportDistance));
+        const totalTransportDistanceForSources: number = _.sum(activeSources.map(o =>
+            sourceManager.getSourceMetrics(o).transportDistance || 10));
 
         var idealHarvesterWorkPartsPerSource = 7;
         var idealHarvesterWorkPartsPerMineral = 18;
