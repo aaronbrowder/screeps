@@ -3,3 +3,8 @@ C:\dev\screeps\Screeps\Screeps\bin\TypeScriptHTMLApp1.dll
 C:\dev\screeps\Screeps\Screeps\bin\TypeScriptHTMLApp1.pdb
 C:\dev\screeps\Screeps\Screeps\obj\Debug\TypeScriptHTMLApp1.dll
 C:\dev\screeps\Screeps\Screeps\obj\Debug\TypeScriptHTMLApp1.pdb
+C:\dev\screeps\Screeps\bin\TypeScriptHTMLApp1.dll
+C:\dev\screeps\Screeps\bin\TypeScriptHTMLApp1.pdb
+C:\dev\screeps\Screeps\obj\Debug\Screeps.csprojResolveAssemblyReference.cache
+C:\dev\screeps\Screeps\obj\Debug\TypeScriptHTMLApp1.dll
+C:\dev\screeps\Screeps\obj\Debug\TypeScriptHTMLApp1.pdb
