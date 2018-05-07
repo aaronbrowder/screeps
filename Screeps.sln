@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{00A50FC6-0BF8-47F6-B6CB-66E6335677AC}"
+	ProjectSection(SolutionItems) = preProject
+		Gruntfile.js = Gruntfile.js
+		package.json = package.json
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Screeps", "Screeps\Screeps.csproj", "{2574F603-4B6C-4A30-BFDD-E3BC09EEDFDF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2574F603-4B6C-4A30-BFDD-E3BC09EEDFDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2574F603-4B6C-4A30-BFDD-E3BC09EEDFDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2574F603-4B6C-4A30-BFDD-E3BC09EEDFDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2574F603-4B6C-4A30-BFDD-E3BC09EEDFDF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

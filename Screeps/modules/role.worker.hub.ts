@@ -1,0 +1,53 @@
+import * as util from './util';
+
+export function run(creep: Creep) {
+
+    const storage = creep.pos.findInRange<Storage>(FIND_MY_STRUCTURES, 1, { filter: o => util.isStorage(o) })[0];
+    if (!storage) return;
+
+    const totalCarry = _.sum(creep.carry);
+
+    // 1. if hub is empty, collect from dropped resources, link, or storage
+    if (totalCarry === 0) {
+        const droppedResources = creep.pos.findInRange<Resource>(FIND_DROPPED_RESOURCES, 1);
+        if (droppedResources.length) {
+            creep.pickup(droppedResources[0]);
+            return;
+        }
+        const links = creep.pos.findInRange<Link>(FIND_MY_STRUCTURES, 1, { filter: o => util.isLink(o) });
+        const nonEmptyLinks = _.filter(links, (o: Link) => o.energy > 0);
+        if (nonEmptyLinks.length) {
+            creep.withdraw(nonEmptyLinks[0], RESOURCE_ENERGY);
+            return;
+        }
+        creep.withdraw(storage, RESOURCE_ENERGY);
+        return;
+    }
+
+    const nonFullTowers: Tower[] = _.sortBy(creep.pos.findInRange<Tower>(FIND_MY_STRUCTURES, 1, {
+        filter: o => util.isTower(o) && o.energy < o.energyCapacity
+    }), o => o.energy);
+
+    const nonFullSpawns = creep.pos.findInRange<Spawn>(FIND_MY_SPAWNS, 1, {
+        filter: (o: Spawn) => o.energy < o.energyCapacity
+    });
+
+    // 2. if tower or spawn needs energy, deliver
+    if (creep.carry[RESOURCE_ENERGY] > 0 && (nonFullTowers.length || nonFullSpawns.length)) {
+        if (nonFullSpawns.length) {
+            creep.transfer(nonFullSpawns[0], RESOURCE_ENERGY);
+            return;
+        }
+        if (nonFullTowers.length) {
+            creep.transfer(nonFullTowers[0], RESOURCE_ENERGY);
+            return;
+        }
+    }
+
+    // 3. if link is not empty, deliver to storage
+    if (totalCarry > 0) {
+        for (let i in creep.carry) {
+            creep.transfer(storage, i);
+        }
+    }
+}
