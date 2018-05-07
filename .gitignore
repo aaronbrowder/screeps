@@ -1,6 +1,4 @@
-syntax:glob
-
-dist
-node_modules
-Screeps/bin
-Screeps/obj
+/dist
+/node_modules
+/Screeps/bin
+/Screeps/obj
