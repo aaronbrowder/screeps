@@ -99,8 +99,8 @@ export function findSpawns(roomName: string, maxDistanceToSearch: number, distan
     // always search at the desired distance plus 1, in case there is a shorter route through a greater number of rooms
     const maxDistance = Math.min(distance + 1, maxDistanceToSearch);
     return _.filter(Game.spawns, (o: Spawn) => {
-        const distance = Game.map.getRoomLinearDistance(o.room.name, roomName);
-        return distance >= distance && distance <= maxDistance;
+        const d = Game.map.getRoomLinearDistance(o.room.name, roomName);
+        return d >= distance && d <= maxDistance;
     });
 }
 
@@ -156,6 +156,9 @@ export function deliverToSpawn(creep: Creep, spawn: Spawn) {
 
 export function goToRecycle(creep: Creep) {
     var homeRoom = Game.rooms[creep.memory.homeRoomName];
+    if (!homeRoom) {
+        return false;
+    }
     const spawn = homeRoom.find<Spawn>(FIND_MY_SPAWNS)[0];
     if (spawn) {
         setMoveTarget(creep, spawn);
@@ -216,6 +219,13 @@ export function refreshOrders(roomName: string) {
     });
 }
 
+export function recycle(creep: Creep) {
+    if (!creep.memory.markedForRecycle) {
+        creep.memory.markedForRecycle = true;
+        refreshOrders(creep.memory.assignedRoomName);
+    }
+}
+
 export function getRoomMemory(roomName: string): I.RoomMemory {
     return Memory.rooms[roomName] || {};
 }
@@ -250,27 +260,27 @@ export function isNumber(x: any): x is number {
     return typeof x === "number";
 }
 
-export function isSpawn(structure: Structure): structure is StructureSpawn {
+export function isSpawn(structure: Structure): structure is Spawn {
     return structure.structureType === STRUCTURE_SPAWN;
 }
 
-export function isExtension(structure: Structure): structure is StructureExtension {
+export function isExtension(structure: Structure): structure is Extension {
     return structure.structureType === STRUCTURE_EXTENSION;
 }
 
-export function isTower(structure: Structure): structure is StructureTower {
+export function isTower(structure: Structure): structure is Tower {
     return structure.structureType === STRUCTURE_TOWER;
 }
 
-export function isContainer(structure: Structure): structure is StructureContainer {
+export function isContainer(structure: Structure): structure is Container {
     return structure.structureType === STRUCTURE_CONTAINER;
 }
 
-export function isStorage(structure: Structure): structure is StructureStorage {
+export function isStorage(structure: Structure): structure is Storage {
     return structure.structureType === STRUCTURE_STORAGE;
 }
 
-export function isLink(structure: Structure): structure is StructureLink {
+export function isLink(structure: Structure): structure is Link {
     return structure.structureType === STRUCTURE_LINK;
 }
 
@@ -278,8 +288,12 @@ export function isExtractor(structure: Structure): structure is StructureExtract
     return structure.structureType === STRUCTURE_EXTRACTOR;
 }
 
-export function isController(structure: Structure): structure is StructureController {
+export function isController(structure: Structure): structure is Controller {
     return structure.structureType === STRUCTURE_CONTROLLER;
+}
+
+export function isTerminal(structure: Structure): structure is Terminal {
+    return structure.structureType === STRUCTURE_TERMINAL;
 }
 
 export function isStructure(o: Structure | ConstructionSite): o is Structure {
@@ -291,7 +305,7 @@ export function findLinks(room: Room) {
 }
 
 export function isSource(sourceOrMineral: Source | Mineral): sourceOrMineral is Source {
-    return !!sourceOrMineral['energyCapacity'];
+    return sourceOrMineral && !!sourceOrMineral['energyCapacity'];
 }
 
 export function isSourceActive(source: Source) {

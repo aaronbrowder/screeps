@@ -67,32 +67,35 @@ export function run(creep: Creep) {
 
         var droppedResources = assignedRoom.find(FIND_DROPPED_RESOURCES).map(o => { return { target: o, value: getDroppedResourcesValue(o) }; });
 
-        const stores = assignedRoom.find(FIND_STRUCTURES, {
-            filter: o =>
-                (o.structureType == STRUCTURE_CONTAINER || o.structureType == STRUCTURE_STORAGE) && o.store[RESOURCE_ENERGY] > 0
+        const stores = assignedRoom.find<Container | Storage>(FIND_STRUCTURES, {
+            filter: o => (util.isContainer(o) || util.isStorage(o)) && o.store[RESOURCE_ENERGY] > 0
         }).map(o => {
             return { target: o, value: getStoreValue(o) };
         });
 
-        const links = assignedRoom.find(FIND_MY_STRUCTURES, {
-            filter: o => o.structureType == STRUCTURE_LINK && o.energy > 0 && structureLink.isDestination(o)
+        const links = assignedRoom.find<Link>(FIND_MY_STRUCTURES, {
+            filter: o => util.isLink(o) && o.energy > 0 && structureLink.isDestination(o)
         }).map(o => {
             return { target: o, value: getLinkValue(o) };
         });
 
-        const targets = _.filter(droppedResources.concat(stores).concat(links), o => o.value > -10000);
+        const targets = util.filter(droppedResources.concat(stores).concat(links), o => o.value > -10000);
         return util.getBestValue(targets);
 
         function getDroppedResourcesValue(droppedResources) {
             var value = getCollectTargetValue(droppedResources, o => o.amount);
             if (droppedResources.resourceType == RESOURCE_ENERGY) {
+                if (droppedResources.amount < 50) {
+                    // it's not worth traveling to pick up a tiny amount of energy
+                    return value - 1000;
+                }
                 return value + 18;
             }
             // minerals are more valuable than energy
             return value + 28;
         }
 
-        function getStoreValue(store) {
+        function getStoreValue(store: Container | Storage) {
             var value = getCollectTargetValue(store, o => o.store[RESOURCE_ENERGY]);
             if (store.pos.findInRange(FIND_SOURCES, 2).length || store.pos.findInRange(FIND_MINERALS, 2).length) {
                 // store is a mining container
@@ -118,14 +121,16 @@ export function run(creep: Creep) {
         function getCollectTargetValue(target, energyFunc) {
             var value = 10 * Math.min(2, energyFunc(target) / (creep.carryCapacity - creep.carry.energy));
             const path = creep.pos.findPathTo(target.pos);
-            // in wartime carriers need to be faster, so choosing somewhere close by becomes more important
-            value -= path.length * (threatLevel > 0 ? 2 : 1);
+            value -= path.length;
             return value;
         }
     }
 
     function deliver() {
-        if (!homeRoom) return;
+        if (!homeRoom) {
+            console.log('WARNING: no home room for creep ' + creep.name + ' (homeRoomName: ' + creep.memory.homeRoomName + ')');
+            return;
+        }
         // if creep is carrying any minerals, deliver them to storage
         if (creep.carry.energy !== totalCarry) {
             if (homeRoom.storage) {
@@ -189,7 +194,7 @@ export function run(creep: Creep) {
     function findConvenienceContainerForDelivery(room) {
         var convenienceContainers = room.find(FIND_STRUCTURES, {
             filter: o =>
-                o.structureType == STRUCTURE_CONTAINER
+                util.isContainer(o)
                 && !o.pos.findInRange(FIND_SOURCES, 2).length
                 && _.sum(o.store) <= o.storeCapacity - creep.carry.energy
         });
@@ -197,7 +202,7 @@ export function run(creep: Creep) {
     }
 
     function isAssignmentMineralContainer(assignment) {
-        return assignment && assignment.structureType == STRUCTURE_CONTAINER && assignment.pos.findInRange(FIND_MINERALS, 2).length;
+        return assignment && util.isContainer(assignment) && assignment.pos.findInRange(FIND_MINERALS, 2).length;
     }
 
     function isAssignmentCompleted(assignment) {

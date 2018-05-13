@@ -16,7 +16,7 @@ function run(creep) {
     var miningLink = Game.getObjectById(creep.memory.miningLinkId);
     if (!miningLink) {
         miningLink = room.find(FIND_MY_STRUCTURES, {
-            filter: o => o.structureType == STRUCTURE_LINK && o.pos.inRangeTo(assignment.pos, 2)
+            filter: o => util.isLink(o) && o.pos.inRangeTo(assignment.pos, 2)
         })[0];
         if (miningLink) {
             creep.memory.miningLinkId = miningLink.id;
@@ -29,7 +29,7 @@ function run(creep) {
     var miningContainer = Game.getObjectById(creep.memory.miningContainerId);
     if (!miningContainer) {
         miningContainer = room.find(FIND_STRUCTURES, {
-            filter: o => o.structureType == STRUCTURE_CONTAINER && o.pos.inRangeTo(assignment.pos, 2)
+            filter: o => util.isContainer(o) && o.pos.inRangeTo(assignment.pos, 2)
         })[0];
         if (miningContainer) {
             creep.memory.miningContainerId = miningContainer.id;

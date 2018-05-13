@@ -38,8 +38,17 @@ function measurePathDistanceByRoute(pointA, pointB, route) {
             }
             else {
                 // measure the distance from the start position to the room exit
-                exit = startPos.findClosestByPath(routePart.exit);
-                path = startPos.findPathTo(exit);
+                exit = startPos.findClosestByPath(routePart.exit, { ignoreCreeps: true });
+                try {
+                    path = startPos.findPathTo(exit, { ignoreCreeps: true });
+                }
+                catch (error) {
+                    const data = 'startPos: ' + startPos + ', routePart.exit: ' + routePart.exit + ', exit: ' + exit +
+                        ', pointA: ' + pointA + ', pointB: ' + pointB + ', routePart.room: ' + routePart.room;
+                    console.log(error);
+                    console.log(data);
+                    Game.notify(error + '\n\n' + data);
+                }
                 if (path && path.length)
                     distance += path.length;
                 else

@@ -11,7 +11,7 @@ export function addItemToQueue(spawn: Spawn, assignedRoomName: string,
     const item = {
         spawnId: spawn.id,
         role: role,
-        subRole: role,
+        subRole: subRole,
         assignmentId: assignmentId,
         assignedRoomName: assignedRoomName,
         homeRoomName: determineHomeRoom(role, assignedRoomName),
@@ -64,6 +64,7 @@ function determineHomeRoom(role: string, assignedRoomName: string): string {
         const valueData = filteredSpawns.map(o => {
             return {
                 target: o.room.name,
+                // TODO use source metrics for transporters, because that takes into account links, etc.
                 value: -metrics.getPathDistance(o, assignedRoomName)
             };
         });

@@ -128,7 +128,7 @@ function deleteCreep(roomName, role, subRole, assignmentId) {
         spawnQueue.removeItemFromQueue(creepsInQueue[0]);
     }
     else if (activeCreeps.length) {
-        activeCreeps[0].memory.markedForRecycle = true;
+        util.recycle(activeCreeps[0]);
     }
 }
 function fulfillRoomOrder(order) {
@@ -185,7 +185,8 @@ function assignRoomOrderToSpawns(spawns, order) {
         if (hubFlag) {
             const hubSpawns = _.filter(spawns, (o) => o.pos.inRangeTo(hubFlag, 1));
             if (hubSpawns.length) {
-                assignOrderPartToSpawns(hubSpawns, order.hubPotency, order.roomName, 'hub');
+                const bodyResult = bodies.generateBody(order.hubPotency, hubSpawns[0].room, order.roomName, 'hub');
+                spawnQueue.addItemToQueue(hubSpawns[0], order.roomName, 'hub', null, null, bodyResult);
             }
         }
     }
@@ -199,7 +200,7 @@ function assignOrderPartToSpawns(spawns, potency, roomName, role, subRole, assig
         return getSpawnValue(o, roomName, potency, bodyResult);
     }));
     const bodyResult = bodies.generateBody(potency, spawn.room, roomName, role, subRole, assignmentId);
-    spawnQueue.addItemToQueue(spawn, roomName, role, subRole, null, bodyResult);
+    spawnQueue.addItemToQueue(spawn, roomName, role, subRole, assignmentId, bodyResult);
     const remainingPotency = potency - bodyResult.potency;
     if (remainingPotency > 0) {
         assignOrderPartToSpawns(spawns, remainingPotency, roomName, role, subRole, assignmentId);
@@ -208,7 +209,7 @@ function assignOrderPartToSpawns(spawns, potency, roomName, role, subRole, assig
 function getSpawnValue(spawn, roomName, desiredPotency, bodyResult) {
     // The distance the spawned creep will need to travel to get to its assignment should be our primary consideration.
     // We want the distance to be as low as possible.
-    const pathDistance = spawnMetrics.getPathDistance(spawn, roomName).distance;
+    const pathDistance = spawnMetrics.getPathDistance(spawn, roomName);
     // Ideally we will only need one creep, but that depends on the spawn room's energy capacity being enough to cover
     // the body of a large creep. If the energy capacity is low, we may need to spawn two or more creeps in order to
     // fulfill the desired potency. A spawn that can fulfill the desired potency with a single creep is preferable

@@ -1,4 +1,4 @@
-import * as spawnManager from './manager.spawn';
+import * as spawnManager from './manager.spawn.new';
 import * as battleManager from './manager.battle';
 import * as roleManager from './manager.roles';
 import * as mobilization from './mobilization';

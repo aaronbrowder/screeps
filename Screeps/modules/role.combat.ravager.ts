@@ -1,18 +1,18 @@
 import * as map from './map';
 import * as util from './util';
 
-export function run(creep) {
+export function run(creep: Creep) {
 
-    var hasAttackPart = hasBodyPart(creep, ATTACK);
-    var hasRangedAttackPart = hasBodyPart(creep, RANGED_ATTACK);
+    var hasAttackPart = creep.getActiveBodyparts(ATTACK) > 0;
+    var hasRangedAttackPart = creep.getActiveBodyparts(RANGED_ATTACK) > 0;
 
-    var hostileCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+    var hostileCreeps = creep.room.find<Creep>(FIND_HOSTILE_CREEPS);
     if (hostileCreeps.length) {
-        var rangedCombatOpponents = _.filter(hostileCreeps, o =>
-            hasBodyPart(o, RANGED_ATTACK) && o.pos.inRangeTo(creep.pos, 3)
+        var rangedCombatOpponents = util.filter(hostileCreeps, o =>
+            o.getActiveBodyparts(RANGED_ATTACK) > 0 && o.pos.inRangeTo(creep.pos, 3)
         );
-        var meleeCombatOpponents = _.filter(hostileCreeps, o =>
-            hasBodyPart(o, ATTACK) && o.pos.inRangeTo(creep.pos, 1)
+        var meleeCombatOpponents = util.filter(hostileCreeps, o =>
+            o.getActiveBodyparts(ATTACK) > 0 && o.pos.inRangeTo(creep.pos, 1)
         );
         if (rangedCombatOpponents.length || meleeCombatOpponents.length) {
             util.setMoveTarget(creep, null);
@@ -41,19 +41,19 @@ export function run(creep) {
         // this room belongs to an enemy. try to destroy all the structures and creeps.
 
         // if there is a tower nearby we can attack, attack that
-        var nearbyTowers = creep.pos.findInRange(FIND_HOSTILE_STRUCTURES, 3, { filter: o => o.structureType == STRUCTURE_TOWER });
+        var nearbyTowers: Tower[] = creep.pos.findInRange(FIND_HOSTILE_STRUCTURES, 3, { filter: o => util.isTower(o) });
         if (nearbyTowers.length && attack(nearbyTowers[0])) return;
 
         // our primary goal is to kill the spawn
-        var spawns = creep.room.find(FIND_HOSTILE_SPAWNS);
+        var spawns = creep.room.find<Spawn>(FIND_HOSTILE_SPAWNS);
         if (spawns.length && attack(spawns[0])) return;
 
         // once the spawn is dead, we want to go after any towers
-        var towers = creep.room.find(FIND_HOSTILE_STRUCTURES, { filter: o => o.structureType == STRUCTURE_TOWER });
+        var towers = creep.room.find<Tower>(FIND_HOSTILE_STRUCTURES, { filter: o => util.isTower(o) });
         if (towers.length && attack(towers[0])) return;
 
         // either there is no spawn or there's something blocking the way. first try attacking creeps
-        var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
+        var targetCreep = creep.pos.findClosestByPath<Creep>(FIND_HOSTILE_CREEPS);
         if (targetCreep && attack(targetCreep)) return;
 
         // no creeps to attack. there's probably walls blocking the way. attack the weakest one
@@ -66,26 +66,26 @@ export function run(creep) {
         }
 
         // all the important stuff has been destroyed. destroy whatever's left
-        var structure = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {
+        var structure = creep.pos.findClosestByPath<Structure>(FIND_HOSTILE_STRUCTURES, {
             filter: o =>
                 o.structureType != STRUCTURE_ROAD && o.structureType != STRUCTURE_CONTROLLER
         });
         if (structure && attack(structure)) return;
 
         // there's nothing left
-        creep.memory.markedForRecycle = true;
+        util.recycle(creep);
     }
     else {
         // this room is mine or neutral. just try to kill hostile creeps.
-        var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
+        var targetCreep = creep.pos.findClosestByPath<Creep>(FIND_HOSTILE_CREEPS);
         if (!targetCreep) {
             // no hostile creeps. we don't need the ravager anymore
-            creep.memory.markedForRecycle = true;
+            util.recycle(creep);
         }
         attack(targetCreep);
     }
 
-    function engageInCombat(rangedOpponents, meleeOpponents) {
+    function engageInCombat(rangedOpponents: Creep[], meleeOpponents: Creep[]) {
         if (creep.hits < creep.hitsMax / 2) {
             flee(rangedOpponents, meleeOpponents);
         }
@@ -93,21 +93,21 @@ export function run(creep) {
             flee(null, meleeOpponents);
         }
         else if (rangedOpponents.length && hasAttackPart) {
-            var target = creep.pos.findClosestByRange(rangedOpponents);
+            var target = creep.pos.findClosestByRange<Creep>(rangedOpponents);
             if (!creep.pos.inRangeTo(target.pos, 1)) {
                 creep.moveTo(target);
             }
         }
         if (hasAttackPart) {
             var attackResult;
-            var adjacentRangedOpponents = creep.pos.findInRange(rangedOpponents, 1);
+            var adjacentRangedOpponents = creep.pos.findInRange<Creep>(rangedOpponents, 1);
             if (adjacentRangedOpponents.length) {
                 attackResult = creep.attack(adjacentRangedOpponents[0]);
             }
             if (attackResult !== OK) {
-                var adjacentMeleeOpponents = creep.pos.findInRange(meleeOpponents, 1);
+                var adjacentMeleeOpponents = creep.pos.findInRange<Creep>(meleeOpponents, 1);
                 var target = adjacentMeleeOpponents[0];
-                if (target && countBodyParts(target, ATTACK) < countBodyParts(creep, ATTACK)) {
+                if (target && target.getActiveBodyparts(ATTACK) < creep.getActiveBodyparts(ATTACK)) {
                     creep.attack(target);
                 }
             }
@@ -120,13 +120,13 @@ export function run(creep) {
             if (massAttackValue > 10) {
                 creep.rangedMassAttack();
             } else {
-                var target = creep.pos.findClosestByRange(allOpponents);
+                var target = creep.pos.findClosestByRange<Creep>(allOpponents);
                 creep.rangedAttack(target);
             }
         }
     }
 
-    function flee(rangedOpponents, meleeOpponents) {
+    function flee(rangedOpponents: Creep[], meleeOpponents: Creep[]) {
         var goals = [];
         if (rangedOpponents && rangedOpponents.length) {
             goals = goals.concat(rangedOpponents.map(o => { return { pos: o.pos, range: 3 } }));
@@ -139,7 +139,7 @@ export function run(creep) {
         creep.move(creep.pos.getDirectionTo(pos));
     }
 
-    function attack(target) {
+    function attack(target: Creep | Structure) {
         var attackResult;
         var success = false;
         var hasMoved = false;
@@ -178,13 +178,5 @@ export function run(creep) {
             return true;
         }
         return false;
-    }
-
-    function hasBodyPart(c, type) {
-        return !!countBodyParts(c, type);
-    }
-
-    function countBodyParts(c, type) {
-        return _.filter(c.body, o => o.type === type && o.hits > 0).length;
     }
 }

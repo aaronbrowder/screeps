@@ -96,8 +96,8 @@ function findSpawns(roomName, maxDistanceToSearch, distance) {
     // always search at the desired distance plus 1, in case there is a shorter route through a greater number of rooms
     const maxDistance = Math.min(distance + 1, maxDistanceToSearch);
     return _.filter(Game.spawns, (o) => {
-        const distance = Game.map.getRoomLinearDistance(o.room.name, roomName);
-        return distance >= distance && distance <= maxDistance;
+        const d = Game.map.getRoomLinearDistance(o.room.name, roomName);
+        return d >= distance && d <= maxDistance;
     });
 }
 exports.findSpawns = findSpawns;
@@ -151,6 +151,9 @@ function deliverToSpawn(creep, spawn) {
 exports.deliverToSpawn = deliverToSpawn;
 function goToRecycle(creep) {
     var homeRoom = Game.rooms[creep.memory.homeRoomName];
+    if (!homeRoom) {
+        return false;
+    }
     const spawn = homeRoom.find(FIND_MY_SPAWNS)[0];
     if (spawn) {
         setMoveTarget(creep, spawn);
@@ -212,6 +215,13 @@ function refreshOrders(roomName) {
     });
 }
 exports.refreshOrders = refreshOrders;
+function recycle(creep) {
+    if (!creep.memory.markedForRecycle) {
+        creep.memory.markedForRecycle = true;
+        refreshOrders(creep.memory.assignedRoomName);
+    }
+}
+exports.recycle = recycle;
 function getRoomMemory(roomName) {
     return Memory.rooms[roomName] || {};
 }
@@ -278,6 +288,10 @@ function isController(structure) {
     return structure.structureType === STRUCTURE_CONTROLLER;
 }
 exports.isController = isController;
+function isTerminal(structure) {
+    return structure.structureType === STRUCTURE_TERMINAL;
+}
+exports.isTerminal = isTerminal;
 function isStructure(o) {
     return o['hitsMax'] || o.structureType === STRUCTURE_CONTROLLER;
 }
@@ -287,7 +301,7 @@ function findLinks(room) {
 }
 exports.findLinks = findLinks;
 function isSource(sourceOrMineral) {
-    return !!sourceOrMineral['energyCapacity'];
+    return sourceOrMineral && !!sourceOrMineral['energyCapacity'];
 }
 exports.isSource = isSource;
 function isSourceActive(source) {

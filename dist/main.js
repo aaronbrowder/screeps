@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const spawnManager = require("./manager.spawn");
+const newSpawnManager = require("./manager.spawn.new");
 const battleManager = require("./manager.battle");
 const roleManager = require("./manager.roles");
 const mobilization = require("./mobilization");
@@ -15,6 +16,7 @@ exports.loop = () => {
     mobilization.runDefenseSystems();
     // manager order matters!
     spawnManager.run();
+    newSpawnManager.run();
     battleManager.run();
     roleManager.run();
     // assignment must happen after roles have been run

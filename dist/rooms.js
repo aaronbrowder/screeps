@@ -2,12 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 function getControlDirectives() {
     return [
-        { roomName: 'E44N31', flagName: 'Colony1', doClaim: true },
+        { roomName: 'E44N31', flagName: 'Colony1', doClaim: true, useNewSpawnSystem: true },
         { roomName: 'E44N32', flagName: 'Colony2', doClaim: true },
         { roomName: 'E45N31', flagName: 'Colony3', doClaim: true },
         { roomName: 'E45N32', flagName: 'Colony4', doReserve: true },
         { roomName: 'E43N32', flagName: 'Colony5', doReserve: true },
-        { roomName: 'E42N32', flagName: 'Colony6', doReserve: false }
+        { roomName: 'E42N32', flagName: 'Colony6', doClaim: true }
     ];
 }
 exports.getControlDirectives = getControlDirectives;

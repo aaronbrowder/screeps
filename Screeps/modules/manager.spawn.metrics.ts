@@ -4,12 +4,13 @@ import * as rooms from './rooms';
 
 export function getPathDistance(spawn: Spawn, roomName: string) {
 
-    var spawnDistance = (util.getSpawnMemory(spawn).distances || {})[roomName];
+    util.modifySpawnMemory(spawn, o => o.distances = o.distances || {});
+    var spawnDistance = util.getSpawnMemory(spawn).distances[roomName];
 
     if (!spawnDistance || Game.time - spawnDistance.timestamp > 10000) {
         const flag = rooms.getFlag(roomName);
         if (!flag) {
-            console.log('cant get spawn distance for room ' + roomName + ' because there is no flag there');
+            console.log('WARNING: cant get spawn distance for room ' + roomName + ' because there is no flag there');
             return null;
         }
         spawnDistance = {
@@ -19,7 +20,7 @@ export function getPathDistance(spawn: Spawn, roomName: string) {
         util.modifySpawnMemory(spawn, o => o.distances[roomName] = spawnDistance);
     }
 
-    return spawnDistance;
+    return spawnDistance.distance;
 }
 
 export function getHealth(spawn: Spawn) {

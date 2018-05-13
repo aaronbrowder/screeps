@@ -62,7 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="definitions\lodash.d.ts" />
-    <TypeScriptCompile Include="definitions\screeps.d.ts" />
+    <TypeScriptCompile Include="definitions\screeps.d.old.ts" />
     <TypeScriptCompile Include="modules\assignment.builder.ts" />
     <TypeScriptCompile Include="modules\interfaces.ts" />
     <TypeScriptCompile Include="modules\main.ts" />

@@ -9,8 +9,7 @@ import * as spawnQueue from './manager.spawn.queue';
 
 export function run() {
 
-    const controlDirectives: rooms.ControlDirective[] = _.filter(rooms.getControlDirectives(),
-        (o: rooms.ControlDirective) => o.doClaim || o.doReserve);
+    const controlDirectives: rooms.ControlDirective[] = util.filter(rooms.getControlDirectives(), o => o.doClaim || o.doReserve);
 
     const roomsToProcess = getRoomsToProcess(controlDirectives);
 
@@ -18,9 +17,9 @@ export function run() {
         processOrders(roomsToProcess[i]);
     }
 
-    if (Memory['siegeMode']) {
-        spawnSiege.run();
-    }
+    //if (Memory['siegeMode']) {
+    //    spawnSiege.run();
+    //}
 
     for (let i in Game.spawns) {
         const spawn = Game.spawns[i];
@@ -48,18 +47,20 @@ function getRoomsToProcess(directives: rooms.ControlDirective[]): string[] {
 
 function processOrders(roomName: string) {
 
-    const room = Game.rooms[roomName];
+    var needsRefresh = Game.time % 937 === 0;
 
     const roomOrder = spawnOrders.getRoomOrder(roomName);
-    var needsRefresh = spawnOrders.fulfillRoomOrder(roomOrder);
+    var didFulfillOrder = spawnOrders.fulfillRoomOrder(roomOrder);
+    if (didFulfillOrder) needsRefresh = true;
 
+    const room = Game.rooms[roomName];
     const activeSources = room.find<Source | Mineral>(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
     const activeMinerals = room.find<Source | Mineral>(FIND_MINERALS, { filter: (o: Mineral) => util.isMineralActive(o) });
     const activeSourcesAndMinerals = activeSources.concat(activeMinerals);
 
     for (let i in activeSourcesAndMinerals) {
         const sourceOrder = spawnOrders.getSourceOrder(roomName, activeSourcesAndMinerals[i].id);
-        const didFulfillOrder = spawnOrders.fulfillSourceOrder(sourceOrder);
+        didFulfillOrder = spawnOrders.fulfillSourceOrder(sourceOrder);
         if (didFulfillOrder) needsRefresh = true;
     }
 
@@ -87,6 +88,9 @@ function spawnFromQueue(spawn: Spawn) {
             doClaim: item.doClaim
         }
     };
+    if (item.role === 'harvester' && !item.assignmentId) {
+        throw 'trying to spawn a harvester with no assignmentId';
+    }
     const result = spawn.spawnCreep(body, creepName, options);
     if (result === OK) {
         spawnQueue.removeItemFromQueue(item);

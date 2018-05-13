@@ -19,7 +19,7 @@ export interface BodyResult {
 }
 
 export function generateBody(desiredPotency: number, spawnRoom: Room, assignedRoomName: string,
-    role: string, subRole: string, assignmentId: string): BodyResult {
+    role: string, subRole?: string, assignmentId?: string): BodyResult {
 
     switch (role) {
         case 'harvester': return generateHarvesterBody(desiredPotency, spawnRoom, assignedRoomName, assignmentId);
@@ -141,7 +141,12 @@ function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
         (100 + (50 * builderCarryPartsPerWorkPart) + (50 * builderMovePartsPerWorkPart)))
         - (doClaim ? 0 : 1);
 
-    maxPotency = Math.min(7, maxPotency);
+    const ideals = idealsManager.getIdeals(assignedRoomName);
+    const idealPotency = subRole === 'upgrader' ? ideals.upgraderPotency : ideals.wallBuilderPotency;
+
+    // we always want to have two builders per subRole so they can work on different tasks
+    const maxPotencyPerBuilder = Math.ceil(idealPotency / 2);
+    maxPotency = Math.min(maxPotencyPerBuilder, maxPotency);
 
     if (!_.filter(Game.creeps, o => o.memory.role === 'builder' && o.memory.assignedRoomName === assignedRoomName).length) {
         // do recovery mode
@@ -152,8 +157,6 @@ function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
 
     if (potency < maxPotency) {
         const activeBuilders = potencyUtil.getActiveCreeps(assignedRoomName, 'builder', subRole);
-        const ideals = idealsManager.getIdeals(assignedRoomName);
-        const idealPotency = subRole === 'upgrader' ? ideals.upgraderPotency : ideals.wallBuilderPotency;
         const smallBuildersCount = _.filter(activeBuilders, o => potencyUtil.getCreepPotency(o) < maxPotency).length;
         if (maxPotency >= idealPotency || smallBuildersCount > 0) {
             potency = Math.min(maxPotency, idealPotency);

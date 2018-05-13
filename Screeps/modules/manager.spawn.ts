@@ -311,7 +311,7 @@ export function run() {
                     if (spawnHarvester(assignedHarvesters, assignment, workPartsNeeded, idealWorkParts)) return true;
                 }
                 else if (assignedHarvesters.length && workPartsNeeded < 0) {
-                    assignedHarvesters[0].memory.markedForRecycle = true;
+                    util.recycle(assignedHarvesters[0]);
                 }
                 return false;
             }
@@ -372,7 +372,7 @@ export function run() {
                 if (spawnTransporter(carryPartsNeeded)) return true;
             }
             else if (transporters.length && carryPartsNeeded < 0) {
-                transporters[0].memory.markedForRecycle = true;
+                util.recycle(transporters[0]);
             }
             return false;
 

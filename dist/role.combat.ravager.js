@@ -62,14 +62,14 @@ function run(creep) {
         if (structure && attack(structure))
             return;
         // there's nothing left
-        creep.memory.markedForRecycle = true;
+        util.recycle(creep);
     }
     else {
         // this room is mine or neutral. just try to kill hostile creeps.
         var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
         if (!targetCreep) {
             // no hostile creeps. we don't need the ravager anymore
-            creep.memory.markedForRecycle = true;
+            util.recycle(creep);
         }
         attack(targetCreep);
     }
