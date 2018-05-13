@@ -9,14 +9,31 @@ const transporterMovePartsPerCarryPart = 0.5;
 const builderCarryPartsPerWorkPart = 0.75;
 const builderMovePartsPerWorkPart = 0.5;
 
+const ravagerRangedAttackPartsPerAttackPart = 1;
+const ravagerToughPartsPerAttackPart = 1;
+const ravagerMovePartsPerAttackPart = 1.5;
+
 export interface BodyResult {
     body: string[];
     potency: number;
-    maxPotency: number;
 }
 
-export function generateHarvesterBody(desiredPotency: number, spawnRoom: Room,
-    assignedRoomName: string, assignmentId: string): BodyResult {
+export function generateBody(desiredPotency: number, spawnRoom: Room, assignedRoomName: string,
+    role: string, subRole: string, assignmentId: string): BodyResult {
+
+    switch (role) {
+        case 'harvester': return generateHarvesterBody(desiredPotency, spawnRoom, assignedRoomName, assignmentId);
+        case 'transporter': return generateTransporterBody(desiredPotency, spawnRoom, assignedRoomName);
+        case 'hub': return generateHubBody(desiredPotency);
+        case 'builder': return generateBuilderBody(desiredPotency, spawnRoom, assignedRoomName, subRole);
+        case 'claimer': return generateClaimerBody(desiredPotency, spawnRoom);
+        case 'scout': return generateScoutBody();
+        case 'ravager': return generateRavagerBody(desiredPotency, spawnRoom);
+        default: return null;
+    }
+}
+
+function generateHarvesterBody(desiredPotency: number, spawnRoom: Room, assignedRoomName: string, assignmentId: string): BodyResult {
 
     const doClaim = rooms.getDoClaim(assignedRoomName);
 
@@ -65,12 +82,11 @@ export function generateHarvesterBody(desiredPotency: number, spawnRoom: Room,
 
     return {
         body: body,
-        potency: potency,
-        maxPotency: maxPotency
+        potency: potency
     };
 }
 
-export function generateTransporterBody(desiredPotency: number, spawnRoom: Room, assignedRoomName: string): BodyResult {
+function generateTransporterBody(desiredPotency: number, spawnRoom: Room, assignedRoomName: string): BodyResult {
 
     const doClaim = rooms.getDoClaim(assignedRoomName);
 
@@ -100,12 +116,11 @@ export function generateTransporterBody(desiredPotency: number, spawnRoom: Room,
 
     return {
         body: body,
-        potency: potency,
-        maxPotency: maxPotency
+        potency: potency
     };
 }
 
-export function generateHubBody(desiredPotency: number, spawnRoom: Room, assignedRoomName: string): BodyResult {
+function generateHubBody(desiredPotency: number): BodyResult {
     const potency = desiredPotency;
     var body: string[] = [];
     for (let i = 0; i < potency; i++) {
@@ -113,12 +128,11 @@ export function generateHubBody(desiredPotency: number, spawnRoom: Room, assigne
     }
     return {
         body: body,
-        potency: potency,
-        maxPotency: 10000
+        potency: potency
     };
 }
 
-export function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
+function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
     assignedRoomName: string, subRole: string): BodyResult {
 
     const doClaim = rooms.getDoClaim(assignedRoomName);
@@ -167,8 +181,70 @@ export function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
 
     return {
         body: body,
-        potency: potency,
-        maxPotency: maxPotency
+        potency: potency
+    };
+}
+
+function generateClaimerBody(desiredPotency: number, spawnRoom: Room): BodyResult {
+    var potency = 0;
+    var body: string[] = [];
+    var energyCost = 0;
+    for (let i = 0; i < desiredPotency; i++) {
+        energyCost += 650;
+        if (spawnRoom.energyCapacityAvailable < energyCost) break;
+        potency++;
+        body = body.concat([CLAIM, MOVE]);
+    }
+    return {
+        body: body,
+        potency: potency
+    };
+}
+
+function generateScoutBody(): BodyResult {
+    return {
+        body: [MOVE],
+        potency: 1
+    };
+}
+
+function generateRavagerBody(desiredPotency: number, spawnRoom: Room): BodyResult {
+
+    const maxPotency = Math.floor(spawnRoom.energyCapacityAvailable / (80 +
+        (150 * ravagerRangedAttackPartsPerAttackPart) +
+        (10 * ravagerToughPartsPerAttackPart) +
+        (50 * ravagerMovePartsPerAttackPart)));
+
+    const potency = Math.min(desiredPotency || 1, maxPotency);
+
+    var attackParts = potency;
+    var rangedAttackParts = Math.floor(potency * ravagerRangedAttackPartsPerAttackPart);
+    var toughParts = Math.floor(potency * ravagerToughPartsPerAttackPart);
+    var moveParts = Math.max(1, Math.floor(potency * ravagerMovePartsPerAttackPart));
+
+    var body: string[] = [];
+
+    while (attackParts > 0 || rangedAttackParts > 0 || toughParts > 0 || moveParts > 0) {
+        if (toughParts > 0) {
+            body = body.concat([TOUGH]);
+            toughParts--;
+        }
+        if (attackParts > 0) {
+            body = body.concat([ATTACK]);
+            attackParts--;
+        }
+        if (rangedAttackParts > 0) {
+            body = body.concat([RANGED_ATTACK]);
+            rangedAttackParts--;
+        }
+        if (moveParts > 0) {
+            body = body.concat([MOVE]);
+            moveParts--;
+        }
+    }
+    return {
+        body: body,
+        potency: potency
     };
 }
 
@@ -176,9 +252,20 @@ export function getEnergyCost(body: string[]) {
     return (util.countBodyParts(body, WORK) * 100)
         + (util.countBodyParts(body, CARRY) * 50)
         + (util.countBodyParts(body, MOVE) * 50)
-        + (util.countBodyParts(body, CLAIM) * 600);
+        + (util.countBodyParts(body, CLAIM) * 600)
+        + (util.countBodyParts(body, ATTACK) * 80)
+        + (util.countBodyParts(body, RANGED_ATTACK) * 150)
+        + (util.countBodyParts(body, TOUGH) * 10)
+        + (util.countBodyParts(body, HEAL) * 250);
 }
 
 export function getTimeCost(body: string[]): number {
     return body.length * 3;
+}
+
+export function getUnladenSpeedOnRoads(body: string[]): number {
+    const moveParts = util.countBodyParts(body, MOVE);
+    const carryParts = util.countBodyParts(body, CARRY);
+    const heavyParts = body.length - moveParts - carryParts;
+    return Math.min(1, 2 * moveParts / heavyParts);
 }

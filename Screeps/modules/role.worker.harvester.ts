@@ -44,7 +44,7 @@ export function run(creep) {
         return;
     }
 
-    var spawn = room.find(FIND_MY_SPAWNS)[0];
+    var spawn = room.find<Spawn>(FIND_MY_SPAWNS)[0];
     if (spawn) {
         // the creep and the container are both full, so the creep can't do anything.
         // it should deliver this energy to the spawn if there is one.

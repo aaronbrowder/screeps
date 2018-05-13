@@ -5,17 +5,17 @@ import * as spawnSiege from './manager.spawn.siege';
 import * as sourceManager from './manager.sources';
 import * as spawnOrders from './manager.spawn.orders';
 import * as bodies from './manager.spawn.bodies';
+import * as spawnQueue from './manager.spawn.queue';
 
 export function run() {
 
     const controlDirectives: rooms.ControlDirective[] = _.filter(rooms.getControlDirectives(),
         (o: rooms.ControlDirective) => o.doClaim || o.doReserve);
 
-    const username = _.find(Game.structures).owner.username;
+    const roomsToProcess = getRoomsToProcess(controlDirectives);
 
-    for (let i in controlDirectives) {
-        const d = controlDirectives[i];
-        processOrders(d.roomName, d.doClaim);
+    for (let i in roomsToProcess) {
+        processOrders(roomsToProcess[i]);
     }
 
     if (Memory['siegeMode']) {
@@ -28,26 +28,30 @@ export function run() {
     }
 }
 
-function processOrders(roomName: string, doClaim: boolean) {
+function getRoomsToProcess(directives: rooms.ControlDirective[]): string[] {
+    const rooms = directives.map(o => {
+        const room = Game.rooms[o.roomName];
+        return {
+            roomName: o.roomName,
+            room: room
+        };
+    });
+    // Sort rooms so that the higher level rooms come first. This is because high level rooms
+    // will be in high demand for spawning, but we want rooms to prioritize spawning for themselves
+    // so that we don't get into a situation where two neighbors are spawning for each other.
+    const sortedRooms = _.sortBy(rooms, (o: { roomName: string, room: Room }) => {
+        if (!o.room || !o.room.controller || !o.room.controller.my) return 0;
+        return -o.room.controller.level;
+    });
+    return sortedRooms.map(o => o.roomName);
+}
 
-    var room = Game.rooms[roomName];
+function processOrders(roomName: string) {
 
-    if (!room || !room.find(FIND_MY_SPAWNS).length) {
-        // there are no spawns in this room. if we want to set up a colony in this room, we'll need colonists.
-        if (doClaim) {
-            runColonistSpawn();
-            return;
-        } else {
-            // we only want to reserve the room, not claim it.
-            // we don't return here, so the rest of runRoomSpawn will execute as normal.
-            spawnClaimers();
-            // do return if we don't have eyes in the room. the claimer will give us eyes.
-            if (!room) return;
-        }
-    }
+    const room = Game.rooms[roomName];
 
     const roomOrder = spawnOrders.getRoomOrder(roomName);
-    spawnOrders.fulfillRoomOrder(roomOrder);
+    var needsRefresh = spawnOrders.fulfillRoomOrder(roomOrder);
 
     const activeSources = room.find<Source | Mineral>(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
     const activeMinerals = room.find<Source | Mineral>(FIND_MINERALS, { filter: (o: Mineral) => util.isMineralActive(o) });
@@ -55,15 +59,21 @@ function processOrders(roomName: string, doClaim: boolean) {
 
     for (let i in activeSourcesAndMinerals) {
         const sourceOrder = spawnOrders.getSourceOrder(roomName, activeSourcesAndMinerals[i].id);
-        spawnOrders.fulfillSourceOrder(sourceOrder);
+        const didFulfillOrder = spawnOrders.fulfillSourceOrder(sourceOrder);
+        if (didFulfillOrder) needsRefresh = true;
+    }
+
+    if (needsRefresh) {
+        util.refreshOrders(roomName);
     }
 }
 
 function spawnFromQueue(spawn: Spawn) {
+    // TODO if the spawn room is in wartime, it should devote all its attention to spawning mercenaries
+    // instead of reading from the queue
     if (spawn.spawning) return;
-    const queue = util.getSpawnMemory(spawn).queue;
-    if (!queue || !queue.length) return;
-    const item = queue[0];
+    const item = getItemFromQueue(spawn);
+    if (!item) return;
     const creepName = item.role + Game.time;
     const body = generateBody(spawn, item);
     const options = {
@@ -79,12 +89,26 @@ function spawnFromQueue(spawn: Spawn) {
     };
     const result = spawn.spawnCreep(body, creepName, options);
     if (result === OK) {
-        // remove the item from the queue
-        queue.shift();
-        util.modifySpawnMemory(spawn, o => o.queue = queue);
+        spawnQueue.removeItemFromQueue(item);
         // record the expense
         updateRemoteMiningMetrics(item.assignedRoomName, item.homeRoomName, item.role, body);
     }
+}
+
+function getItemFromQueue(spawn: Spawn): I.SpawnQueueItem {
+    const queue = util.getSpawnMemory(spawn).queue;
+    if (!queue) return null;
+    const eligibleItems = util.filter(queue, o => o.energyCost <= spawn.room.energyAvailable);
+    if (!eligibleItems.length) return null;
+    const sorted = util.sortBy(eligibleItems, o => {
+        if (o.role === 'meleeMercenary' || o.role === 'rangedMercenary') return 0;
+        if (o.role === 'ravager') return 1;
+        if (o.role === 'builder') return 2;
+        if (o.role === 'harvester') return 3;
+        if (o.role === 'transporter') return 4;
+        return 100;
+    });
+    return sorted[0];
 }
 
 function getSpawnDirections(spawn: Spawn, item: I.SpawnQueueItem) {
@@ -105,16 +129,8 @@ function getSpawnDirections(spawn: Spawn, item: I.SpawnQueueItem) {
 }
 
 function generateBody(spawn: Spawn, item: I.SpawnQueueItem) {
-    if (item.role === 'builder') {
-        return bodies.generateBuilderBody(item.potency, spawn.room, item.assignedRoomName, item.subRole).body;
-    } else if (item.role === 'harvester') {
-        return bodies.generateHarvesterBody(item.potency, spawn.room, item.assignedRoomName, item.assignmentId).body;
-    } else if (item.role === 'transporter') {
-        return bodies.generateTransporterBody(item.potency, spawn.room, item.assignedRoomName).body;
-    } else if (item.role === 'hub') {
-        return bodies.generateBuilderBody(item.potency, spawn.room, item.assignedRoomName, item.subRole).body;
-    }
-    // TODO generate other kinds of bodies
+    const result = bodies.generateBody(item.potency, spawn.room, item.assignedRoomName, item.role, item.subRole, item.assignmentId);
+    return result ? result.body : null;
 }
 
 function updateRemoteMiningMetrics(roomName: string, homeRoomName: string, role: string, body: string[]) {
@@ -129,16 +145,4 @@ function updateRemoteMiningMetrics(roomName: string, homeRoomName: string, role:
         remoteMiningMetrics[roomName] = roomMetrics;
         Memory.remoteMiningMetrics = remoteMiningMetrics;
     }
-}
-
-function spawnForWartime() {
-}
-
-function spawnForPeacetime() {
-}
-
-function runColonistSpawn() {
-}
-
-function spawnClaimers() {
 }

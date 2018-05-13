@@ -8,7 +8,7 @@ export function run(creep: Creep) {
     var homeRoom = Game.rooms[creep.memory.homeRoomName];
 
     var totalCarry = _.sum(creep.carry);
-    var wartime = util.isWartime(creep.room);
+    var threatLevel = util.getThreatLevel(creep.room);
 
     // filter and sort assignments
     if (!creep.memory.assignments) creep.memory.assignments = [];
@@ -100,7 +100,7 @@ export function run(creep: Creep) {
             } else {
                 // only pull from storage under special circumstances
                 var consumptionMode = util.getRoomMemory(creep.memory.assignedRoomName).consumptionMode;
-                if (!wartime && !Memory['siegeMode'] && !consumptionMode && !isSpawnHungry()) {
+                if (!threatLevel && !Memory['siegeMode'] && !consumptionMode && !isSpawnHungry()) {
                     value -= 1000000;
                 }
             }
@@ -119,7 +119,7 @@ export function run(creep: Creep) {
             var value = 10 * Math.min(2, energyFunc(target) / (creep.carryCapacity - creep.carry.energy));
             const path = creep.pos.findPathTo(target.pos);
             // in wartime carriers need to be faster, so choosing somewhere close by becomes more important
-            value -= path.length * (wartime ? 2 : 1);
+            value -= path.length * (threatLevel > 0 ? 2 : 1);
             return value;
         }
     }
@@ -132,8 +132,8 @@ export function run(creep: Creep) {
                 if (util.transferTo(creep, homeRoom.storage)) return;
             }
             // no storage in this room, so deliver to a container
-            var container = creep.pos.findClosestByPath(FIND_STRUCTURES, {
-                filter: o => o.structureType == STRUCTURE_CONTAINER && _.sum(o.store) < o.storeCapacity
+            var container = creep.pos.findClosestByPath<Structure>(FIND_STRUCTURES, {
+                filter: o => util.isContainer(o) && _.sum(o.store) < o.storeCapacity
             });
             if (container) {
                 if (util.transferTo(creep, container)) return;

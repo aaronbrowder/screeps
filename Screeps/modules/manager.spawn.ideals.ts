@@ -7,19 +7,21 @@ export interface Ideals {
     upgraderPotency: number;
     wallBuilderPotency: number;
     transporterPotency: number;
+    claimerPotencyForReservation: number;
+    ravagerPotency: number;
     harvesterPotencyPerSource: number;
     harvesterPotencyPerMineral: number;
 }
 
 export function getIdeals(roomName: string) {
     const room = Game.rooms[roomName];
-    const wartime = room ? util.isWartime(room) : false;
+    const threatLevel = room ? util.getThreatLevel(room) : 0;
     const doClaim = rooms.getDoClaim(roomName);
-    const key = '5621016b-1eae-4322-950d-e51a2043a0d5.' + roomName + '.' + doClaim + '.' + wartime;
-    return cache.get(key, 93, () => getIdealsInternal(roomName, doClaim, wartime));
+    const key = '5621016b-1eae-4322-950d-e51a2043a0d5.' + roomName + '.' + doClaim + '.' + threatLevel;
+    return cache.get(key, 93, () => getIdealsInternal(roomName, doClaim, threatLevel));
 }
 
-function getIdealsInternal(roomName: string, doClaim: boolean, wartime: boolean): Ideals {
+function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: number): Ideals {
 
     const room = Game.rooms[roomName];
     if (!room) return null;
@@ -60,7 +62,7 @@ function getIdealsInternal(roomName: string, doClaim: boolean, wartime: boolean)
 
     if (doClaim) {
         idealTransporterPotency += 6;
-        if (wartime) {
+        if (threatLevel > 20) {
             idealTransporterPotency += 6;
         }
         if (!towers.length) {
@@ -123,10 +125,19 @@ function getIdealsInternal(roomName: string, doClaim: boolean, wartime: boolean)
         idealWallBuilderPotency = 0;
     }
 
+    var ravagerPotency = 0;
+    if (!doClaim) {
+        // ravager potency is measured by the number of ATTACK parts, but ravagers also have some
+        // RANGED_ATTACK and TOUGH parts. we should take this into account when examining the threat level.
+        ravagerPotency = Math.ceil(threatLevel / 2);
+    }
+
     return {
         upgraderPotency: idealUpgraderPotency,
         wallBuilderPotency: idealWallBuilderPotency,
         transporterPotency: idealTransporterPotency,
+        claimerPotencyForReservation: 3,
+        ravagerPotency: ravagerPotency,
         harvesterPotencyPerSource: idealHarvesterPotencyPerSource,
         harvesterPotencyPerMineral: idealHarvesterPotencyPerMineral
     }

@@ -29,14 +29,19 @@ export interface RoomOrder {
     upgraderPotency: number;
     transporterPotency: number;
     hubPotency: number;
+    claimerPotency: number;
+    scoutPotency: number;
+    ravagerPotency: number;
 }
 
 export interface SourceOrder {
+    roomName: string;
     sourceOrMineralId: string;
     harvesterPotency: number;
 }
 
 export interface SpawnQueueItem {
+    spawnId: string;
     role: string;
     subRole: string;
     assignmentId: string;

@@ -21,3 +21,11 @@ export function getPathDistance(spawn: Spawn, roomName: string) {
 
     return spawnDistance;
 }
+
+export function getHealth(spawn: Spawn) {
+    // health = 1 if there is never any downtime where there are items in the queue but it's not spawning
+    // because of a lack of energy. the more downtime there is, the closer to 0 health will be.
+    // we should use trend data to calculate this.
+    // TODO implement
+    return 1;
+}

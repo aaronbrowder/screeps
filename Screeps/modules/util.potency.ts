@@ -7,6 +7,13 @@ import * as util from './util';
 // * A creep that is elderly or marked for recycle does not count towards the potency.
 // * A creep that is currently spawning or is in a spawn queue DOES count towards the potency.
 
+export function getPotency(roomName: string, role: string, subRole?: string, assignmentId?: string) {
+    const activeCreeps = getActiveCreeps(roomName, role, subRole, assignmentId);
+    const potencyFromLivingCreeps = _.sum(activeCreeps, getCreepPotency);
+    const potencyFromSpawnQueue = getPotencyInQueue(roomName, role, subRole, assignmentId);
+    return potencyFromLivingCreeps + potencyFromSpawnQueue;
+}
+
 export function getActiveCreeps(roomName: string, role: string, subRole?: string, assignmentId?: string): Creep[] {
     return _.filter(Game.creeps, (o: Creep) =>
         !o.memory.isElderly &&
@@ -17,13 +24,6 @@ export function getActiveCreeps(roomName: string, role: string, subRole?: string
         (!assignmentId || o.memory.assignmentId === assignmentId));
 }
 
-export function getPotency(roomName: string, role: string, subRole?: string, assignmentId?: string) {
-    const activeCreeps = getActiveCreeps(roomName, role, subRole, assignmentId);
-    const potencyFromLivingCreeps = _.sum(activeCreeps, getCreepPotency);
-    const potencyFromSpawnQueue = getPotencyInQueue(roomName, role, subRole, assignmentId);
-    return potencyFromLivingCreeps + potencyFromSpawnQueue;
-}
-
 export function getCreepPotency(creep: Creep) {
     const body = creep.body.map(p => p.type);
     const role: string = creep.memory.role;
@@ -31,19 +31,27 @@ export function getCreepPotency(creep: Creep) {
     if (role === 'harvester') return util.countBodyParts(body, WORK);
     if (role === 'transporter') return util.countBodyParts(body, CARRY);
     if (role === 'hub') return util.countBodyParts(body, CARRY);
+    if (role === 'claimer') return util.countBodyParts(body, CLAIM);
+    if (role === 'scout') return 1;
+    if (role === 'ravager') return util.countBodyParts(body, ATTACK);
 }
 
-function getPotencyInQueue(roomName: string, role: string, subRole?: string, assignmentId?: string) {
-    var potency = 0;
+function getPotencyInQueue(roomName: string, role: string, subRole?: string, assignmentId?: string): number {
+    const creeps = getCreepsInQueue(roomName, role, subRole, assignmentId);
+    return _.sum(creeps, (o: I.SpawnQueueItem) => o.potency);
+}
+
+export function getCreepsInQueue(roomName: string, role: string, subRole?: string, assignmentId?: string) {
+    var result: I.SpawnQueueItem[] = [];
     for (let i in Game.spawns) {
         const spawn = Game.spawns[i];
         const queue = util.getSpawnMemory(spawn).queue || [];
-        const filtered = _.filter(queue, (o: I.SpawnQueueItem) =>
+        const filtered: I.SpawnQueueItem[] = _.filter(queue, (o: I.SpawnQueueItem) =>
             o.role === role &&
             o.assignedRoomName === roomName &&
             (!subRole || o.subRole === subRole) &&
             (!assignmentId || o.assignmentId === assignmentId));
-        potency += _.sum(filtered, (o: I.SpawnQueueItem) => o.potency);
+        result = result.concat(filtered);
     }
-    return potency;
+    return result;
 }

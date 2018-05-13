@@ -1,51 +1,93 @@
 import * as I from './interfaces';
 import * as util from './util';
 import * as rooms from './rooms';
+import * as cache from './cache';
 import * as bodies from './manager.spawn.bodies';
+import * as metrics from './manager.spawn.metrics';
 
-export function addRoomOrderToQueue(spawn: Spawn, order: I.RoomOrder) {
-    var role: string = null;
-    var subRole: string = null;
-    var bodyResult: bodies.BodyResult = null;
-    // we are expecting this order to only have one type of worker, because it corresponds to a single creep
-    if (order.upgraderPotency) {
-        role = 'builder';
-        subRole = 'upgrader';
-        bodyResult = bodies.generateBuilderBody(order.upgraderPotency, spawn.room, order.roomName, subRole);
-    }
-    if (order.wallBuilderPotency) {
-        role = 'builder';
-        subRole = 'wallBuilder';
-        bodyResult = bodies.generateBuilderBody(order.wallBuilderPotency, spawn.room, order.roomName, subRole);
-    }
-    if (order.transporterPotency) {
-        role = 'transporter';
-        bodyResult = bodies.generateTransporterBody(order.transporterPotency, spawn.room, order.roomName);
-    }
-    if (order.hubPotency) {
-        role = 'hub';
-        bodyResult = bodies.generateHubBody(order.hubPotency, spawn.room, order.roomName);
-    }
-    addItemToQueue(spawn, {
+export function addItemToQueue(spawn: Spawn, assignedRoomName: string,
+    role: string, subRole: string, assignmentId: string, bodyResult: bodies.BodyResult) {
+
+    const item = {
+        spawnId: spawn.id,
         role: role,
         subRole: role,
-        assignmentId: null,
-        assignedRoomName: order.roomName,
-        homeRoomName: determineHomeRoom(role, order.roomName),
-        doClaim: rooms.getDoClaim(order.roomName),
+        assignmentId: assignmentId,
+        assignedRoomName: assignedRoomName,
+        homeRoomName: determineHomeRoom(role, assignedRoomName),
+        doClaim: rooms.getDoClaim(assignedRoomName),
         potency: bodyResult.potency,
         energyCost: bodies.getEnergyCost(bodyResult.body),
         timeCost: bodies.getTimeCost(bodyResult.body)
-    });
-}
-
-function addItemToQueue(spawn: Spawn, item: I.SpawnQueueItem) {
-    const queue = util.getSpawnMemory(spawn).queue || [];
+    };
+    const queue = getQueue(spawn);
     queue.push(item);
     util.modifySpawnMemory(spawn, o => o.queue = queue);
-    util.refreshOrders(item.assignedRoomName);
+}
+
+export function removeItemFromQueue(item: I.SpawnQueueItem) {
+    const spawn = Game.getObjectById<Spawn>(item.spawnId);
+    const queue = getQueue(spawn);
+    const i = queue.findIndex(o =>
+        o.spawnId === item.spawnId &&
+        o.role === item.role &&
+        o.subRole === item.subRole &&
+        o.assignmentId === item.assignmentId &&
+        o.assignedRoomName === item.assignedRoomName &&
+        o.homeRoomName === item.homeRoomName &&
+        o.doClaim === item.doClaim &&
+        o.potency === item.potency
+    );
+    if (i === -1) return false;
+    queue.splice(i, 1);
+    util.modifySpawnMemory(spawn, o => o.queue = queue);
+    return true;
 }
 
 function determineHomeRoom(role: string, assignedRoomName: string): string {
+    if (role === 'harvester' || role === 'builder') return assignedRoomName;
+    const maxDistance = getMaxDistance();
+    const key = '33436f72-91aa-403c-bbd2-29c2328988b5.' + assignedRoomName + '.' + maxDistance;
+    return cache.get(key, 3000, () => {
+        const spawns = util.findSpawns(assignedRoomName, maxDistance);
+        // filter the spawns so we have no more than one spawn from each room
+        const filteredSpawns: Spawn[] = [];
+        const roomNames: string[] = [];
+        for (let i in spawns) {
+            const spawn = spawns[i];
+            if (roomNames.indexOf(spawn.room.name) === -1) {
+                roomNames.push(spawn.room.name);
+                filteredSpawns.push(spawn);
+            }
+        }
+        // pick the spawn that is closest to the assigned room by path
+        const valueData = filteredSpawns.map(o => {
+            return {
+                target: o.room.name,
+                value: -metrics.getPathDistance(o, assignedRoomName)
+            };
+        });
+        return util.getBestValue(valueData);
+    });
+    function getMaxDistance() {
+        switch (role) {
+            // transporters will not be efficient if they have to travel long distances
+            case 'transporter': return 2;
+            default: return 4;
+        }
+    }
+}
 
+export function getTimeLoad(spawn: Spawn): number {
+    const queue = getQueue(spawn);
+    return (spawn.spawning ? spawn.spawning.remainingTime : 0) + _.sum(queue, (o: I.SpawnQueueItem) => o.timeCost);
+}
+
+export function getEnergyLoad(spawn: Spawn): number {
+    const queue = getQueue(spawn);
+    return _.sum(queue, (o: I.SpawnQueueItem) => o.energyCost);
+}
+
+function getQueue(spawn: Spawn) {
+    return util.getSpawnMemory(spawn).queue || [];
 }

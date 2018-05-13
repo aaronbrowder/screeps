@@ -17,6 +17,14 @@ function filter(items, func) {
     return _.filter(items, func);
 }
 exports.filter = filter;
+function sortBy(items, func) {
+    return _.sortBy(items, func);
+}
+exports.sortBy = sortBy;
+function sum(items, func) {
+    return _.sum(items, func);
+}
+exports.sum = sum;
 function setMoveTarget(creep, target, desiredDistance) {
     creep.memory.moveTargetId = target ? target.id : null;
     creep.memory.moveTargetFlagName = null;
@@ -75,6 +83,24 @@ function findHubFlag(room) {
     return room.find(FIND_FLAGS, { filter: (o) => o.name.startsWith('Hub') })[0];
 }
 exports.findHubFlag = findHubFlag;
+function findSpawns(roomName, maxDistanceToSearch, distance) {
+    distance = distance || 0;
+    if (distance > maxDistanceToSearch)
+        return [];
+    const spawnsAtMinDistance = _.filter(Game.spawns, (o) => {
+        return Game.map.getRoomLinearDistance(o.room.name, roomName) === distance;
+    });
+    if (!spawnsAtMinDistance.length) {
+        return findSpawns(roomName, maxDistanceToSearch, distance + 1);
+    }
+    // always search at the desired distance plus 1, in case there is a shorter route through a greater number of rooms
+    const maxDistance = Math.min(distance + 1, maxDistanceToSearch);
+    return _.filter(Game.spawns, (o) => {
+        const distance = Game.map.getRoomLinearDistance(o.room.name, roomName);
+        return distance >= distance && distance <= maxDistance;
+    });
+}
+exports.findSpawns = findSpawns;
 function isCreepWorker(creep) {
     var role = creep.memory.role;
     return role === 'harvester' || role === 'transporter' || role === 'builder' || role === 'claimer';
@@ -113,7 +139,9 @@ function deliverToSpawn(creep, spawn) {
         transferTo(creep, spawn);
         return true;
     }
-    const extensions = spawn.room.find(FIND_MY_STRUCTURES, { filter: o => o.structureType == STRUCTURE_EXTENSION && o.energy < o.energyCapacity });
+    const extensions = spawn.room.find(FIND_MY_STRUCTURES, {
+        filter: o => isExtension(o) && o.energy < o.energyCapacity
+    });
     if (extensions.length) {
         transferTo(creep, extensions[0]);
         return true;
@@ -153,18 +181,35 @@ function countCreeps(role, filter) {
     return count;
 }
 exports.countCreeps = countCreeps;
+// LEGACY
 function isWartime(room) {
     var hostiles = room.find(FIND_HOSTILE_CREEPS, { filter: o => o.body.some(p => p.type == ATTACK || p.type == RANGED_ATTACK) });
     return !!hostiles.length;
 }
 exports.isWartime = isWartime;
+function getThreatLevel(room) {
+    const hostileCreeps = room.find(FIND_HOSTILE_CREEPS, {
+        filter: (o) => o.getActiveBodyparts(ATTACK) > 0 || o.getActiveBodyparts(RANGED_ATTACK) > 0
+    });
+    if (!hostileCreeps.length)
+        return 0;
+    // normalize the threat level so that a threat level of 1 means 1 attack part
+    return (1 / 80) * sum(hostileCreeps, o => (80 * o.getActiveBodyparts(ATTACK)) +
+        (150 * o.getActiveBodyparts(RANGED_ATTACK)) +
+        (10 * o.getActiveBodyparts(TOUGH)) +
+        (250 * o.getActiveBodyparts(HEAL)));
+}
+exports.getThreatLevel = getThreatLevel;
 // LEGACY
 function refreshSpawn(roomName) {
     modifyRoomMemory(roomName, o => o.doRefreshSpawn = true);
 }
 exports.refreshSpawn = refreshSpawn;
 function refreshOrders(roomName) {
-    modifyRoomMemory(roomName, o => o.order = null);
+    modifyRoomMemory(roomName, o => {
+        o.order = null;
+        o.sourceOrders = null;
+    });
 }
 exports.refreshOrders = refreshOrders;
 function getRoomMemory(roomName) {
@@ -246,17 +291,17 @@ function isSource(sourceOrMineral) {
 }
 exports.isSource = isSource;
 function isSourceActive(source) {
-    return _.filter(source.pos.findInRange(FIND_STRUCTURES, 2), o => isContainer(o) || isLink(o)).length > 0;
+    return filter(source.pos.findInRange(FIND_STRUCTURES, 2), o => isContainer(o) || isLink(o)).length > 0;
 }
 exports.isSourceActive = isSourceActive;
 function isMineralActive(mineral) {
     return mineral.mineralAmount > 0
-        && _.filter(mineral.pos.findInRange(FIND_STRUCTURES, 2), o => isContainer(o)).length
-        && _.filter(mineral.pos.lookFor(LOOK_STRUCTURES), o => isExtractor(o)).length;
+        && filter(mineral.pos.findInRange(FIND_STRUCTURES, 2), o => isContainer(o)).length
+        && filter(mineral.pos.lookFor(LOOK_STRUCTURES), o => isExtractor(o)).length;
 }
 exports.isMineralActive = isMineralActive;
 function countBodyParts(body, type) {
-    return _.filter(body, (o) => o.toLowerCase() === type.toLowerCase()).length;
+    return filter(body, o => o.toLowerCase() === type.toLowerCase()).length;
 }
 exports.countBodyParts = countBodyParts;
 //# sourceMappingURL=util.js.map
