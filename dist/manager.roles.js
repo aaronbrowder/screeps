@@ -6,17 +6,23 @@ const roleHarvester = require("./role.worker.harvester");
 const roleTransporter = require("./role.worker.transporter");
 const roleHub = require("./role.worker.hub");
 const roleClaimer = require("./role.worker.claimer");
+const roleScout = require("./role.scout");
 const roleRavager = require("./role.combat.ravager");
 const roleMercenary = require("./role.mercenary");
 const roleCrusher = require("./role.siege.crusher");
 const roleMedic = require("./role.siege.medic");
 const roleHunter = require("./role.siege.hunter");
 const structureTower = require("./structure.tower");
+const structureTerminal = require("./structure.terminal");
 const util = require("./util");
 function run() {
-    var towers = _.filter(Game.structures, function (structure) { return structure.structureType == STRUCTURE_TOWER; });
-    for (var i = 0; i < towers.length; i++) {
+    const towers = _.filter(Game.structures, o => util.isTower(o));
+    for (let i = 0; i < towers.length; i++) {
         structureTower.run(towers[i]);
+    }
+    const terminals = _.filter(Game.structures, o => util.isTerminal(o));
+    for (let i = 0; i < terminals.length; i++) {
+        structureTerminal.run(terminals[i]);
     }
     for (var name in Game.creeps) {
         var creep = Game.creeps[name];
@@ -27,7 +33,8 @@ function run() {
         if (creep.ticksToLive <= 1) {
             util.refreshSpawn(creep.memory.homeRoomName);
         }
-        if (creep.ticksToLive < 100 && !creep.memory.isElderly) {
+        const elderlyThreshold = creep.memory.role !== 'hub' ? 10 : 100;
+        if (creep.ticksToLive < elderlyThreshold && !creep.memory.isElderly) {
             creep.memory.isElderly = true;
             util.refreshOrders(creep.memory.assignedRoomName);
         }
@@ -57,6 +64,9 @@ function run() {
             if (roleWorker.run(creep))
                 continue;
             roleClaimer.run(creep);
+        }
+        if (creep.memory.role === 'scout') {
+            roleScout.run(creep);
         }
         if (creep.memory.role === 'ravager') {
             roleRavager.run(creep);

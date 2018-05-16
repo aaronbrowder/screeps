@@ -111,16 +111,14 @@ function generateBuilderBody(desiredPotency, spawnRoom, assignedRoomName, subRol
     var maxPotency = Math.floor(spawnRoom.energyCapacityAvailable /
         (100 + (50 * builderCarryPartsPerWorkPart) + (50 * builderMovePartsPerWorkPart)))
         - (doClaim ? 0 : 1);
-    maxPotency = Math.min(7, maxPotency);
-    if (!_.filter(Game.creeps, o => o.memory.role === 'builder' && o.memory.assignedRoomName === assignedRoomName).length) {
-        // do recovery mode
-        maxPotency = 1;
-    }
+    const ideals = idealsManager.getIdeals(assignedRoomName);
+    const idealPotency = subRole === 'upgrader' ? ideals.upgraderPotency : ideals.wallBuilderPotency;
+    // we always want to have two builders per subRole so they can work on different tasks
+    const maxPotencyPerBuilder = Math.ceil(idealPotency / 2);
+    maxPotency = Math.min(maxPotencyPerBuilder, maxPotency);
     var potency = Math.min(desiredPotency || 1, maxPotency);
     if (potency < maxPotency) {
         const activeBuilders = potencyUtil.getActiveCreeps(assignedRoomName, 'builder', subRole);
-        const ideals = idealsManager.getIdeals(assignedRoomName);
-        const idealPotency = subRole === 'upgrader' ? ideals.upgraderPotency : ideals.wallBuilderPotency;
         const smallBuildersCount = _.filter(activeBuilders, o => potencyUtil.getCreepPotency(o) < maxPotency).length;
         if (maxPotency >= idealPotency || smallBuildersCount > 0) {
             potency = Math.min(maxPotency, idealPotency);

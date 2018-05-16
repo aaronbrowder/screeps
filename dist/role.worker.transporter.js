@@ -60,7 +60,9 @@ function run(creep) {
         }
     }
     function findCollectTarget() {
-        var droppedResources = assignedRoom.find(FIND_DROPPED_RESOURCES).map(o => { return { target: o, value: getDroppedResourcesValue(o) }; });
+        var droppedResources = assignedRoom.find(FIND_DROPPED_RESOURCES).map(o => {
+            return { target: o, value: getDroppedResourcesValue(o) };
+        });
         const stores = assignedRoom.find(FIND_STRUCTURES, {
             filter: o => (util.isContainer(o) || util.isStorage(o)) && o.store[RESOURCE_ENERGY] > 0
         }).map(o => {
@@ -168,13 +170,13 @@ function run(creep) {
                 if (assignment.structureType === STRUCTURE_EXTENSION || assignment.structureType === STRUCTURE_SPAWN) {
                     util.refreshSpawn(assignment.room.name);
                 }
-                if (creep.memory.assignedRoomName !== creep.memory.homeRoomName) {
-                    const remoteMiningMetrics = Memory.remoteMiningMetrics || {};
-                    const roomMetrics = remoteMiningMetrics[creep.memory.assignedRoomName] || { cost: 0, income: 0 };
-                    roomMetrics.income += Math.min(creep.carry.energy, util.getEmptySpace(assignment));
-                    remoteMiningMetrics[creep.memory.assignedRoomName] = roomMetrics;
-                    Memory.remoteMiningMetrics = remoteMiningMetrics;
-                }
+                //if (creep.memory.assignedRoomName !== creep.memory.homeRoomName) {
+                //    const remoteMiningMetrics = Memory.remoteMiningMetrics || {};
+                //    const roomMetrics = remoteMiningMetrics[creep.memory.assignedRoomName] || { cost: 0, income: 0 };
+                //    roomMetrics.income += Math.min(creep.carry.energy, util.getEmptySpace(assignment));
+                //    remoteMiningMetrics[creep.memory.assignedRoomName] = roomMetrics;
+                //    Memory.remoteMiningMetrics = remoteMiningMetrics;
+                //}
             }
             return;
         }

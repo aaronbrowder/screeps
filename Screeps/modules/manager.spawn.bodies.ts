@@ -148,11 +148,6 @@ function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
     const maxPotencyPerBuilder = Math.ceil(idealPotency / 2);
     maxPotency = Math.min(maxPotencyPerBuilder, maxPotency);
 
-    if (!_.filter(Game.creeps, o => o.memory.role === 'builder' && o.memory.assignedRoomName === assignedRoomName).length) {
-        // do recovery mode
-        maxPotency = 1;
-    }
-
     var potency = Math.min(desiredPotency || 1, maxPotency);
 
     if (potency < maxPotency) {

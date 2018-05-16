@@ -60,16 +60,16 @@ export function run(creep: Creep) {
 
         function findTowerOrCreepAttackTarget() {
             var nearbyTowers = (creep.pos.findInRange(towers, 1) as Tower[]).map(o => {
-                return { target: o, value: towerPriority(o) } as util.ValueData<Tower | Creep>;
+                return { target: o, value: towerValue(o) } as util.ValueData<Tower | Creep>;
             });
             var nearbyHostileCreeps = (creep.pos.findInRange(hostileCreeps, 1) as Creep[]).map(o => {
-                return { target: o, value: hostileCreepPriority(o) } as util.ValueData<Tower | Creep>;
+                return { target: o, value: hostileCreepValue(o) } as util.ValueData<Tower | Creep>;
             });
             var targets = util.filter(nearbyTowers.concat(nearbyHostileCreeps), o => o.value > 0);
             return util.getBestValue(targets);
         }
 
-        function towerPriority(tower: Tower) {
+        function towerValue(tower: Tower) {
             if (myDamage === 0 || tower.hits === 0) return 0;
             var hitsToKill = tower.hits / myDamage;
             var theirDamage = 600;
@@ -81,7 +81,7 @@ export function run(creep: Creep) {
             return priority;
         }
 
-        function hostileCreepPriority(hostileCreep: Creep) {
+        function hostileCreepValue(hostileCreep: Creep) {
             if (myDamage === 0 || hostileCreep.body.length === 0) return 0;
 
             var bodyParts = util.filter(hostileCreep.body, o => o.hits > 0);

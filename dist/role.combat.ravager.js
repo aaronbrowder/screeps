@@ -3,12 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const map = require("./map");
 const util = require("./util");
 function run(creep) {
-    var hasAttackPart = hasBodyPart(creep, ATTACK);
-    var hasRangedAttackPart = hasBodyPart(creep, RANGED_ATTACK);
+    var hasAttackPart = creep.getActiveBodyparts(ATTACK) > 0;
+    var hasRangedAttackPart = creep.getActiveBodyparts(RANGED_ATTACK) > 0;
     var hostileCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
     if (hostileCreeps.length) {
-        var rangedCombatOpponents = _.filter(hostileCreeps, o => hasBodyPart(o, RANGED_ATTACK) && o.pos.inRangeTo(creep.pos, 3));
-        var meleeCombatOpponents = _.filter(hostileCreeps, o => hasBodyPart(o, ATTACK) && o.pos.inRangeTo(creep.pos, 1));
+        var rangedCombatOpponents = util.filter(hostileCreeps, o => o.getActiveBodyparts(RANGED_ATTACK) > 0 && o.pos.inRangeTo(creep.pos, 3));
+        var meleeCombatOpponents = util.filter(hostileCreeps, o => o.getActiveBodyparts(ATTACK) > 0 && o.pos.inRangeTo(creep.pos, 1));
         if (rangedCombatOpponents.length || meleeCombatOpponents.length) {
             util.setMoveTarget(creep, null);
             engageInCombat(rangedCombatOpponents, meleeCombatOpponents);
@@ -29,10 +29,11 @@ function run(creep) {
         map.navigateToRoom(creep, creep.memory.assignedRoomName, waitOutside);
         return;
     }
-    if (creep.room.controller && !creep.room.controller.my && creep.room.controller.owner) {
+    const controller = creep.room.controller;
+    if (controller && !controller.my && controller.owner) {
         // this room belongs to an enemy. try to destroy all the structures and creeps.
         // if there is a tower nearby we can attack, attack that
-        var nearbyTowers = creep.pos.findInRange(FIND_HOSTILE_STRUCTURES, 3, { filter: o => o.structureType == STRUCTURE_TOWER });
+        var nearbyTowers = creep.pos.findInRange(FIND_HOSTILE_STRUCTURES, 3, { filter: o => util.isTower(o) });
         if (nearbyTowers.length && attack(nearbyTowers[0]))
             return;
         // our primary goal is to kill the spawn
@@ -40,7 +41,7 @@ function run(creep) {
         if (spawns.length && attack(spawns[0]))
             return;
         // once the spawn is dead, we want to go after any towers
-        var towers = creep.room.find(FIND_HOSTILE_STRUCTURES, { filter: o => o.structureType == STRUCTURE_TOWER });
+        var towers = creep.room.find(FIND_HOSTILE_STRUCTURES, { filter: o => util.isTower(o) });
         if (towers.length && attack(towers[0]))
             return;
         // either there is no spawn or there's something blocking the way. first try attacking creeps
@@ -95,7 +96,7 @@ function run(creep) {
             if (attackResult !== OK) {
                 var adjacentMeleeOpponents = creep.pos.findInRange(meleeOpponents, 1);
                 var target = adjacentMeleeOpponents[0];
-                if (target && countBodyParts(target, ATTACK) < countBodyParts(creep, ATTACK)) {
+                if (target && target.getActiveBodyparts(ATTACK) < creep.getActiveBodyparts(ATTACK)) {
                     creep.attack(target);
                 }
             }
@@ -166,12 +167,6 @@ function run(creep) {
             return true;
         }
         return false;
-    }
-    function hasBodyPart(c, type) {
-        return !!countBodyParts(c, type);
-    }
-    function countBodyParts(c, type) {
-        return _.filter(c.body, o => o.type === type && o.hits > 0).length;
     }
 }
 exports.run = run;

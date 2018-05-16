@@ -2,8 +2,6 @@ import * as map from './map';
 import * as util from './util';
 import * as builderAssignment from './assignment.builder';
 
-var logId = '';
-
 export function run(creep: Creep) {
 
     var username = _.find(Game.structures).owner.username;
@@ -17,23 +15,24 @@ export function run(creep: Creep) {
         return;
     }
 
-    if (creep.memory.subRole === 'colonist' && controller && !controller.my) {
-        var hasClaimParts = _.filter(creep.body, o => o.type === CLAIM).length;
-        if (!hasClaimParts) return;
-        if (controller.owner) {
-            if (creep.attackController(controller) === ERR_NOT_IN_RANGE) {
-                creep.moveTo(controller);
-            }
-        } else {
-            if (util.signController(creep, controller)) return;
-            creep.moveTo(controller);
-            var claimResult = creep.claimController(controller);
-            if (claimResult === ERR_GCL_NOT_ENOUGH || claimResult === ERR_FULL) {
-                creep.reserveController(controller);
-            }
-        }
-        return;
-    }
+    // LEGACY
+    //if (creep.memory.subRole === 'colonist' && controller && !controller.my) {
+    //    var hasClaimParts = _.filter(creep.body, o => o.type === CLAIM).length;
+    //    if (!hasClaimParts) return;
+    //    if (controller.owner) {
+    //        if (creep.attackController(controller) === ERR_NOT_IN_RANGE) {
+    //            creep.moveTo(controller);
+    //        }
+    //    } else {
+    //        if (util.signController(creep, controller)) return;
+    //        creep.moveTo(controller);
+    //        var claimResult = creep.claimController(controller);
+    //        if (claimResult === ERR_GCL_NOT_ENOUGH || claimResult === ERR_FULL) {
+    //            creep.reserveController(controller);
+    //        }
+    //    }
+    //    return;
+    //}
 
     if (creep.memory.isCollecting) {
         collect();
@@ -60,7 +59,7 @@ export function run(creep: Creep) {
         const constructionSites = room.find<ConstructionSite>(FIND_MY_CONSTRUCTION_SITES);
 
         const containers = room.find<Container | Storage>(FIND_STRUCTURES, {
-            filter: o => (o.structureType === STRUCTURE_CONTAINER || o.structureType === STRUCTURE_STORAGE) && o.store[RESOURCE_ENERGY] > 0
+            filter: o => (util.isContainer(o) || util.isStorage(o)) && o.store[RESOURCE_ENERGY] > 0
         }).map(o => {
             return { target: o as Container | Storage | Source, value: getStoreValue(o) };
         });
@@ -102,12 +101,14 @@ export function run(creep: Creep) {
     function deliver() {
         // make sure the builder is not right next to an energy source, blocking it from being used by other creeps
         var nearbySource = creep.pos.findInRange<Source>(FIND_SOURCES, 1)[0];
-        var spawn = creep.pos.findClosestByPath<Spawn>(FIND_MY_SPAWNS);
-        if (nearbySource && spawn) {
-            creep.moveTo(spawn);
+        if (nearbySource) {
+            const goals = [{ pos: nearbySource.pos, range: 2 }];
+            const fleeResult = PathFinder.search(creep.pos, goals, { flee: true });
+            creep.move(creep.pos.getDirectionTo(fleeResult.path[0]));
             return;
         }
         // if there are no harvesters in this room or no transporters, the builder should deliver to the spawn
+        var spawn = creep.pos.findClosestByPath<Spawn>(FIND_MY_SPAWNS);
         var hasHarvesters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === 'harvester' }).length;
         var hasTransporters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === 'transporter' }).length;
         if (spawn && (!hasHarvesters || !hasTransporters)) {

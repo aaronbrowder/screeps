@@ -13,7 +13,7 @@ var builderCarryPartsPerWorkPart = 0.75;
 var builderMovePartsPerWorkPart = 0.5;
 var hubFlag;
 function run() {
-    const controlDirectives = _.filter(rooms.getControlDirectives(), (o) => (o.doClaim || o.doReserve) && !o.useNewSpawnSystem);
+    const controlDirectives = _.filter(rooms.getControlDirectives(), (o) => o.doClaim || o.doReserve);
     const username = _.find(Game.structures).owner.username;
     // TODO cache this
     var allSpawns = [];

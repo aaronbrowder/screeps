@@ -62,7 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="definitions\lodash.d.ts" />
-    <TypeScriptCompile Include="definitions\screeps.d.old.ts" />
+    <TypeScriptCompile Include="definitions\screeps.d.ts" />
     <TypeScriptCompile Include="modules\assignment.builder.ts" />
     <TypeScriptCompile Include="modules\interfaces.ts" />
     <TypeScriptCompile Include="modules\main.ts" />
@@ -82,8 +82,10 @@
     <TypeScriptCompile Include="modules\manager.spawn.siege.ts" />
     <TypeScriptCompile Include="modules\map.ts" />
     <TypeScriptCompile Include="modules\mobilization.ts" />
+    <TypeScriptCompile Include="modules\role.ravager.combat.ts" />
     <TypeScriptCompile Include="modules\role.combat.ravager.ts" />
     <TypeScriptCompile Include="modules\role.mercenary.ts" />
+    <TypeScriptCompile Include="modules\role.scout.ts" />
     <TypeScriptCompile Include="modules\role.siege.crusher.ts" />
     <TypeScriptCompile Include="modules\role.siege.hunter.ts" />
     <TypeScriptCompile Include="modules\role.siege.medic.ts" />
@@ -94,6 +96,7 @@
     <TypeScriptCompile Include="modules\role.worker.ts" />
     <TypeScriptCompile Include="modules\role.worker.transporter.ts" />
     <TypeScriptCompile Include="modules\structure.link.ts" />
+    <TypeScriptCompile Include="modules\structure.terminal.ts" />
     <TypeScriptCompile Include="modules\structure.tower.ts" />
     <TypeScriptCompile Include="modules\cache.ts" />
     <TypeScriptCompile Include="modules\rooms.ts" />

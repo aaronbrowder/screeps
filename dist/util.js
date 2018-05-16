@@ -292,6 +292,14 @@ function isTerminal(structure) {
     return structure.structureType === STRUCTURE_TERMINAL;
 }
 exports.isTerminal = isTerminal;
+function isRampart(structure) {
+    return structure.structureType === STRUCTURE_RAMPART;
+}
+exports.isRampart = isRampart;
+function isWall(structure) {
+    return structure.structureType === STRUCTURE_WALL;
+}
+exports.isWall = isWall;
 function isStructure(o) {
     return o['hitsMax'] || o.structureType === STRUCTURE_CONTROLLER;
 }
@@ -318,4 +326,8 @@ function countBodyParts(body, type) {
     return filter(body, o => o.toLowerCase() === type.toLowerCase()).length;
 }
 exports.countBodyParts = countBodyParts;
+function isWorkerRole(role) {
+    return role === 'builder' || role === 'harvester' || role === 'transporter' || role === 'hub';
+}
+exports.isWorkerRole = isWorkerRole;
 //# sourceMappingURL=util.js.map

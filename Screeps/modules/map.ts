@@ -37,19 +37,11 @@ export function measurePathDistanceByRoute(pointA: RoomPosition, pointB: RoomPos
                 // we don't have eyes in this room. just guess at the distance to traverse it.
                 exit = null;
                 path = null;
-                distance += 50;
+                distance += 30;
             } else {
                 // measure the distance from the start position to the room exit
                 exit = startPos.findClosestByPath<RoomPosition>(routePart.exit, { ignoreCreeps: true });
-                try {
-                    path = startPos.findPathTo(exit, { ignoreCreeps: true });
-                } catch (error) {
-                    const data = 'startPos: ' + startPos + ', routePart.exit: ' + routePart.exit + ', exit: ' + exit +
-                        ', pointA: ' + pointA + ', pointB: ' + pointB + ', routePart.room: ' + routePart.room;
-                    console.log(error);
-                    console.log(data);
-                    Game.notify(error + '\n\n' + data);
-                }
+                path = startPos.findPathTo(exit, { ignoreCreeps: true });
                 if (path && path.length) distance += path.length;
                 else return -1;
             }
@@ -57,10 +49,14 @@ export function measurePathDistanceByRoute(pointA: RoomPosition, pointB: RoomPos
             startPos = getEntrancePosition(Game.rooms[routePart.room], routePart.exit, exit);
         }
     }
-    // We are in the repository's room now. Measure the distance from the start position to the repository.
-    path = startPos.findPathTo(pointB);
-    if (path && path.length) distance += path.length;
-    else return -1;
+    // We are in the final room now. Measure the distance from the start position to the destination.
+    if (startPos) {
+        path = startPos.findPathTo(pointB, { ignoreCreeps: true });
+        if (path && path.length) distance += path.length;
+    } else {
+        // we don't have eyes in this room. just guess at the distance to traverse it.
+        distance += 30;
+    }
     return distance;
 }
 
@@ -82,6 +78,10 @@ function getEntrancePosition(room: Room, otherExit: number, otherExitPos: RoomPo
 
 export function routeCallback(roomName: string, fromRoomName: string): number {
     const room = Game.rooms[roomName];
+    // highways are fine to use
+    const parsed: any = /^[WE]([0-9]+)[NS]([0-9]+)$/.exec(roomName);
+    const isHighway = (parsed[1] % 10 === 0) || (parsed[2] % 10 === 0);
+    if (isHighway) return 1;
     // it's not ideal to use a room if we don't know what's in there
     if (!room) return 3;
     const ctrl = room.controller;

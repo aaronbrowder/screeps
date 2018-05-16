@@ -296,6 +296,14 @@ export function isTerminal(structure: Structure): structure is Terminal {
     return structure.structureType === STRUCTURE_TERMINAL;
 }
 
+export function isRampart(structure: Structure): structure is Rampart {
+    return structure.structureType === STRUCTURE_RAMPART;
+}
+
+export function isWall(structure: Structure): structure is StructureWall {
+    return structure.structureType === STRUCTURE_WALL;
+}
+
 export function isStructure(o: Structure | ConstructionSite): o is Structure {
     return o['hitsMax'] || o.structureType === STRUCTURE_CONTROLLER;
 }
@@ -320,4 +328,8 @@ export function isMineralActive(mineral: Mineral) {
 
 export function countBodyParts(body: string[], type: string): number {
     return filter(body, o => o.toLowerCase() === type.toLowerCase()).length;
+}
+
+export function isWorkerRole(role: string) {
+    return role === 'builder' || role === 'harvester' || role === 'transporter' || role === 'hub';
 }

@@ -9,7 +9,7 @@ import * as util from './util';
 
 export function getPotency(roomName: string, role: string, subRole?: string, assignmentId?: string) {
     const activeCreeps = getActiveCreeps(roomName, role, subRole, assignmentId);
-    const potencyFromLivingCreeps = _.sum(activeCreeps, getCreepPotency);
+    const potencyFromLivingCreeps = util.sum(activeCreeps, getCreepPotency);
     const potencyFromSpawnQueue = getPotencyInQueue(roomName, role, subRole, assignmentId);
     return potencyFromLivingCreeps + potencyFromSpawnQueue;
 }

@@ -6,12 +6,12 @@ function getSourceMetrics(source) {
     var metrics = getMetrics(source.id);
     if (!metrics || !metrics.timestamp || Game.time - metrics.timestamp > 10000) {
         const nearestRepository = findNearestRepository(source);
-        const distance = nearestRepository ? nearestRepository.distance : null;
         metrics = {
             timestamp: Game.time,
-            transportDistance: distance
+            transportDistance: nearestRepository ? nearestRepository.distance : null,
+            repositoryId: nearestRepository ? nearestRepository.repository.id : null
         };
-        Memory.sourceMetrics = metrics;
+        Memory.sourceMetrics[source.id] = metrics;
     }
     return metrics;
 }
@@ -20,28 +20,8 @@ function getMetrics(sourceId) {
     Memory.sourceMetrics = Memory.sourceMetrics || {};
     return Memory.sourceMetrics[sourceId];
 }
-function getRoomsToSearch(startingRoom) {
-    const roomNames = [startingRoom.name];
-    // get repositories in nearby rooms, sorted by linear room distance
-    const repositories = _.filter(Game.structures, o => (util.isLink(o) || util.isSpawn(o)))
-        .map((o) => {
-        return {
-            repository: o,
-            distance: Game.map.getRoomLinearDistance(o.room.name, startingRoom.name)
-        };
-    });
-    const nearbyRepositories = _.filter(repositories, (o) => o.distance <= 2);
-    const sortedRepositories = _.sortBy(nearbyRepositories, (o) => o.distance);
-    for (let i in sortedRepositories) {
-        const info = sortedRepositories[i];
-        if (roomNames.indexOf(info.repository.room.name) === -1) {
-            roomNames.push(info.repository.room.name);
-        }
-    }
-    return roomNames;
-}
 function findNearestRepository(source) {
-    return _.sortBy(findRepositories(source), (o) => o.distance)[0];
+    return util.sortBy(findRepositories(source), o => o.distance)[0];
 }
 function findRepositories(source) {
     var infos = [];
@@ -72,6 +52,26 @@ function findRepositories(source) {
         }
     }
     return infos;
+}
+function getRoomsToSearch(startingRoom) {
+    const roomNames = [startingRoom.name];
+    // get repositories in nearby rooms, sorted by linear room distance
+    const repositories = _.filter(Game.structures, o => (util.isLink(o) || util.isSpawn(o)))
+        .map((o) => {
+        return {
+            repository: o,
+            distance: Game.map.getRoomLinearDistance(o.room.name, startingRoom.name)
+        };
+    });
+    const nearbyRepositories = util.filter(repositories, o => o.distance <= 2);
+    const sortedRepositories = util.sortBy(nearbyRepositories, o => o.distance);
+    for (let i in sortedRepositories) {
+        const info = sortedRepositories[i];
+        if (roomNames.indexOf(info.repository.room.name) === -1) {
+            roomNames.push(info.repository.room.name);
+        }
+    }
+    return roomNames;
 }
 function findRepositoriesInRoom(room) {
     return room.find(FIND_MY_STRUCTURES, {

@@ -3,7 +3,8 @@ import * as util from './util';
 import * as rooms from './rooms';
 import * as cache from './cache';
 import * as bodies from './manager.spawn.bodies';
-import * as metrics from './manager.spawn.metrics';
+import * as spawnMetrics from './manager.spawn.metrics';
+import * as sources from './manager.sources';
 
 export function addItemToQueue(spawn: Spawn, assignedRoomName: string,
     role: string, subRole: string, assignmentId: string, bodyResult: bodies.BodyResult) {
@@ -22,6 +23,11 @@ export function addItemToQueue(spawn: Spawn, assignedRoomName: string,
     };
     const queue = getQueue(spawn);
     queue.push(item);
+    if (queue.length > 10) {
+        const warning = 'Spawn queue for spawn ' + spawn.name + ' contains ' + queue.length + ' items.';
+        console.log(warning);
+        Game.notify(warning);
+    }
     util.modifySpawnMemory(spawn, o => o.queue = queue);
 }
 
@@ -64,18 +70,34 @@ function determineHomeRoom(role: string, assignedRoomName: string): string {
         const valueData = filteredSpawns.map(o => {
             return {
                 target: o.room.name,
-                // TODO use source metrics for transporters, because that takes into account links, etc.
-                value: -metrics.getPathDistance(o, assignedRoomName)
+                value: -getPathDistance(o)
             };
         });
         return util.getBestValue(valueData);
     });
+
     function getMaxDistance() {
         switch (role) {
             // transporters will not be efficient if they have to travel long distances
             case 'transporter': return 2;
             default: return 4;
         }
+    }
+
+    function getPathDistance(spawn: Spawn) {
+        const room = Game.rooms[assignedRoomName];
+        if (room && role === 'transporter') {
+            // use source metrics for transporters, because that takes into account links, etc.
+            const source = room.find<Source>(FIND_SOURCES)[0];
+            if (source) {
+                const sourceMetrics = sources.getSourceMetrics(source);
+                const repository = Game.getObjectById<Structure>(sourceMetrics.repositoryId);
+                if (repository && repository.room.name === spawn.room.name) {
+                    return sourceMetrics.transportDistance;
+                }
+            }
+        }
+        return spawnMetrics.getPathDistance(spawn, assignedRoomName);
     }
 }
 

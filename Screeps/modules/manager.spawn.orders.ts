@@ -23,7 +23,10 @@ export function getRoomOrder(roomName: string) {
     const room = Game.rooms[roomName];
 
     if (!room) {
-        scoutPotencyNeeded = 1;
+        const scoutPotency = potency.getPotency(roomName, 'scout');
+        if (!scoutPotency) {
+            scoutPotencyNeeded = 1;
+        }
     }
     else {
         const ideals = idealsManager.getIdeals(roomName);
@@ -126,6 +129,11 @@ export function getSourceOrder(roomName: string, sourceOrMineralId: string) {
         harvesterPotency: idealPotency - harvesterPotency
     };
 
+    if (order.harvesterPotency < 0) {
+        deleteCreep(roomName, 'harvester', undefined, sourceOrMineralId);
+        order.harvesterPotency = 0;
+    }
+
     sourceOrders[sourceOrMineralId] = order;
     util.modifyRoomMemory(roomName, o => o.sourceOrders = sourceOrders);
     return order;
@@ -175,32 +183,35 @@ export function fulfillSourceOrder(order: I.SourceOrder) {
 }
 
 function assignRoomOrderToSpawns(spawns: Spawn[], order: I.RoomOrder) {
-    if (order.upgraderPotency) {
-        assignOrderPartToSpawns(spawns, order.upgraderPotency, order.roomName, 'builder', 'upgrader');
-    }
-    if (order.wallBuilderPotency) {
-        assignOrderPartToSpawns(spawns, order.wallBuilderPotency, order.roomName, 'builder', 'wallBuilder');
-    }
-    if (order.transporterPotency) {
-        assignOrderPartToSpawns(spawns, order.transporterPotency, order.roomName, 'transporter');
-    }
-    if (order.claimerPotency) {
-        assignOrderPartToSpawns(spawns, order.claimerPotency, order.roomName, 'claimer');
-    }
     if (order.scoutPotency) {
         assignOrderPartToSpawns(spawns, order.scoutPotency, order.roomName, 'scout');
     }
     if (order.ravagerPotency) {
         assignOrderPartToSpawns(spawns, order.ravagerPotency, order.roomName, 'ravager');
     }
-    if (order.hubPotency) {
-        // if we are spawning a hub, make sure to assign it to a spawn that is adjacent to the hub flag
-        const hubFlag = util.findHubFlag(Game.rooms[order.roomName]);
-        if (hubFlag) {
-            const hubSpawns = _.filter(spawns, (o: Spawn) => o.pos.inRangeTo(hubFlag, 1));
-            if (hubSpawns.length) {
-                const bodyResult = bodies.generateBody(order.hubPotency, hubSpawns[0].room, order.roomName, 'hub');
-                spawnQueue.addItemToQueue(hubSpawns[0], order.roomName, 'hub', null, null, bodyResult);
+    // we should never try to spawn workers if we don't have eyes in the room. this will cause an error.
+    if (Game.rooms[order.roomName]) {
+        if (order.upgraderPotency) {
+            assignOrderPartToSpawns(spawns, order.upgraderPotency, order.roomName, 'builder', 'upgrader');
+        }
+        if (order.wallBuilderPotency) {
+            assignOrderPartToSpawns(spawns, order.wallBuilderPotency, order.roomName, 'builder', 'wallBuilder');
+        }
+        if (order.transporterPotency) {
+            assignOrderPartToSpawns(spawns, order.transporterPotency, order.roomName, 'transporter');
+        }
+        if (order.claimerPotency) {
+            assignOrderPartToSpawns(spawns, order.claimerPotency, order.roomName, 'claimer');
+        }
+        if (order.hubPotency) {
+            // if we are spawning a hub, make sure to assign it to a spawn that is adjacent to the hub flag
+            const hubFlag = util.findHubFlag(Game.rooms[order.roomName]);
+            if (hubFlag) {
+                const hubSpawns = _.filter(spawns, (o: Spawn) => o.pos.inRangeTo(hubFlag, 1));
+                if (hubSpawns.length) {
+                    const bodyResult = bodies.generateBody(order.hubPotency, hubSpawns[0].room, order.roomName, 'hub');
+                    spawnQueue.addItemToQueue(hubSpawns[0], order.roomName, 'hub', null, null, bodyResult);
+                }
             }
         }
     }
@@ -247,7 +258,7 @@ function getSpawnValue(spawn: Spawn, roomName: string, desiredPotency: number, b
 
     const distanceValue = -pathDistance / bodies.getUnladenSpeedOnRoads(bodyResult.body);
     const creepsValue = -75 * (numberOfCreepsNeeded - 1);
-    const timeLoadValue = -timeLoad;
+    const timeLoadValue = -Math.min(timeLoad, 5000);
     const healthValue = 200 * health;
     const value = distanceValue + creepsValue + timeLoadValue + healthValue;
     return { target: spawn, value: value };

@@ -37,7 +37,8 @@ export function run(creep: Creep) {
         return;
     }
 
-    if (creep.room.controller && !creep.room.controller.my && creep.room.controller.owner) {
+    const controller = creep.room.controller;
+    if (controller && !controller.my && controller.owner) {
         // this room belongs to an enemy. try to destroy all the structures and creeps.
 
         // if there is a tower nearby we can attack, attack that
@@ -67,8 +68,7 @@ export function run(creep: Creep) {
 
         // all the important stuff has been destroyed. destroy whatever's left
         var structure = creep.pos.findClosestByPath<Structure>(FIND_HOSTILE_STRUCTURES, {
-            filter: o =>
-                o.structureType != STRUCTURE_ROAD && o.structureType != STRUCTURE_CONTROLLER
+            filter: o => o.structureType != STRUCTURE_ROAD && o.structureType != STRUCTURE_CONTROLLER
         });
         if (structure && attack(structure)) return;
 

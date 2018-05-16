@@ -4,6 +4,7 @@ import * as roleHarvester from './role.worker.harvester';
 import * as roleTransporter from './role.worker.transporter';
 import * as roleHub from './role.worker.hub';
 import * as roleClaimer from './role.worker.claimer';
+import * as roleScout from './role.scout';
 
 import * as roleRavager from './role.combat.ravager';
 import * as roleMercenary from './role.mercenary';
@@ -12,14 +13,20 @@ import * as roleMedic from './role.siege.medic';
 import * as roleHunter from './role.siege.hunter';
 
 import * as structureTower from './structure.tower';
+import * as structureTerminal from './structure.terminal';
 
 import * as util from './util';
 
 export function run() {
 
-    var towers = _.filter(Game.structures, function (structure) { return structure.structureType == STRUCTURE_TOWER; });
-    for (var i = 0; i < towers.length; i++) {
+    const towers: Tower[] = _.filter(Game.structures, o => util.isTower(o));
+    for (let i = 0; i < towers.length; i++) {
         structureTower.run(towers[i]);
+    }
+
+    const terminals: Terminal[] = _.filter(Game.structures, o => util.isTerminal(o));
+    for (let i = 0; i < terminals.length; i++) {
+        structureTerminal.run(terminals[i]);
     }
 
     for (var name in Game.creeps) {
@@ -33,7 +40,8 @@ export function run() {
             util.refreshSpawn(creep.memory.homeRoomName);
         }
 
-        if (creep.ticksToLive < 100 && !creep.memory.isElderly) {
+        const elderlyThreshold = creep.memory.role !== 'hub' ? 10 : 100;
+        if (creep.ticksToLive < elderlyThreshold && !creep.memory.isElderly) {
             creep.memory.isElderly = true;
             util.refreshOrders(creep.memory.assignedRoomName);
         }
@@ -64,6 +72,10 @@ export function run() {
         if (creep.memory.role === 'claimer') {
             if (roleWorker.run(creep)) continue;
             roleClaimer.run(creep);
+        }
+
+        if (creep.memory.role === 'scout') {
+            roleScout.run(creep);
         }
 
         if (creep.memory.role === 'ravager') {

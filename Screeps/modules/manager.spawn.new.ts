@@ -47,21 +47,23 @@ function getRoomsToProcess(directives: rooms.ControlDirective[]): string[] {
 
 function processOrders(roomName: string) {
 
-    var needsRefresh = Game.time % 937 === 0;
+    var needsRefresh = Game.time % 133 === 0;
 
     const roomOrder = spawnOrders.getRoomOrder(roomName);
     var didFulfillOrder = spawnOrders.fulfillRoomOrder(roomOrder);
     if (didFulfillOrder) needsRefresh = true;
 
     const room = Game.rooms[roomName];
-    const activeSources = room.find<Source | Mineral>(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
-    const activeMinerals = room.find<Source | Mineral>(FIND_MINERALS, { filter: (o: Mineral) => util.isMineralActive(o) });
-    const activeSourcesAndMinerals = activeSources.concat(activeMinerals);
+    if (room) {
+        const activeSources = room.find<Source | Mineral>(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
+        const activeMinerals = room.find<Source | Mineral>(FIND_MINERALS, { filter: (o: Mineral) => util.isMineralActive(o) });
+        const activeSourcesAndMinerals = activeSources.concat(activeMinerals);
 
-    for (let i in activeSourcesAndMinerals) {
-        const sourceOrder = spawnOrders.getSourceOrder(roomName, activeSourcesAndMinerals[i].id);
-        didFulfillOrder = spawnOrders.fulfillSourceOrder(sourceOrder);
-        if (didFulfillOrder) needsRefresh = true;
+        for (let i in activeSourcesAndMinerals) {
+            const sourceOrder = spawnOrders.getSourceOrder(roomName, activeSourcesAndMinerals[i].id);
+            didFulfillOrder = spawnOrders.fulfillSourceOrder(sourceOrder);
+            if (didFulfillOrder) needsRefresh = true;
+        }
     }
 
     if (needsRefresh) {
@@ -75,6 +77,11 @@ function spawnFromQueue(spawn: Spawn) {
     if (spawn.spawning) return;
     const item = getItemFromQueue(spawn);
     if (!item) return;
+    // we should never try to spawn workers if we don't have eyes in the room. this will cause an error.
+    if (util.isWorkerRole(item.role) && !Game.rooms[item.assignedRoomName]) {
+        console.log('WARNING: trying to spawn ' + item.role + ' in room with no eyes (' + item.assignedRoomName + ') from spawn ' + spawn.name);
+        return;
+    }
     const creepName = item.role + Game.time;
     const body = generateBody(spawn, item);
     const options = {
@@ -95,7 +102,7 @@ function spawnFromQueue(spawn: Spawn) {
     if (result === OK) {
         spawnQueue.removeItemFromQueue(item);
         // record the expense
-        updateRemoteMiningMetrics(item.assignedRoomName, item.homeRoomName, item.role, body);
+        //updateRemoteMiningMetrics(item.assignedRoomName, item.homeRoomName, item.role, body);
     }
 }
 
@@ -105,11 +112,15 @@ function getItemFromQueue(spawn: Spawn): I.SpawnQueueItem {
     const eligibleItems = util.filter(queue, o => o.energyCost <= spawn.room.energyAvailable);
     if (!eligibleItems.length) return null;
     const sorted = util.sortBy(eligibleItems, o => {
-        if (o.role === 'meleeMercenary' || o.role === 'rangedMercenary') return 0;
-        if (o.role === 'ravager') return 1;
-        if (o.role === 'builder') return 2;
-        if (o.role === 'harvester') return 3;
-        if (o.role === 'transporter') return 4;
+        const room = Game.rooms[o.assignedRoomName];
+        if (o.role === 'hub') return 0;
+        if (o.role === 'scout') return 1;
+        if (o.role === 'meleeMercenary' || o.role === 'rangedMercenary') return 2;
+        if (o.role === 'ravager') return 3;
+        if (o.role === 'transporter' && room && room.storage) return 4;
+        if (o.role === 'builder') return 5;
+        if (o.role === 'harvester') return 6;
+        if (o.role === 'transporter') return 7;
         return 100;
     });
     return sorted[0];
@@ -118,13 +129,13 @@ function getItemFromQueue(spawn: Spawn): I.SpawnQueueItem {
 function getSpawnDirections(spawn: Spawn, item: I.SpawnQueueItem) {
     // spawn hubs towards the hub flag.
     // spawn other things away from the hub flag.
+    var directions: number[] = [TOP, TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM, BOTTOM_LEFT, LEFT, TOP_LEFT];
     const hubFlag = util.findHubFlag(spawn.room);
-    if (!hubFlag || !hubFlag.pos.inRangeTo(spawn, 1)) return null;
+    if (!hubFlag || !hubFlag.pos.inRangeTo(spawn, 1)) return directions;
     const hubFlagDirection = spawn.pos.getDirectionTo(hubFlag);
     if (item.role === 'hub') {
         return [hubFlagDirection];
     }
-    var directions: number[] = [TOP, TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM, BOTTOM_LEFT, LEFT, TOP_LEFT];
     const removeIndex = directions.indexOf(hubFlagDirection);
     if (removeIndex > -1) {
         directions.splice(removeIndex, 1);
@@ -137,16 +148,16 @@ function generateBody(spawn: Spawn, item: I.SpawnQueueItem) {
     return result ? result.body : null;
 }
 
-function updateRemoteMiningMetrics(roomName: string, homeRoomName: string, role: string, body: string[]) {
-    if (roomName !== homeRoomName && role === 'transporter' || role === 'builder' || role === 'harvester') {
-        const remoteMiningMetrics = Memory.remoteMiningMetrics || {};
-        const roomMetrics = remoteMiningMetrics[roomName] || { cost: 0, income: 0 };
-        const cost = (util.countBodyParts(body, 'WORK') * 100)
-            + (util.countBodyParts(body, 'MOVE') * 50)
-            + (util.countBodyParts(body, 'CARRY') * 50)
-            + (util.countBodyParts(body, 'CLAIM') * 600);
-        roomMetrics.cost += cost;
-        remoteMiningMetrics[roomName] = roomMetrics;
-        Memory.remoteMiningMetrics = remoteMiningMetrics;
-    }
-}
+//function updateRemoteMiningMetrics(roomName: string, homeRoomName: string, role: string, body: string[]) {
+//    if (roomName !== homeRoomName && role === 'transporter' || role === 'builder' || role === 'harvester') {
+//        const remoteMiningMetrics = Memory.remoteMiningMetrics || {};
+//        const roomMetrics = remoteMiningMetrics[roomName] || { cost: 0, income: 0 };
+//        const cost = (util.countBodyParts(body, 'WORK') * 100)
+//            + (util.countBodyParts(body, 'MOVE') * 50)
+//            + (util.countBodyParts(body, 'CARRY') * 50)
+//            + (util.countBodyParts(body, 'CLAIM') * 600);
+//        roomMetrics.cost += cost;
+//        remoteMiningMetrics[roomName] = roomMetrics;
+//        Memory.remoteMiningMetrics = remoteMiningMetrics;
+//    }
+//}
