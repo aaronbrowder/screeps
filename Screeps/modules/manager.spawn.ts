@@ -145,11 +145,6 @@ export function run() {
             Math.max(0, Math.ceil(Math.pow(totalTransportDistanceForSources, .7) * 1.9) - 4)
             + Math.ceil(room.energyCapacityAvailable / 1000);
 
-        // HACK because this room has a lot of remote mining operations and has to spawn a lot
-        if (roomName === 'E44N32') {
-            idealTotalTransporterCarryParts += 6;
-        }
-
         if (totalTransportDistanceForSources > 0 && idealTotalTransporterCarryParts <= 0) {
             idealTotalTransporterCarryParts = 2;
         }
@@ -565,11 +560,10 @@ export function run() {
             }
             var role = 'builder';
             var subRole = 'colonist';
-            var body: string[] = [
-                WORK, WORK, WORK,
-                CARRY, CARRY, CARRY, CARRY,
-                MOVE, MOVE, MOVE, MOVE
-            ];
+            var body: string[] = [WORK, CARRY, MOVE, MOVE];
+            if (spawnInfo.maxEnergyAvailable >= 600 + (600 * claimParts)) {
+                body = body.concat([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE]);
+            }
             if (spawnInfo.maxEnergyAvailable >= 1200 + (600 * claimParts)) {
                 body = body.concat([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE]);
             }

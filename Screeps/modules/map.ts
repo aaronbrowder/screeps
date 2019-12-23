@@ -40,10 +40,18 @@ export function measurePathDistanceByRoute(pointA: RoomPosition, pointB: RoomPos
                 distance += 30;
             } else {
                 // measure the distance from the start position to the room exit
-                exit = startPos.findClosestByPath<RoomPosition>(routePart.exit, { ignoreCreeps: true });
-                path = startPos.findPathTo(exit, { ignoreCreeps: true });
-                if (path && path.length) distance += path.length;
-                else return -1;
+                try {
+                    exit = startPos.findClosestByPath<RoomPosition>(routePart.exit, { ignoreCreeps: true });
+                    path = startPos.findPathTo(exit, { ignoreCreeps: true });
+                    if (path && path.length) distance += path.length;
+                    else return -1;
+                }
+                catch (error) {
+                    const message = error + '. Could not calculate path from ' + pointA + ' to ' + pointB;
+                    //Game.notify(message);
+                    console.log(message);
+                    return -1;
+                }
             }
             // the next start pos is in the next room with the exit inverted
             startPos = getEntrancePosition(Game.rooms[routePart.room], routePart.exit, exit);

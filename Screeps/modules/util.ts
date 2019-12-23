@@ -333,3 +333,20 @@ export function countBodyParts(body: string[], type: string): number {
 export function isWorkerRole(role: string) {
     return role === 'builder' || role === 'harvester' || role === 'transporter' || role === 'hub';
 }
+
+export function countSurroundingWalls(pos: RoomPosition) {
+    var count = 0;
+    if (isWallAt(pos.x, pos.y + 1)) count++;
+    if (isWallAt(pos.x + 1, pos.y + 1)) count++;
+    if (isWallAt(pos.x + 1, pos.y)) count++;
+    if (isWallAt(pos.x + 1, pos.y - 1)) count++;
+    if (isWallAt(pos.x, pos.y - 1)) count++;
+    if (isWallAt(pos.x - 1, pos.y - 1)) count++;
+    if (isWallAt(pos.x - 1, pos.y)) count++;
+    if (isWallAt(pos.x - 1, pos.y + 1)) count++;
+    return count;
+
+    function isWallAt(x: number, y: number) {
+        return Game.map.getTerrainAt(x, y, pos.roomName) === 'wall';
+    }
+}

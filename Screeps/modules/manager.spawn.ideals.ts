@@ -42,7 +42,12 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
         sourceManager.getSourceMetrics(o).transportDistance || 10));
 
     const idealHarvesterPotencyPerSource = 7;
-    const idealHarvesterPotencyPerMineral = 18;
+    var idealHarvesterPotencyPerMineral = 18;
+
+    // HACK - stop harvesting if we already have more than 500,000 minerals stored in the room
+    if (room.storage && _.sum(room.storage.store) - room.storage.store[RESOURCE_ENERGY] > 500000) {
+        idealHarvesterPotencyPerMineral = 0;
+    }
 
     var idealTransporterPotency =
         Math.max(0, Math.ceil(Math.pow(totalTransportDistanceForSources, .7) * 1.9) - 4)
@@ -132,11 +137,13 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
         ravagerPotency = Math.ceil(threatLevel / 2);
     }
 
+    var claimerPotencyForReservation = 3;
+
     return {
         upgraderPotency: idealUpgraderPotency,
         wallBuilderPotency: idealWallBuilderPotency,
         transporterPotency: idealTransporterPotency,
-        claimerPotencyForReservation: 3,
+        claimerPotencyForReservation: claimerPotencyForReservation,
         ravagerPotency: ravagerPotency,
         harvesterPotencyPerSource: idealHarvesterPotencyPerSource,
         harvesterPotencyPerMineral: idealHarvesterPotencyPerMineral

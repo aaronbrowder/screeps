@@ -1,0 +1,4 @@
+﻿
+interface CreepMemory {
+    role: string;
+}

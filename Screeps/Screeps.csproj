@@ -22,6 +22,7 @@
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
     <TypeScriptToolsVersion>2.4</TypeScriptToolsVersion>
+    <Use64BitIISExpress />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -61,8 +62,9 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="definitions\extension.d.ts" />
+    <TypeScriptCompile Include="definitions\index.d.ts" />
     <TypeScriptCompile Include="definitions\lodash.d.ts" />
-    <TypeScriptCompile Include="definitions\screeps.d.ts" />
     <TypeScriptCompile Include="modules\assignment.builder.ts" />
     <TypeScriptCompile Include="modules\interfaces.ts" />
     <TypeScriptCompile Include="modules\main.ts" />

@@ -144,8 +144,8 @@ function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
     const ideals = idealsManager.getIdeals(assignedRoomName);
     const idealPotency = subRole === 'upgrader' ? ideals.upgraderPotency : ideals.wallBuilderPotency;
 
-    // we always want to have two builders per subRole so they can work on different tasks
-    const maxPotencyPerBuilder = Math.ceil(idealPotency / 2);
+    // in claimed rooms, we always want to have two builders per subRole so they can work on different tasks
+    const maxPotencyPerBuilder = doClaim ? Math.ceil(idealPotency / 2) : idealPotency;
     maxPotency = Math.min(maxPotencyPerBuilder, maxPotency);
 
     var potency = Math.min(desiredPotency || 1, maxPotency);

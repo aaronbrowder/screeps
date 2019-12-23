@@ -7,14 +7,7 @@ export interface ControlDirective {
 
 export function getControlDirectives(): ControlDirective[] {
     return [
-        { roomName: 'E44N31', flagName: 'Colony1', doClaim: true },
-        { roomName: 'E44N32', flagName: 'Colony2', doClaim: true },
-        { roomName: 'E45N31', flagName: 'Colony3', doClaim: true },
-        { roomName: 'E45N32', flagName: 'Colony4', doReserve: true },
-        { roomName: 'E43N32', flagName: 'Colony5', doReserve: true },
-        { roomName: 'E42N32', flagName: 'Colony6', doClaim: true },
-        { roomName: 'E43N31', flagName: 'Colony7', doReserve: true },
-        { roomName: 'E41N32', flagName: 'Colony8', doReserve: true },
+        { roomName: 'W17S6', flagName: 'Colony1', doClaim: true },
     ];
 }
 
