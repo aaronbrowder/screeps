@@ -19,10 +19,12 @@ function run(creep) {
         return;
     // if creep is low on health, it should retreat
     // TODO make the creep take shelter behind walls
-    if (creep.room.name !== creep.memory.homeRoomName && creep.hits < creep.hitsMax / 2) {
-        map.navigateToRoom(creep, creep.memory.homeRoomName);
-        return;
-    }
+    // I'm disabling this for now because it seems uncertain that it is always a good idea to retreat.
+    // This depends on how much healing capacity we have and whether allies need our help in combat.
+    //if (creep.room.name !== creep.memory.homeRoomName && creep.hits < creep.hitsMax / 2) {
+    //    map.navigateToRoom(creep, creep.memory.homeRoomName);
+    //    return;
+    //}
     // if creep is not in its assigned room, navigate there
     if (creep.room.name !== creep.memory.assignedRoomName) {
         var waitOutside = !creep.memory.charge && (creep.hits < creep.hitsMax || creep.memory.wait);
@@ -32,6 +34,12 @@ function run(creep) {
     const controller = creep.room.controller;
     if (controller && !controller.my && controller.owner) {
         // this room belongs to an enemy. try to destroy all the structures and creeps.
+        /* NOTES
+         * If the spawn is undefended, our best bet is probably to go straight for the spawn and destroy it.
+         * Another viable strategy is to disrupt the enemy supply line (transporters) to indirectly shut down the towers.
+         * We only need to worry about enemy creeps if they come close enough to us to attack us; then we can counterattack.
+         * Figuring out what to destroy requires us to assess how long it will take to destroy, considering walls in the way.
+        */
         // if there is a tower nearby we can attack, attack that
         var nearbyTowers = creep.pos.findInRange(FIND_HOSTILE_STRUCTURES, 3, { filter: o => util.isTower(o) });
         if (nearbyTowers.length && attack(nearbyTowers[0]))

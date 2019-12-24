@@ -8,6 +8,7 @@ export interface ControlDirective {
 export function getControlDirectives(): ControlDirective[] {
     return [
         { roomName: 'W17S6', flagName: 'Colony1', doClaim: true },
+        { roomName: 'W17S7', flagName: 'Colony2', doClaim: false },
     ];
 }
 

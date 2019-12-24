@@ -1,6 +1,36 @@
 import * as map from './map';
 import * as util from './util';
 
+/* OVERVIEW
+ * There are three types of battle environments:
+ * 1. Enemy-controlled room. We want to pierce enemy defenses and destroy key structures.
+ * 2. Ally-controlled room. We want to destroy invading creeps.
+ * 3. Neutral room. We want to engage enemy creeps in the field.
+ * A Ravager is spawned with one of these specific purposes in mind. It is assigned a target room upon spawning.
+ * A Ravager is a general-purpose combat unit that can perform both melee and ranged attacks. It can pursue
+ * and engage in combat with enemy creeps, as well as lay seige to structures.
+ * A Ravager does not operate alone but acts as part of a combat unit. Ravagers in a unit follow their leader.
+ * They can follow independent paths if there are nearby enemy creeps to attack, but they will abandon combat
+ * and return to their leader if the leader gets too far away.
+*/
+
+/* ENEMY-CONTROLLED ROOM
+ * The primary objective is to destroy all spawns. However, if the spawn is surrounded by walls, and there are
+ * other key structures that are not protected, it may be better to go for the other key structures.
+ * We can also potentially shut off towers by disrupting enemy supply lines.
+ * The priority value of an enemy structure can be calculated as the intrinsic value of that structure
+ * divided by the amount of time it will take to destroy it (including the time required to travel to it,
+ * and the time required to destroy any walls blocking the way).
+ * If the structure with the highest priority value is behind walls, we must calculate a path ignoring
+ * walls and then choose the first wall we encounter to be our temporary target.
+ * Once we have decided on a target, all Ravagers in the unit will begin attacking that target.
+ * This may involve localized decision making if there are enemy creeps near the target.
+ * Ravagers with low melee damage (or higher ranged damage than melee damage) should move out of the
+ * way so that Ravagers with higher melee damage can be adjacent to the target.
+ * If we cannot reach the target structure at a distance of 1 but we can reach it at a distance of
+ * 2 or 3, it may sometimes be better to go ahead and ranged attack it rather than breaking obstacles.
+*/
+
 export function run(creep: Creep) {
 
     var hasAttackPart = creep.getActiveBodyparts(ATTACK) > 0;
@@ -25,10 +55,12 @@ export function run(creep: Creep) {
 
     // if creep is low on health, it should retreat
     // TODO make the creep take shelter behind walls
-    if (creep.room.name !== creep.memory.homeRoomName && creep.hits < creep.hitsMax / 2) {
-        map.navigateToRoom(creep, creep.memory.homeRoomName);
-        return;
-    }
+    // I'm disabling this for now because it seems uncertain that it is always a good idea to retreat.
+    // This depends on how much healing capacity we have and whether allies need our help in combat.
+    //if (creep.room.name !== creep.memory.homeRoomName && creep.hits < creep.hitsMax / 2) {
+    //    map.navigateToRoom(creep, creep.memory.homeRoomName);
+    //    return;
+    //}
 
     // if creep is not in its assigned room, navigate there
     if (creep.room.name !== creep.memory.assignedRoomName) {
@@ -40,6 +72,13 @@ export function run(creep: Creep) {
     const controller = creep.room.controller;
     if (controller && !controller.my && controller.owner) {
         // this room belongs to an enemy. try to destroy all the structures and creeps.
+
+        /* NOTES
+         * If the spawn is undefended, our best bet is probably to go straight for the spawn and destroy it.
+         * Another viable strategy is to disrupt the enemy supply line (transporters) to indirectly shut down the towers.
+         * We only need to worry about enemy creeps if they come close enough to us to attack us; then we can counterattack.
+         * Figuring out what to destroy requires us to assess how long it will take to destroy, considering walls in the way.
+        */
 
         // if there is a tower nearby we can attack, attack that
         var nearbyTowers = creep.pos.findInRange(FIND_HOSTILE_STRUCTURES, 3, { filter: o => util.isTower(o) });

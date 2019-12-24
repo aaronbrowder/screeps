@@ -79,12 +79,11 @@
     <TypeScriptCompile Include="modules\manager.spawn.ideals.ts" />
     <TypeScriptCompile Include="modules\manager.spawn.queue.ts" />
     <TypeScriptCompile Include="modules\manager.spawn.orders.ts" />
-    <TypeScriptCompile Include="modules\manager.spawn.ts" />
     <TypeScriptCompile Include="modules\manager.spawn.siege.ts" />
     <TypeScriptCompile Include="modules\map.ts" />
     <TypeScriptCompile Include="modules\mobilization.ts" />
-    <TypeScriptCompile Include="modules\role.ravager.combat.ts" />
-    <TypeScriptCompile Include="modules\role.combat.ravager.ts" />
+    <TypeScriptCompile Include="modules\ravager-obsolete.ts" />
+    <TypeScriptCompile Include="modules\role.battle.ravager.ts" />
     <TypeScriptCompile Include="modules\role.mercenary.ts" />
     <TypeScriptCompile Include="modules\role.scout.ts" />
     <TypeScriptCompile Include="modules\role.siege.crusher.ts" />

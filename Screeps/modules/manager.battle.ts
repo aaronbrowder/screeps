@@ -172,7 +172,7 @@ export function run() {
     function getCostMatrix(roomName: string) {
         var room = Game.rooms[roomName];
         var costMatrix = new PathFinder.CostMatrix;
-        var walls = room.find<StructureWall | StructureRampart>(FIND_HOSTILE_STRUCTURES, {
+        var walls = room.find<StructureWall | StructureRampart>(FIND_STRUCTURES, {
             filter: (o: Structure) => o.structureType === STRUCTURE_WALL || o.structureType === STRUCTURE_RAMPART
         });
         if (walls.length) {

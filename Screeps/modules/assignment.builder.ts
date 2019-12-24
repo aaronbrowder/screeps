@@ -11,12 +11,11 @@ export function assignBuilders() {
     // 3. wall or rampart construction site
     // 4. controller critically downgrading
     // 5. significantly damaged structure besides roads, walls, and ramparts
-    // 6. container construction site (only in unclaimed rooms)
+    // 6. container construction site
     // 7. significantly damaged road
     // 8. spawn construction site
     // 9. extension construction site when number of extensions < 5
     // 10. road construction site over a swamp
-    // 11. container construction site
     // 12. other non-road construction site
     // 13. road construction site
 
@@ -76,8 +75,7 @@ export function assignBuilders() {
                 assign(target, 10);
             }
             else if (target.structureType == STRUCTURE_CONTAINER) {
-                if (isMyRoom) assign(target, 11);
-                else assign(target, 6);
+                assign(target, 6);
             }
             else if (target.structureType != STRUCTURE_ROAD) {
                 assign(target, 12);
@@ -111,7 +109,7 @@ export function assignBuilders() {
 
 function isCriticallyDowngrading(controller) {
     if (controller.level < 3) {
-        return controller.ticksToDowngrade < 2500;
+        return controller.ticksToDowngrade < 2000;
     }
     if (controller.level === 3) {
         return controller.ticksToDowngrade < 7000;

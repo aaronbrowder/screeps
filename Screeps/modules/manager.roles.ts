@@ -6,7 +6,7 @@ import * as roleHub from './role.worker.hub';
 import * as roleClaimer from './role.worker.claimer';
 import * as roleScout from './role.scout';
 
-import * as roleRavager from './role.combat.ravager';
+import * as roleRavager from './role.battle.ravager';
 import * as roleMercenary from './role.mercenary';
 import * as roleCrusher from './role.siege.crusher';
 import * as roleMedic from './role.siege.medic';

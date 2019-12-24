@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 function getControlDirectives() {
     return [
         { roomName: 'W17S6', flagName: 'Colony1', doClaim: true },
+        { roomName: 'W17S7', flagName: 'Colony2', doClaim: false },
     ];
 }
 exports.getControlDirectives = getControlDirectives;

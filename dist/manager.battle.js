@@ -165,7 +165,7 @@ function run() {
     function getCostMatrix(roomName) {
         var room = Game.rooms[roomName];
         var costMatrix = new PathFinder.CostMatrix;
-        var walls = room.find(FIND_HOSTILE_STRUCTURES, {
+        var walls = room.find(FIND_STRUCTURES, {
             filter: (o) => o.structureType === STRUCTURE_WALL || o.structureType === STRUCTURE_RAMPART
         });
         if (walls.length) {

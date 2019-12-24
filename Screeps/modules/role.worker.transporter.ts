@@ -26,6 +26,9 @@ export function run(creep: Creep) {
     }
 
     function collect() {
+        if (creep.carry.getFreeCapacity() === 0) {
+            return false;
+        }
         var assignment = assignments.length ? Game.getObjectById(assignments[0].id) : null;
         if (isAssignmentMineralContainer(assignment)) {
             // assignment is a mining container for minerals. this is the one type of assignment that requires collecting instead of delivering.
@@ -66,14 +69,25 @@ export function run(creep: Creep) {
 
     function findCollectTarget() {
 
-        var droppedResources = assignedRoom.find(FIND_DROPPED_RESOURCES).map(o => {
-            return { target: o, value: getDroppedResourcesValue(o) } as any;
+        interface CollectTarget {
+            target: RoomObject;
+            value: number;
+        }
+
+        var droppedResources: Array<CollectTarget> = assignedRoom.find(FIND_DROPPED_RESOURCES).map(o => {
+            return { target: o, value: getDroppedResourcesValue(o) };
         });
 
-        const stores = assignedRoom.find<StructureContainer | StructureStorage>(FIND_STRUCTURES, {
+        var tombstones: Array<CollectTarget> = assignedRoom.find(FIND_TOMBSTONES).map(o => {
+            return { target: o, value: getTombstoneValue(o) };
+        });
+
+        const roomHasStorage = assignedRoom.find<StructureStorage>(FIND_STRUCTURES, { filter: o => util.isStorage(o) });
+
+        const stores: Array<CollectTarget> = assignedRoom.find<StructureContainer | StructureStorage>(FIND_STRUCTURES, {
             filter: o => (util.isContainer(o) || util.isStorage(o)) && o.store[RESOURCE_ENERGY] > 0
         }).map(o => {
-            return { target: o, value: getStoreValue(o) } as any;
+            return { target: o, value: getStorageValue(o) };
         });
 
         const links = assignedRoom.find<StructureLink>(FIND_MY_STRUCTURES, {
@@ -85,28 +99,48 @@ export function run(creep: Creep) {
         const targets = util.filter(droppedResources.concat(stores).concat(links), o => o.value > -10000);
         return util.getBestValue(targets);
 
-        function getDroppedResourcesValue(droppedResources) {
-            var value = getCollectTargetValue(droppedResources, o => o.amount);
-            if (droppedResources.resourceType == RESOURCE_ENERGY) {
-                if (droppedResources.amount < 50) {
-                    // it's not worth traveling to pick up a tiny amount of energy
-                    return value - 1000;
-                }
-                return value + 18;
+        function getDroppedResourcesValue(resource: Resource) {
+            // adjust the amount so we ignore small piles but highly value large piles
+            var adjustedAmount = Math.pow(resource.amount, 2) / 100;
+            // we value non-energy resources twice as much as energy
+            if (resource.resourceType !== RESOURCE_ENERGY) {
+                adjustedAmount *= 2;
             }
-            // minerals are more valuable than energy
-            return value + 28;
+            const value = getResourceCollectTargetValue(resource, adjustedAmount);
+            return getResourceValue(resource.resourceType, resource.amount, value);
         }
 
-        function getStoreValue(store: StructureContainer | StructureStorage) {
-            var value = getCollectTargetValue(store, o => o.store[RESOURCE_ENERGY]);
-            if (store.pos.findInRange(FIND_SOURCES, 2).length || store.pos.findInRange(FIND_MINERALS, 2).length) {
+        function getTombstoneValue(tombstone: Tombstone) {
+            const nonEnergyWeightFactor = 2;
+            return getStoreCollectTargetValue(tombstone, tombstone.store, nonEnergyWeightFactor);
+        }
+
+        function getResourceValue(type: ResourceConstant, amount: number, baseValue: number) {
+            if (type == RESOURCE_ENERGY) {
+                if (amount < 50) {
+                    // it's not worth traveling to pick up a tiny amount of energy
+                    return baseValue - 1000;
+                }
+                return baseValue + 18;
+            }
+            // minerals are more valuable than energy
+            return baseValue + 28;
+        }
+
+        function getStorageValue(storage: StructureContainer | StructureStorage) {
+            // we don't care about collecting non-energy resources from storage
+            const nonEnergyWeightFactor = 0;
+            var value = getStoreCollectTargetValue(storage, storage.store, nonEnergyWeightFactor);
+            if (storage.pos.findInRange(FIND_SOURCES, 2).length || storage.pos.findInRange(FIND_MINERALS, 2).length) {
                 // store is a mining container
                 value += 8;
+            } else if (roomHasStorage && storage.structureType === STRUCTURE_CONTAINER) {
+                // store is a convenience container
+                value -= 40;
             } else {
                 // only pull from storage under special circumstances
                 var consumptionMode = util.getRoomMemory(creep.memory.assignedRoomName).consumptionMode;
-                if (!threatLevel && !Memory['siegeMode'] && !consumptionMode && !isSpawnHungry()) {
+                if (!threatLevel && !Memory.siegeMode && !consumptionMode && !isSpawnHungry()) {
                     value -= 1000000;
                 }
             }
@@ -117,15 +151,27 @@ export function run(creep: Creep) {
             }
         }
 
-        function getLinkValue(link) {
-            return getCollectTargetValue(link, o => o.energy) + 12;
+        function getLinkValue(link: StructureLink) {
+            return getResourceCollectTargetValue(link, link.energy) + 12;
         }
 
-        function getCollectTargetValue(target, energyFunc) {
-            var value = 10 * Math.min(2, energyFunc(target) / (creep.carryCapacity - creep.carry.energy));
+        function getResourceCollectTargetValue<T extends RoomObject>(target: T, amount: number) {
+            var value = 10 * Math.min(2, amount / creep.carry.getFreeCapacity());
             const path = creep.pos.findPathTo(target.pos);
             value -= path.length;
             return value;
+        }
+
+        function getStoreCollectTargetValue<T extends RoomObject>(target: T, store: Store<ResourceConstant, false>, nonEnergyWeightFactor: number) {
+            var amount = 0;
+            for (let i in store) {
+                if (i === RESOURCE_ENERGY) {
+                    amount += store[i];
+                } else {
+                    amount += store[i] * nonEnergyWeightFactor;
+                }
+            }
+            return getResourceCollectTargetValue(target, amount);
         }
     }
 
