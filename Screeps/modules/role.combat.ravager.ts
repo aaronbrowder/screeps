@@ -6,7 +6,7 @@ export function run(creep: Creep) {
     var hasAttackPart = creep.getActiveBodyparts(ATTACK) > 0;
     var hasRangedAttackPart = creep.getActiveBodyparts(RANGED_ATTACK) > 0;
 
-    var hostileCreeps = creep.room.find<Creep>(FIND_HOSTILE_CREEPS);
+    var hostileCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
     if (hostileCreeps.length) {
         var rangedCombatOpponents = util.filter(hostileCreeps, o =>
             o.getActiveBodyparts(RANGED_ATTACK) > 0 && o.pos.inRangeTo(creep.pos, 3)
@@ -42,23 +42,23 @@ export function run(creep: Creep) {
         // this room belongs to an enemy. try to destroy all the structures and creeps.
 
         // if there is a tower nearby we can attack, attack that
-        var nearbyTowers: Tower[] = creep.pos.findInRange(FIND_HOSTILE_STRUCTURES, 3, { filter: o => util.isTower(o) });
+        var nearbyTowers = creep.pos.findInRange(FIND_HOSTILE_STRUCTURES, 3, { filter: o => util.isTower(o) });
         if (nearbyTowers.length && attack(nearbyTowers[0])) return;
 
         // our primary goal is to kill the spawn
-        var spawns = creep.room.find<Spawn>(FIND_HOSTILE_SPAWNS);
+        var spawns = creep.room.find(FIND_HOSTILE_SPAWNS);
         if (spawns.length && attack(spawns[0])) return;
 
         // once the spawn is dead, we want to go after any towers
-        var towers = creep.room.find<Tower>(FIND_HOSTILE_STRUCTURES, { filter: o => util.isTower(o) });
+        var towers = creep.room.find<StructureTower>(FIND_HOSTILE_STRUCTURES, { filter: o => util.isTower(o) });
         if (towers.length && attack(towers[0])) return;
 
         // either there is no spawn or there's something blocking the way. first try attacking creeps
-        var targetCreep = creep.pos.findClosestByPath<Creep>(FIND_HOSTILE_CREEPS);
+        var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
         if (targetCreep && attack(targetCreep)) return;
 
         // no creeps to attack. there's probably walls blocking the way. attack the weakest one
-        var walls = _.sortBy(creep.room.find(FIND_HOSTILE_STRUCTURES, {
+        var walls = _.sortBy(creep.room.find(FIND_STRUCTURES, {
             filter: o =>
                 (o.structureType == STRUCTURE_WALL || o.structureType == STRUCTURE_RAMPART)
         }), o => o.hits);
@@ -77,7 +77,7 @@ export function run(creep: Creep) {
     }
     else {
         // this room is mine or neutral. just try to kill hostile creeps.
-        var targetCreep = creep.pos.findClosestByPath<Creep>(FIND_HOSTILE_CREEPS);
+        var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
         if (!targetCreep) {
             // no hostile creeps. we don't need the ravager anymore
             util.recycle(creep);

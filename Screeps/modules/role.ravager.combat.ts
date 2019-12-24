@@ -32,7 +32,7 @@ function attackSomething(creep: Creep) {
         const nearbyWall = util.sortBy(util.filter(nearbyStructures, o => util.isRampart(o) || util.isWall(o)), o => o.hits)[0];
         if (nearbyWall) return nearbyWall;
         // then attack whichever worker creep has the lowest health
-        const nearbyWorker = util.sortBy(creep.pos.findInRange<Creep>(FIND_HOSTILE_CREEPS, range), o => o.hits)[0];
+        const nearbyWorker = util.sortBy(creep.pos.findInRange(FIND_HOSTILE_CREEPS, range), o => o.hits)[0];
         if (nearbyWorker) return nearbyWorker;
         // finally attack whichever structure has the lowest health
         const nearbyStructure = util.sortBy(nearbyStructures, o => o.hits)[0];
@@ -50,7 +50,7 @@ function attackSomething(creep: Creep) {
     }
 
     function findTowers(myDamage: number, range: number): Array<util.ValueData<Creep | Structure>> {
-        return creep.room.find<Tower>(FIND_HOSTILE_STRUCTURES, {
+        return creep.room.find<StructureTower>(FIND_HOSTILE_STRUCTURES, {
             filter: o => util.isTower(o) && o.pos.inRangeTo(creep, range)
         }).map(o => {
             return { target: o, value: towerValue(o, myDamage) };
@@ -58,15 +58,15 @@ function attackSomething(creep: Creep) {
     }
 
     function findSpawns(myDamage: number, range: number): Array<util.ValueData<Creep | Structure>> {
-        return creep.room.find<Spawn>(FIND_HOSTILE_SPAWNS, {
-            filter: (o: Spawn) => o.pos.inRangeTo(creep, range)
+        return creep.room.find(FIND_HOSTILE_SPAWNS, {
+            filter: (o: StructureSpawn) => o.pos.inRangeTo(creep, range)
         }).map(o => {
             return { target: o, value: spawnValue(o, myDamage) };
         });
     }
 
     function findStorage(myDamage: number, range: number): Array<util.ValueData<Creep | Structure>> {
-        return creep.room.find<Storage>(FIND_HOSTILE_STRUCTURES, {
+        return creep.room.find<StructureStorage>(FIND_HOSTILE_STRUCTURES, {
             filter: o => util.isStorage(o) && o.pos.inRangeTo(creep, range)
         }).map(o => {
             return { target: o, value: storageValue(o, myDamage) };
@@ -74,14 +74,14 @@ function attackSomething(creep: Creep) {
     }
 
     function findHostileCreeps(myDamage: number, range: number, isMelee: boolean): Array<util.ValueData<Creep | Structure>> {
-        return creep.room.find<Creep>(FIND_HOSTILE_CREEPS, {
+        return creep.room.find(FIND_HOSTILE_CREEPS, {
             filter: o => o.pos.inRangeTo(creep, range)
         }).map(o => {
             return { target: o, value: hostileCreepValue(o, myDamage, isMelee) };
         });
     }
 
-    function towerValue(tower: Tower, myDamage: number) {
+    function towerValue(tower: StructureTower, myDamage: number) {
         const hitsToKill = getHitsToKill(tower, myDamage);
         const theirDamage = 600;
         const priority = theirDamage / hitsToKill;
@@ -92,18 +92,18 @@ function attackSomething(creep: Creep) {
         return priority;
     }
 
-    function spawnValue(spawn: Spawn, myDamage: number) {
+    function spawnValue(spawn: StructureSpawn, myDamage: number) {
         const hitsToKill = getHitsToKill(spawn, myDamage);
         return 100 / hitsToKill;
     }
 
-    function storageValue(storage: Storage, myDamage: number) {
+    function storageValue(storage: StructureStorage, myDamage: number) {
         const hitsToKill = getHitsToKill(storage, myDamage);
         return Math.sqrt(_.sum(storage.store)) / hitsToKill;
     }
 
     function getHitsToKill(structure: Structure, myDamage: number) {
-        const rampart = util.filter(structure.pos.lookFor<Structure>(LOOK_STRUCTURES), o => util.isRampart(o))[0];
+        const rampart = util.filter(structure.pos.lookFor(LOOK_STRUCTURES), o => util.isRampart(o))[0];
         const hits = structure.hits + (rampart ? rampart.hits : 0);
         return hits / myDamage;
     }
@@ -121,7 +121,7 @@ function attackSomething(creep: Creep) {
         // TODO should we consider that a creep can be healed?
         const bodyParts = util.filter(targetCreep.body, o => o.hits > 0);
 
-        const rampart = util.filter(targetCreep.pos.lookFor<Structure>(LOOK_STRUCTURES), o => util.isRampart(o))[0];
+        const rampart = util.filter(targetCreep.pos.lookFor(LOOK_STRUCTURES), o => util.isRampart(o))[0];
         const rampartHits = rampart ? rampart.hits : 0;
         const myAdjustedDamage = Math.max(0, myDamage - rampartHits);
 

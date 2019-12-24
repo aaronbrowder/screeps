@@ -56,22 +56,22 @@ export function run(creep: Creep) {
 
     function findCollectTarget(): any {
 
-        const constructionSites = room.find<ConstructionSite>(FIND_MY_CONSTRUCTION_SITES);
+        const constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
 
-        const containers = room.find<Container | Storage>(FIND_STRUCTURES, {
+        const containers = room.find<StructureContainer | StructureStorage>(FIND_STRUCTURES, {
             filter: o => (util.isContainer(o) || util.isStorage(o)) && o.store[RESOURCE_ENERGY] > 0
         }).map(o => {
-            return { target: o as Container | Storage | Source, value: getStoreValue(o) };
+            return { target: o as StructureContainer | StructureStorage | Source, value: getStoreValue(o) };
         });
 
-        const sources = room.find<Source>(FIND_SOURCES, { filter: o => o.energy > 0 }).map(o => {
-            return { target: o as Container | Storage | Source, value: getSourceValue(o) };
+        const sources = room.find(FIND_SOURCES, { filter: o => o.energy > 0 }).map(o => {
+            return { target: o as StructureContainer | StructureStorage | Source, value: getSourceValue(o) };
         });
 
         const targets = _.filter(containers.concat(sources), o => o.value > -1000);
         return util.getBestValue(targets);
 
-        function getStoreValue(store: Container | Storage) {
+        function getStoreValue(store: StructureContainer | StructureStorage) {
             var value = getCollectTargetValue(store, o => o.store[RESOURCE_ENERGY]) + 5;
             // don't collect from storage except when there are construction sites or in consumption mode
             var consumptionMode = util.getRoomMemory(creep.memory.assignedRoomName).consumptionMode;
@@ -90,7 +90,7 @@ export function run(creep: Creep) {
             return value;
         }
 
-        function getCollectTargetValue<T extends Container | Storage | Source>(target: T, energyFunc: (target: T) => number) {
+        function getCollectTargetValue<T extends StructureContainer | StructureStorage | Source>(target: T, energyFunc: (target: T) => number) {
             var value = 10 * Math.min(1, energyFunc(target) / (creep.carryCapacity - creep.carry.energy));
             const path = creep.pos.findPathTo(target.pos);
             if (!path) return -1000;
@@ -100,7 +100,7 @@ export function run(creep: Creep) {
 
     function deliver() {
         // make sure the builder is not right next to an energy source, blocking it from being used by other creeps
-        var nearbySource = creep.pos.findInRange<Source>(FIND_SOURCES, 1)[0];
+        var nearbySource = creep.pos.findInRange(FIND_SOURCES, 1)[0];
         if (nearbySource) {
             const goals = [{ pos: nearbySource.pos, range: 2 }];
             const fleeResult = PathFinder.search(creep.pos, goals, { flee: true });
@@ -108,7 +108,7 @@ export function run(creep: Creep) {
             return;
         }
         // if there are no harvesters in this room or no transporters, the builder should deliver to the spawn
-        var spawn = creep.pos.findClosestByPath<Spawn>(FIND_MY_SPAWNS);
+        var spawn = creep.pos.findClosestByPath(FIND_MY_SPAWNS);
         var hasHarvesters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === 'harvester' }).length;
         var hasTransporters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === 'transporter' }).length;
         if (spawn && (!hasHarvesters || !hasTransporters)) {
@@ -145,7 +145,7 @@ export function run(creep: Creep) {
             }
         }
 
-        function upgradeController(target: Controller) {
+        function upgradeController(target: StructureController) {
             if (creep.memory.assignmentId === target.id && target.level > 1 && !builderAssignment.isDowngrading(target)) {
                 creep.memory.assignmentId = null;
                 return;
@@ -156,7 +156,7 @@ export function run(creep: Creep) {
             }
         }
 
-        function buildUpWall(target: StructureWall | Rampart) {
+        function buildUpWall(target: StructureWall | StructureRampart) {
             if (target.hits === target.hitsMax) {
                 creep.memory.preferredWallId = null;
             }
@@ -179,12 +179,12 @@ export function run(creep: Creep) {
             }
         }
 
-        function findPreferredWall(): StructureWall | Rampart {
+        function findPreferredWall(): StructureWall | StructureRampart {
             if (creep.memory.preferredWallId) {
-                var wall = Game.getObjectById<StructureWall | Rampart>(creep.memory.preferredWallId);
+                var wall = Game.getObjectById<StructureWall | StructureRampart>(creep.memory.preferredWallId);
                 if (wall) return wall;
             }
-            const walls = room.find<StructureWall | Rampart>(FIND_STRUCTURES, {
+            const walls = room.find<StructureWall | StructureRampart>(FIND_STRUCTURES, {
                 filter: o =>
                     (o.structureType === STRUCTURE_WALL || o.structureType === STRUCTURE_RAMPART) && o.hits < o.hitsMax
             });

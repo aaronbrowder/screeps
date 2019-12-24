@@ -1,4 +1,3 @@
-import * as I from './interfaces';
 import * as util from './util';
 import * as potency from './util.potency';
 import * as rooms from './rooms';
@@ -95,7 +94,7 @@ export function getRoomOrder(roomName: string) {
         }
     }
 
-    const order: I.RoomOrder = {
+    const order: RoomOrder = {
         roomName: roomName,
         transporterPotency: transporterPotencyNeeded,
         wallBuilderPotency: wallBuilderPotencyNeeded,
@@ -127,7 +126,7 @@ export function getSourceOrder(roomName: string, sourceOrMineralId: string) {
         ? ideals.harvesterPotencyPerSource
         : ideals.harvesterPotencyPerMineral;
 
-    const order: I.SourceOrder = {
+    const order: SourceOrder = {
         roomName: roomName,
         sourceOrMineralId: sourceOrMineralId,
         harvesterPotency: idealPotency - harvesterPotency
@@ -160,7 +159,7 @@ function deleteCreep(roomName: string, role: string, subRole?: string, assignmen
     }
 }
 
-export function fulfillRoomOrder(order: I.RoomOrder) {
+export function fulfillRoomOrder(order: RoomOrder) {
     if (!order.upgraderPotency &&
         !order.wallBuilderPotency &&
         !order.transporterPotency &&
@@ -171,22 +170,22 @@ export function fulfillRoomOrder(order: I.RoomOrder) {
         // the order is empty, so there's nothing to do
         return false;
     }
-    const spawns: Spawn[] = util.findSpawns(order.roomName, 2);
+    const spawns: StructureSpawn[] = util.findSpawns(order.roomName, 2);
     // if there are no nearby spawns, we can't fulfill the order
     if (!spawns.length) return false;
     assignRoomOrderToSpawns(spawns, order);
     return true;
 }
 
-export function fulfillSourceOrder(order: I.SourceOrder) {
+export function fulfillSourceOrder(order: SourceOrder) {
     if (!order.harvesterPotency) return false;
-    const spawns: Spawn[] = util.findSpawns(order.roomName, 2);
+    const spawns: StructureSpawn[] = util.findSpawns(order.roomName, 2);
     if (!spawns.length) return false;
     assignSourceOrderToSpawns(spawns, order);
     return true;
 }
 
-function assignRoomOrderToSpawns(spawns: Spawn[], order: I.RoomOrder) {
+function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
     if (order.scoutPotency) {
         assignOrderPartToSpawns(spawns, order.scoutPotency, order.roomName, 'scout');
     }
@@ -211,7 +210,7 @@ function assignRoomOrderToSpawns(spawns: Spawn[], order: I.RoomOrder) {
             // if we are spawning a hub, make sure to assign it to a spawn that is adjacent to the hub flag
             const hubFlag = util.findHubFlag(Game.rooms[order.roomName]);
             if (hubFlag) {
-                const hubSpawns = _.filter(spawns, (o: Spawn) => o.pos.inRangeTo(hubFlag, 1));
+                const hubSpawns = _.filter(spawns, (o: StructureSpawn) => o.pos.inRangeTo(hubFlag, 1));
                 if (hubSpawns.length) {
                     const bodyResult = bodies.generateBody(order.hubPotency, hubSpawns[0].room, order.roomName, 'hub');
                     spawnQueue.addItemToQueue(hubSpawns[0], order.roomName, 'hub', null, null, bodyResult);
@@ -221,11 +220,11 @@ function assignRoomOrderToSpawns(spawns: Spawn[], order: I.RoomOrder) {
     }
 }
 
-function assignSourceOrderToSpawns(spawns: Spawn[], order: I.SourceOrder) {
+function assignSourceOrderToSpawns(spawns: StructureSpawn[], order: SourceOrder) {
     assignOrderPartToSpawns(spawns, order.harvesterPotency, order.roomName, 'harvester', null, order.sourceOrMineralId);
 }
 
-function assignOrderPartToSpawns(spawns: Spawn[], potency: number,
+function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number,
     roomName: string, role: string, subRole?: string, assignmentId?: string) {
 
     const spawn = util.getBestValue(spawns.map(o => {
@@ -242,7 +241,7 @@ function assignOrderPartToSpawns(spawns: Spawn[], potency: number,
     }
 }
 
-function getSpawnValue(spawn: Spawn, roomName: string, desiredPotency: number, bodyResult: bodies.BodyResult): util.ValueData<Spawn> {
+function getSpawnValue(spawn: StructureSpawn, roomName: string, desiredPotency: number, bodyResult: bodies.BodyResult): util.ValueData<StructureSpawn> {
     // The distance the spawned creep will need to travel to get to its assignment should be our primary consideration.
     // We want the distance to be as low as possible.
     const pathDistance = spawnMetrics.getPathDistance(spawn, roomName);

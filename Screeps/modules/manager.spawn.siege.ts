@@ -104,12 +104,11 @@ export function run() {
 
     function spawnCreep(role, body) {
         const name = role + Game.time;
-        return spawn.spawnCreep(body, name, {
-            memory: {
-                role: role,
-                homeRoomName: homeRoomName,
-                assignedRoomName: targetRoomName
-            }
-        });
+        const memory = {
+            role: role,
+            homeRoomName: homeRoomName,
+            assignedRoomName: targetRoomName
+        } as CreepMemory;
+        return spawn.spawnCreep(body, name, { memory: memory });
     }
 }

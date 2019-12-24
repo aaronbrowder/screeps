@@ -148,7 +148,7 @@ export function run() {
             var obstacles: Structure[] = [];
             for (let i in path) {
                 var step = path[i];
-                obstacles = obstacles.concat(room.lookForAt<Structure>(LOOK_STRUCTURES, step.x, step.y));
+                obstacles = obstacles.concat(room.lookForAt(LOOK_STRUCTURES, step.x, step.y));
             }
             return obstacles;
         }
@@ -172,7 +172,7 @@ export function run() {
     function getCostMatrix(roomName: string) {
         var room = Game.rooms[roomName];
         var costMatrix = new PathFinder.CostMatrix;
-        var walls = room.find<StructureWall | Rampart>(FIND_HOSTILE_STRUCTURES, {
+        var walls = room.find<StructureWall | StructureRampart>(FIND_HOSTILE_STRUCTURES, {
             filter: (o: Structure) => o.structureType === STRUCTURE_WALL || o.structureType === STRUCTURE_RAMPART
         });
         if (walls.length) {

@@ -2,7 +2,7 @@ import * as util from './util';
 import * as map from './map';
 import * as rooms from './rooms';
 
-export function getPathDistance(spawn: Spawn, roomName: string) {
+export function getPathDistance(spawn: StructureSpawn, roomName: string) {
 
     util.modifySpawnMemory(spawn, o => o.distances = o.distances || {});
     var spawnDistance = util.getSpawnMemory(spawn).distances[roomName];
@@ -23,7 +23,7 @@ export function getPathDistance(spawn: Spawn, roomName: string) {
     return spawnDistance.distance;
 }
 
-export function getHealth(spawn: Spawn) {
+export function getHealth(spawn: StructureSpawn) {
     // health = 1 if there is never any downtime where there are items in the queue but it's not spawning
     // because of a lack of energy. the more downtime there is, the closer to 0 health will be.
     // we should use trend data to calculate this.

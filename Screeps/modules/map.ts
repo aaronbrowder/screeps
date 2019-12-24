@@ -1,9 +1,8 @@
-import * as I from './interfaces';
 import * as util from './util';
 import * as rooms from './rooms';
 
 export type Route = {
-    exit: number;
+    exit: ExitConstant;
     room: string;
 }[];
 
@@ -41,7 +40,8 @@ export function measurePathDistanceByRoute(pointA: RoomPosition, pointB: RoomPos
             } else {
                 // measure the distance from the start position to the room exit
                 try {
-                    exit = startPos.findClosestByPath<RoomPosition>(routePart.exit, { ignoreCreeps: true });
+                    const opts = { ignoreCreeps: true } as any;
+                    exit = startPos.findClosestByPath<ExitConstant>(routePart.exit, opts);
                     path = startPos.findPathTo(exit, { ignoreCreeps: true });
                     if (path && path.length) distance += path.length;
                     else return -1;
@@ -68,10 +68,10 @@ export function measurePathDistanceByRoute(pointA: RoomPosition, pointB: RoomPos
     return distance;
 }
 
-function getEntrancePosition(room: Room, otherExit: number, otherExitPos: RoomPosition): RoomPosition {
+function getEntrancePosition(room: Room, otherExit: ExitConstant, otherExitPos: RoomPosition): RoomPosition {
     if (!room) return null;
     // in case otherExit is not available, just pick a random exit position
-    const someExitPos = room.find<RoomPosition>(otherExit)[0];
+    const someExitPos = room.find(otherExit)[0];
     if (!otherExitPos && !someExitPos) return null;
     const otherX = otherExitPos ? otherExitPos.x : someExitPos.x;
     const otherY = otherExitPos ? otherExitPos.y : someExitPos.y;
@@ -112,7 +112,7 @@ export function findNearbySpawns(roomName: string) {
         return roomMemory.nearbySpawns;
     }
 
-    var spawns: I.SpawnMapInfo[] = [];
+    var spawns: SpawnMapInfo[] = [];
 
     for (var i in Game.spawns) {
         var spawn = Game.spawns[i];

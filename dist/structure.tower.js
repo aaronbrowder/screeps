@@ -30,8 +30,12 @@ function run(tower) {
                 // towers should not repair walls or ramparts
                 return o.structureType != STRUCTURE_WALL
                     && o.structureType != STRUCTURE_RAMPART
+                    // towers should only repair structures that are slightly damaged (major damage should be repaired by builders)
                     && o.hits / o.hitsMax >= 0.8
                     && o.hits < o.hitsMax
+                    // don't repair roads that haven't been used in a long time (we apparently don't need those roads anymore)
+                    //&& (o.structureType != STRUCTURE_ROAD || (Memory.roadUsage[o.id] && Memory.roadUsage[o.id] > Game.time - 1000))
+                    // this tower should not repair a structure if there is another tower in the room that is closer to that structure
                     && (util.findNearestStructure(o.pos, STRUCTURE_TOWER).id === tower.id);
             }
         });

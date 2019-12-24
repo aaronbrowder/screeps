@@ -1,5 +1,4 @@
-﻿import * as I from './interfaces';
-import * as util from './util';
+﻿import * as util from './util';
 
 // "Potency" is a measure of how much of a type of worker there is in a room. For example, for transporters,
 // potency measures the current capacity of that room to transport things, by counting the total number of
@@ -38,15 +37,15 @@ export function getCreepPotency(creep: Creep) {
 
 function getPotencyInQueue(roomName: string, role: string, subRole?: string, assignmentId?: string): number {
     const creeps = getCreepsInQueue(roomName, role, subRole, assignmentId);
-    return _.sum(creeps, (o: I.SpawnQueueItem) => o.potency);
+    return _.sum(creeps, (o: SpawnQueueItem) => o.potency);
 }
 
 export function getCreepsInQueue(roomName: string, role: string, subRole?: string, assignmentId?: string) {
-    var result: I.SpawnQueueItem[] = [];
+    var result: SpawnQueueItem[] = [];
     for (let i in Game.spawns) {
         const spawn = Game.spawns[i];
         const queue = util.getSpawnMemory(spawn).queue || [];
-        const filtered: I.SpawnQueueItem[] = _.filter(queue, (o: I.SpawnQueueItem) =>
+        const filtered: SpawnQueueItem[] = _.filter(queue, (o: SpawnQueueItem) =>
             o.role === role &&
             o.assignedRoomName === roomName &&
             (!subRole || o.subRole === subRole) &&

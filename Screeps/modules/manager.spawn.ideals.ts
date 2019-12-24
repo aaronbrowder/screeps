@@ -28,15 +28,15 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
 
     const hubFlag = util.findHubFlag(room);
 
-    var activeSources = room.find<Source>(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
+    var activeSources = room.find(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
 
-    const towers = room.find<Tower>(FIND_MY_STRUCTURES, { filter: o => util.isTower(o) });
-    const extensions = room.find<Extension>(FIND_MY_STRUCTURES, { filter: o => util.isExtension(o) && o.isActive });
-    const links = room.find<Link>(FIND_MY_STRUCTURES, { filter: o => util.isLink(o) });
+    const towers = room.find<StructureTower>(FIND_MY_STRUCTURES, { filter: o => util.isTower(o) });
+    const extensions = room.find<StructureExtension>(FIND_MY_STRUCTURES, { filter: o => util.isExtension(o) && o.isActive });
+    const links = room.find<StructureLink>(FIND_MY_STRUCTURES, { filter: o => util.isLink(o) });
     const extractors = room.find<StructureExtractor>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_EXTRACTOR });
-    const nonRoadConstructionSites = room.find<ConstructionSite>(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType !== STRUCTURE_ROAD });
-    const containers = room.find<Container>(FIND_STRUCTURES, { filter: o => util.isContainer(o) });
-    const storageUnits = room.find<Storage>(FIND_MY_STRUCTURES, { filter: o => util.isStorage(o) });
+    const nonRoadConstructionSites = room.find(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType !== STRUCTURE_ROAD });
+    const containers = room.find<StructureContainer>(FIND_STRUCTURES, { filter: o => util.isContainer(o) });
+    const storageUnits = room.find<StructureStorage>(FIND_MY_STRUCTURES, { filter: o => util.isStorage(o) });
 
     const totalTransportDistanceForSources: number = _.sum(activeSources.map(o =>
         sourceManager.getSourceMetrics(o).transportDistance || 10));
@@ -52,11 +52,6 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
     var idealTransporterPotency =
         Math.max(0, Math.ceil(Math.pow(totalTransportDistanceForSources, .7) * 1.9) - 4)
         + Math.ceil(room.energyCapacityAvailable / 1000);
-
-    // HACK because this room has a lot of remote mining operations and has to spawn a lot
-    if (roomName === 'E44N32') {
-        idealTransporterPotency += 6;
-    }
 
     if (totalTransportDistanceForSources > 0 && idealTransporterPotency <= 0) {
         idealTransporterPotency = 2;
@@ -102,7 +97,7 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
             idealTransporterPotency = 0;
         }
         if (extensions.length < 5) {
-            idealUpgraderPotency = Math.floor(idealUpgraderPotency * 3 / 4);
+            idealUpgraderPotency = 6;
             idealWallBuilderPotency = 0;
         }
     } else {

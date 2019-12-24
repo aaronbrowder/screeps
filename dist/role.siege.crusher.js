@@ -126,7 +126,7 @@ function run(creep) {
             if (pursue(targetCreep))
                 return;
             // no creeps to attack. there's probably walls blocking the way. attack the weakest one
-            var walls = _.sortBy(creep.room.find(FIND_HOSTILE_STRUCTURES, {
+            var walls = _.sortBy(creep.room.find(FIND_STRUCTURES, {
                 filter: o => (o.structureType == STRUCTURE_WALL || o.structureType == STRUCTURE_RAMPART)
             }), o => o.hits);
             for (var i in walls) {
@@ -134,7 +134,7 @@ function run(creep) {
                     return;
             }
             // all the important stuff has been destroyed. destroy whatever's left
-            var structure = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {
+            var structure = creep.pos.findClosestByPath(FIND_STRUCTURES, {
                 filter: o => o.structureType != STRUCTURE_ROAD && o.structureType != STRUCTURE_CONTROLLER
             });
             if (structure && pursue(structure))

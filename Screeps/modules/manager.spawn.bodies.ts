@@ -14,7 +14,7 @@ const ravagerToughPartsPerAttackPart = 1;
 const ravagerMovePartsPerAttackPart = 1.5;
 
 export interface BodyResult {
-    body: string[];
+    body: BodyPartConstant[];
     potency: number;
 }
 
@@ -69,7 +69,7 @@ function generateHarvesterBody(desiredPotency: number, spawnRoom: Room, assigned
         if (potency > 3) moveParts++;
     }
 
-    var body: string[] = [CARRY];
+    var body: BodyPartConstant[] = [CARRY];
     if (potency >= 10) {
         body = body.concat([CARRY]);
     }
@@ -106,7 +106,7 @@ function generateTransporterBody(desiredPotency: number, spawnRoom: Room, assign
 
     const moveParts = Math.max(1, Math.floor(potency * transporterMovePartsPerCarryPart));
 
-    var body: string[] = [];
+    var body: BodyPartConstant[] = [];
     for (let i = 0; i < potency; i++) {
         body = body.concat([CARRY]);
     }
@@ -122,7 +122,7 @@ function generateTransporterBody(desiredPotency: number, spawnRoom: Room, assign
 
 function generateHubBody(desiredPotency: number): BodyResult {
     const potency = desiredPotency;
-    var body: string[] = [];
+    var body: BodyPartConstant[] = [];
     for (let i = 0; i < potency; i++) {
         body = body.concat([CARRY]);
     }
@@ -166,7 +166,7 @@ function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
         if (potency > 3) moveParts++;
     }
 
-    var body: string[] = [];
+    var body: BodyPartConstant[] = [];
     for (let i = 0; i < potency; i++) {
         body = body.concat([WORK]);
     }
@@ -185,7 +185,7 @@ function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
 
 function generateClaimerBody(desiredPotency: number, spawnRoom: Room): BodyResult {
     var potency = 0;
-    var body: string[] = [];
+    var body: BodyPartConstant[] = [];
     var energyCost = 0;
     for (let i = 0; i < desiredPotency; i++) {
         energyCost += 650;
@@ -220,7 +220,7 @@ function generateRavagerBody(desiredPotency: number, spawnRoom: Room): BodyResul
     var toughParts = Math.floor(potency * ravagerToughPartsPerAttackPart);
     var moveParts = Math.max(1, Math.floor(potency * ravagerMovePartsPerAttackPart));
 
-    var body: string[] = [];
+    var body: BodyPartConstant[] = [];
 
     while (attackParts > 0 || rangedAttackParts > 0 || toughParts > 0 || moveParts > 0) {
         if (toughParts > 0) {

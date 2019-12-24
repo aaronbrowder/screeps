@@ -1,4 +1,3 @@
-import * as I from './interfaces';
 
 export interface ValueData<T> {
     target: T;
@@ -84,13 +83,13 @@ export function moveToMoveTarget(creep: Creep) {
 
 export function findHubFlag(room: Room) {
     if (!room) return null;
-    return room.find<Flag>(FIND_FLAGS, { filter: (o: Flag) => o.name.startsWith('Hub') })[0];
+    return room.find(FIND_FLAGS, { filter: (o: Flag) => o.name.startsWith('Hub') })[0];
 }
 
-export function findSpawns(roomName: string, maxDistanceToSearch: number, distance?: number): Spawn[] {
+export function findSpawns(roomName: string, maxDistanceToSearch: number, distance?: number): StructureSpawn[] {
     distance = distance || 0;
     if (distance > maxDistanceToSearch) return [];
-    const spawnsAtMinDistance: Spawn[] = _.filter(Game.spawns, (o: Spawn) => {
+    const spawnsAtMinDistance: StructureSpawn[] = _.filter(Game.spawns, (o: StructureSpawn) => {
         return Game.map.getRoomLinearDistance(o.room.name, roomName) === distance;
     });
     if (!spawnsAtMinDistance.length) {
@@ -98,7 +97,7 @@ export function findSpawns(roomName: string, maxDistanceToSearch: number, distan
     }
     // always search at the desired distance plus 1, in case there is a shorter route through a greater number of rooms
     const maxDistance = Math.min(distance + 1, maxDistanceToSearch);
-    return _.filter(Game.spawns, (o: Spawn) => {
+    return _.filter(Game.spawns, (o: StructureSpawn) => {
         const d = Game.map.getRoomLinearDistance(o.room.name, roomName);
         return d >= distance && d <= maxDistance;
     });
@@ -124,7 +123,8 @@ export function findNearestStructure(pos, type, maxRange?) {
 }
 
 export function transferTo(creep: Creep, target: Structure) {
-    for (const resource in creep.carry) {
+    for (const carry in creep.carry) {
+        const resource = carry as ResourceConstant;
         if (creep.carry[resource] > 0) {
             var transferResult = creep.transfer(target, resource);
             if (transferResult == ERR_NOT_IN_RANGE) {
@@ -139,7 +139,7 @@ export function transferTo(creep: Creep, target: Structure) {
     return false;
 }
 
-export function deliverToSpawn(creep: Creep, spawn: Spawn) {
+export function deliverToSpawn(creep: Creep, spawn: StructureSpawn) {
     if (spawn.energy < spawn.energyCapacity) {
         transferTo(creep, spawn);
         return true;
@@ -159,7 +159,7 @@ export function goToRecycle(creep: Creep) {
     if (!homeRoom) {
         return false;
     }
-    const spawn = homeRoom.find<Spawn>(FIND_MY_SPAWNS)[0];
+    const spawn = homeRoom.find(FIND_MY_SPAWNS)[0];
     if (spawn) {
         setMoveTarget(creep, spawn);
         spawn.recycleCreep(creep);
@@ -168,7 +168,7 @@ export function goToRecycle(creep: Creep) {
     return false;
 }
 
-export function signController(creep: Creep, target: Controller) {
+export function signController(creep: Creep, target: StructureController) {
     var username = _.find(Game.structures).owner.username;
     if (!target.sign || target.sign.username !== username) {
         const result = creep.signController(target, 'Unholy Kingdom of Z');
@@ -195,7 +195,7 @@ export function isWartime(room) {
 }
 
 export function getThreatLevel(room: Room) {
-    const hostileCreeps = room.find<Creep>(FIND_HOSTILE_CREEPS, {
+    const hostileCreeps = room.find(FIND_HOSTILE_CREEPS, {
         filter: (o: Creep) => o.getActiveBodyparts(ATTACK) > 0 || o.getActiveBodyparts(RANGED_ATTACK) > 0
     });
     if (!hostileCreeps.length) return 0;
@@ -226,21 +226,21 @@ export function recycle(creep: Creep) {
     }
 }
 
-export function getRoomMemory(roomName: string): I.RoomMemory {
-    return Memory.rooms[roomName] || {};
+export function getRoomMemory(roomName: string): RoomMemory {
+    return Memory.rooms[roomName] || {} as RoomMemory;
 }
 
-export function modifyRoomMemory(roomName: string, fn: (roomMemory: I.RoomMemory) => void) {
+export function modifyRoomMemory(roomName: string, fn: (roomMemory: RoomMemory) => void) {
     const roomMemory = getRoomMemory(roomName);
     fn(roomMemory);
     Memory.rooms[roomName] = roomMemory;
 }
 
-export function getSpawnMemory(spawn: Spawn): I.SpawnMemory {
+export function getSpawnMemory(spawn: StructureSpawn): SpawnMemory {
     return spawn.memory;
 }
 
-export function modifySpawnMemory(spawn: Spawn, fn: (spawnMemory: I.SpawnMemory) => void) {
+export function modifySpawnMemory(spawn: StructureSpawn, fn: (spawnMemory: SpawnMemory) => void) {
     const spawnMemory = getSpawnMemory(spawn);
     fn(spawnMemory);
     spawn.memory = spawnMemory;
@@ -260,27 +260,27 @@ export function isNumber(x: any): x is number {
     return typeof x === "number";
 }
 
-export function isSpawn(structure: Structure): structure is Spawn {
+export function isSpawn(structure: Structure): structure is StructureSpawn {
     return structure.structureType === STRUCTURE_SPAWN;
 }
 
-export function isExtension(structure: Structure): structure is Extension {
+export function isExtension(structure: Structure): structure is StructureExtension {
     return structure.structureType === STRUCTURE_EXTENSION;
 }
 
-export function isTower(structure: Structure): structure is Tower {
+export function isTower(structure: Structure): structure is StructureTower {
     return structure.structureType === STRUCTURE_TOWER;
 }
 
-export function isContainer(structure: Structure): structure is Container {
+export function isContainer(structure: Structure): structure is StructureContainer {
     return structure.structureType === STRUCTURE_CONTAINER;
 }
 
-export function isStorage(structure: Structure): structure is Storage {
+export function isStorage(structure: Structure): structure is StructureStorage {
     return structure.structureType === STRUCTURE_STORAGE;
 }
 
-export function isLink(structure: Structure): structure is Link {
+export function isLink(structure: Structure): structure is StructureLink {
     return structure.structureType === STRUCTURE_LINK;
 }
 
@@ -288,15 +288,15 @@ export function isExtractor(structure: Structure): structure is StructureExtract
     return structure.structureType === STRUCTURE_EXTRACTOR;
 }
 
-export function isController(structure: Structure): structure is Controller {
+export function isController(structure: Structure): structure is StructureController {
     return structure.structureType === STRUCTURE_CONTROLLER;
 }
 
-export function isTerminal(structure: Structure): structure is Terminal {
+export function isTerminal(structure: Structure): structure is StructureTerminal {
     return structure.structureType === STRUCTURE_TERMINAL;
 }
 
-export function isRampart(structure: Structure): structure is Rampart {
+export function isRampart(structure: Structure): structure is StructureRampart {
     return structure.structureType === STRUCTURE_RAMPART;
 }
 
@@ -322,8 +322,8 @@ export function isSourceActive(source: Source) {
 
 export function isMineralActive(mineral: Mineral) {
     return mineral.mineralAmount > 0
-        && filter(mineral.pos.findInRange<Structure>(FIND_STRUCTURES, 2), o => isContainer(o)).length
-        && filter(mineral.pos.lookFor<Structure>(LOOK_STRUCTURES), o => isExtractor(o)).length;
+        && filter(mineral.pos.findInRange(FIND_STRUCTURES, 2), o => isContainer(o)).length
+        && filter(mineral.pos.lookFor(LOOK_STRUCTURES), o => isExtractor(o)).length;
 }
 
 export function countBodyParts(body: string[], type: string): number {
@@ -347,6 +347,6 @@ export function countSurroundingWalls(pos: RoomPosition) {
     return count;
 
     function isWallAt(x: number, y: number) {
-        return Game.map.getTerrainAt(x, y, pos.roomName) === 'wall';
+        return Game.map.getRoomTerrain(pos.roomName).get(x, y) === TERRAIN_MASK_WALL;
     }
 }

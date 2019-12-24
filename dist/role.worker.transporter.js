@@ -48,8 +48,9 @@ function run(creep) {
     }
     function collectMinerals(target) {
         for (let i in target.store) {
-            if (target.store[i] > 0) {
-                if (creep.withdraw(target, i) == ERR_NOT_IN_RANGE) {
+            const resource = i;
+            if (target.store[resource] > 0) {
+                if (creep.withdraw(target, resource) == ERR_NOT_IN_RANGE) {
                     util.setMoveTarget(creep, target, 1);
                     return;
                 }

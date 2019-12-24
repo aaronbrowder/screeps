@@ -51,8 +51,9 @@ export function run(creep: Creep) {
 
     function collectMinerals(target) {
         for (let i in target.store) {
-            if (target.store[i] > 0) {
-                if (creep.withdraw(target, i) == ERR_NOT_IN_RANGE) {
+            const resource = i as ResourceConstant;
+            if (target.store[resource] > 0) {
+                if (creep.withdraw(target, resource) == ERR_NOT_IN_RANGE) {
                     util.setMoveTarget(creep, target, 1);
                     return;
                 }
@@ -66,16 +67,16 @@ export function run(creep: Creep) {
     function findCollectTarget() {
 
         var droppedResources = assignedRoom.find(FIND_DROPPED_RESOURCES).map(o => {
-            return { target: o, value: getDroppedResourcesValue(o) };
+            return { target: o, value: getDroppedResourcesValue(o) } as any;
         });
 
-        const stores = assignedRoom.find<Container | Storage>(FIND_STRUCTURES, {
+        const stores = assignedRoom.find<StructureContainer | StructureStorage>(FIND_STRUCTURES, {
             filter: o => (util.isContainer(o) || util.isStorage(o)) && o.store[RESOURCE_ENERGY] > 0
         }).map(o => {
-            return { target: o, value: getStoreValue(o) };
+            return { target: o, value: getStoreValue(o) } as any;
         });
 
-        const links = assignedRoom.find<Link>(FIND_MY_STRUCTURES, {
+        const links = assignedRoom.find<StructureLink>(FIND_MY_STRUCTURES, {
             filter: o => util.isLink(o) && o.energy > 0 && structureLink.isDestination(o)
         }).map(o => {
             return { target: o, value: getLinkValue(o) };
@@ -97,7 +98,7 @@ export function run(creep: Creep) {
             return value + 28;
         }
 
-        function getStoreValue(store: Container | Storage) {
+        function getStoreValue(store: StructureContainer | StructureStorage) {
             var value = getCollectTargetValue(store, o => o.store[RESOURCE_ENERGY]);
             if (store.pos.findInRange(FIND_SOURCES, 2).length || store.pos.findInRange(FIND_MINERALS, 2).length) {
                 // store is a mining container
@@ -159,7 +160,7 @@ export function run(creep: Creep) {
                 return;
             }
             // look at links. we may be able to deliver more efficiently by sending energy through a link.
-            var links: Link[] = assignment.room.find(FIND_MY_STRUCTURES, {
+            var links = assignment.room.find(FIND_MY_STRUCTURES, {
                 filter: o => o.structureType == STRUCTURE_LINK
             });
             var closestSourceLink = creep.pos.findClosestByPath(links, { filter: o => structureLink.isSource(o) });

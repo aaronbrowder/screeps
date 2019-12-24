@@ -34,10 +34,11 @@ export function assignBuilders() {
         if (builders.every(o => !!o.memory.assignmentId) && Game.time % 11 !== 0) continue;
 
         var room = Game.rooms[roomName];
+        var terrain = Game.map.getRoomTerrain(roomName);
         var isMyRoom = room.controller && room.controller.my;
         var structures = room.find<Structure>(FIND_STRUCTURES);
-        var constructionSites = room.find<ConstructionSite>(FIND_MY_CONSTRUCTION_SITES);
-        var extensions = room.find<Extension>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_EXTENSION });
+        var constructionSites = room.find(FIND_MY_CONSTRUCTION_SITES);
+        var extensions = room.find<StructureExtension>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_EXTENSION });
 
         for (let i in structures) {
             let target = structures[i];
@@ -61,6 +62,7 @@ export function assignBuilders() {
 
         for (let i in constructionSites) {
             let target = constructionSites[i];
+            let pos = target.pos;
             if (target.structureType == STRUCTURE_WALL || target.structureType == STRUCTURE_RAMPART) {
                 assign(target, 3);
             }
@@ -70,7 +72,7 @@ export function assignBuilders() {
             else if (target.structureType == STRUCTURE_EXTENSION && extensions.length < 5) {
                 assign(target, 9);
             }
-            else if (target.structureType == STRUCTURE_ROAD && Game.map.getTerrainAt(target.pos) == 'swamp') {
+            else if (target.structureType == STRUCTURE_ROAD && terrain.get(pos.x, pos.y) === TERRAIN_MASK_SWAMP) {
                 assign(target, 10);
             }
             else if (target.structureType == STRUCTURE_CONTAINER) {
@@ -109,7 +111,7 @@ export function assignBuilders() {
 
 function isCriticallyDowngrading(controller) {
     if (controller.level < 3) {
-        return controller.ticksToDowngrade < 3500;
+        return controller.ticksToDowngrade < 2500;
     }
     if (controller.level === 3) {
         return controller.ticksToDowngrade < 7000;

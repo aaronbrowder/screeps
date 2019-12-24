@@ -25,10 +25,10 @@ export function run(creep: Creep) {
 
         var myDamage = 30 * creep.getActiveBodyparts(ATTACK);
 
-        var structures: Structure[] = creep.room.find(FIND_HOSTILE_STRUCTURES);
-        var towers: Tower[] = creep.room.find(FIND_HOSTILE_STRUCTURES, { filter: o => o.structureType == STRUCTURE_TOWER });
-        var hostileCreeps: Creep[] = creep.room.find(FIND_HOSTILE_CREEPS);
-        var spawns: Spawn[] = creep.room.find(FIND_HOSTILE_SPAWNS);
+        var structures = creep.room.find(FIND_HOSTILE_STRUCTURES);
+        var towers = creep.room.find(FIND_HOSTILE_STRUCTURES, { filter: o => o.structureType == STRUCTURE_TOWER });
+        var hostileCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+        var spawns = creep.room.find(FIND_HOSTILE_SPAWNS);
 
         // A crusher can only melee attack and move. It can do both in one tick. It will pursue its desired
         // target until it reaches that target or until something gets in the way that prevents it from moving
@@ -49,7 +49,7 @@ export function run(creep: Creep) {
             var target = findTowerOrCreepAttackTarget();
             if (target) return target;
             // then prioritize spawns
-            var nearbySpawn = creep.pos.findInRange(spawns, 1)[0] as Spawn;
+            var nearbySpawn = creep.pos.findInRange(spawns, 1)[0] as StructureSpawn;
             if (nearbySpawn) return nearbySpawn;
             // then prioritize whatever structure has the lowest health
             var nearbyStructure = _.sortBy(creep.pos.findInRange(structures, 1), o => o.hits)[0];
@@ -59,17 +59,17 @@ export function run(creep: Creep) {
         }
 
         function findTowerOrCreepAttackTarget() {
-            var nearbyTowers = (creep.pos.findInRange(towers, 1) as Tower[]).map(o => {
-                return { target: o, value: towerValue(o) } as util.ValueData<Tower | Creep>;
+            var nearbyTowers = (creep.pos.findInRange(towers, 1) as StructureTower[]).map(o => {
+                return { target: o, value: towerValue(o) } as util.ValueData<StructureTower | Creep>;
             });
             var nearbyHostileCreeps = (creep.pos.findInRange(hostileCreeps, 1) as Creep[]).map(o => {
-                return { target: o, value: hostileCreepValue(o) } as util.ValueData<Tower | Creep>;
+                return { target: o, value: hostileCreepValue(o) } as util.ValueData<StructureTower | Creep>;
             });
             var targets = util.filter(nearbyTowers.concat(nearbyHostileCreeps), o => o.value > 0);
             return util.getBestValue(targets);
         }
 
-        function towerValue(tower: Tower) {
+        function towerValue(tower: StructureTower) {
             if (myDamage === 0 || tower.hits === 0) return 0;
             var hitsToKill = tower.hits / myDamage;
             var theirDamage = 600;
@@ -126,7 +126,7 @@ export function run(creep: Creep) {
             if (creep.memory.isLeader) return;
 
             // prioritize towers within 3 spaces
-            var nearbyTowers: Tower[] = creep.pos.findInRange(towers, 3);
+            var nearbyTowers = creep.pos.findInRange(towers, 3);
             if (pursue(nearbyTowers[0])) return;
             // then prioritize spawns
             if (pursue(spawns[0])) return;
@@ -136,7 +136,7 @@ export function run(creep: Creep) {
             var targetCreep = creep.pos.findClosestByPath(hostileCreeps);
             if (pursue(targetCreep)) return;
             // no creeps to attack. there's probably walls blocking the way. attack the weakest one
-            var walls = _.sortBy(creep.room.find(FIND_HOSTILE_STRUCTURES, {
+            var walls = _.sortBy(creep.room.find(FIND_STRUCTURES, {
                 filter: o =>
                     (o.structureType == STRUCTURE_WALL || o.structureType == STRUCTURE_RAMPART)
             }), o => o.hits);
@@ -144,7 +144,7 @@ export function run(creep: Creep) {
                 if (pursue(walls[i])) return;
             }
             // all the important stuff has been destroyed. destroy whatever's left
-            var structure: Structure = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {
+            var structure: Structure = creep.pos.findClosestByPath(FIND_STRUCTURES, {
                 filter: o =>
                     o.structureType != STRUCTURE_ROAD && o.structureType != STRUCTURE_CONTROLLER
             });

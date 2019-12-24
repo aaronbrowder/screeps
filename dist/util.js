@@ -119,7 +119,8 @@ function findNearestStructure(pos, type, maxRange) {
 }
 exports.findNearestStructure = findNearestStructure;
 function transferTo(creep, target) {
-    for (const resource in creep.carry) {
+    for (const carry in creep.carry) {
+        const resource = carry;
         if (creep.carry[resource] > 0) {
             var transferResult = creep.transfer(target, resource);
             if (transferResult == ERR_NOT_IN_RANGE) {
@@ -330,4 +331,28 @@ function isWorkerRole(role) {
     return role === 'builder' || role === 'harvester' || role === 'transporter' || role === 'hub';
 }
 exports.isWorkerRole = isWorkerRole;
+function countSurroundingWalls(pos) {
+    var count = 0;
+    if (isWallAt(pos.x, pos.y + 1))
+        count++;
+    if (isWallAt(pos.x + 1, pos.y + 1))
+        count++;
+    if (isWallAt(pos.x + 1, pos.y))
+        count++;
+    if (isWallAt(pos.x + 1, pos.y - 1))
+        count++;
+    if (isWallAt(pos.x, pos.y - 1))
+        count++;
+    if (isWallAt(pos.x - 1, pos.y - 1))
+        count++;
+    if (isWallAt(pos.x - 1, pos.y))
+        count++;
+    if (isWallAt(pos.x - 1, pos.y + 1))
+        count++;
+    return count;
+    function isWallAt(x, y) {
+        return Game.map.getRoomTerrain(pos.roomName).get(x, y) === TERRAIN_MASK_WALL;
+    }
+}
+exports.countSurroundingWalls = countSurroundingWalls;
 //# sourceMappingURL=util.js.map

@@ -49,6 +49,10 @@ function getRoomOrder(roomName) {
                     claimerPotencyNeeded = ideals.claimerPotencyForReservation - claimerPotency;
                     if (claimerPotencyNeeded < 0)
                         claimerPotencyNeeded = 0;
+                    if (claimerPotency > 0 && util.countSurroundingWalls(room.controller.pos) === 7) {
+                        // if there's only one spot next to the controller, it's pointless to spawn a second claimer
+                        claimerPotencyNeeded = 0;
+                    }
                 }
             }
         }

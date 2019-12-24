@@ -54,7 +54,7 @@ function run(creep) {
             if (pursue(targetCreep))
                 return;
             // all the important stuff has been destroyed. destroy whatever's left
-            var structure = creep.pos.findClosestByPath(FIND_HOSTILE_STRUCTURES, {
+            var structure = creep.pos.findClosestByPath(FIND_STRUCTURES, {
                 filter: o => o.structureType != STRUCTURE_ROAD && o.structureType != STRUCTURE_CONTROLLER
             });
             if (structure && pursue(structure))

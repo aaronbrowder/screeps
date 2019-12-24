@@ -1,6 +1,6 @@
 import * as util from './util';
 
-export function run(terminal: Terminal) {
+export function run(terminal: StructureTerminal) {
 
     if (terminal.cooldown) return;
 
@@ -13,7 +13,7 @@ export function run(terminal: Terminal) {
         }
     }
 
-    function findOtherTerminals(range: number): Terminal[] {
+    function findOtherTerminals(range: number): StructureTerminal[] {
         return _.filter(Game.structures, o => {
             return util.isTerminal(o)
                 && o.id !== terminal.id
@@ -22,18 +22,18 @@ export function run(terminal: Terminal) {
     }
 }
 
-function canSendEnergy(terminal: Terminal) {
+function canSendEnergy(terminal: StructureTerminal) {
     // if in consumption mode, the terminal wants to get rid of energy
     const energy: number = terminal.store[RESOURCE_ENERGY];
     return energy > 100000 && getIsConsumptionMode(terminal);
 }
 
-function canReceiveEnergy(terminal: Terminal) {
+function canReceiveEnergy(terminal: StructureTerminal) {
     // if in consumption mode, the terminal wants to accumulate energy
     const energy: number = terminal.store[RESOURCE_ENERGY];
     return energy < 10000 || (energy < 200000 && !getIsConsumptionMode(terminal));
 }
 
-function getIsConsumptionMode(terminal: Terminal): boolean {
+function getIsConsumptionMode(terminal: StructureTerminal): boolean {
     return util.getRoomMemory(terminal.room.name).consumptionMode;
 }

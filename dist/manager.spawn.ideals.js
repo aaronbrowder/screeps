@@ -27,13 +27,13 @@ function getIdealsInternal(roomName, doClaim, threatLevel) {
     const storageUnits = room.find(FIND_MY_STRUCTURES, { filter: o => util.isStorage(o) });
     const totalTransportDistanceForSources = _.sum(activeSources.map(o => sourceManager.getSourceMetrics(o).transportDistance || 10));
     const idealHarvesterPotencyPerSource = 7;
-    const idealHarvesterPotencyPerMineral = 18;
+    var idealHarvesterPotencyPerMineral = 18;
+    // HACK - stop harvesting if we already have more than 500,000 minerals stored in the room
+    if (room.storage && _.sum(room.storage.store) - room.storage.store[RESOURCE_ENERGY] > 500000) {
+        idealHarvesterPotencyPerMineral = 0;
+    }
     var idealTransporterPotency = Math.max(0, Math.ceil(Math.pow(totalTransportDistanceForSources, .7) * 1.9) - 4)
         + Math.ceil(room.energyCapacityAvailable / 1000);
-    // HACK because this room has a lot of remote mining operations and has to spawn a lot
-    if (roomName === 'E44N32') {
-        idealTransporterPotency += 6;
-    }
     if (totalTransportDistanceForSources > 0 && idealTransporterPotency <= 0) {
         idealTransporterPotency = 2;
     }
@@ -76,7 +76,7 @@ function getIdealsInternal(roomName, doClaim, threatLevel) {
             idealTransporterPotency = 0;
         }
         if (extensions.length < 5) {
-            idealUpgraderPotency = Math.floor(idealUpgraderPotency * 3 / 4);
+            idealUpgraderPotency = 6;
             idealWallBuilderPotency = 0;
         }
     }
@@ -108,11 +108,12 @@ function getIdealsInternal(roomName, doClaim, threatLevel) {
         // RANGED_ATTACK and TOUGH parts. we should take this into account when examining the threat level.
         ravagerPotency = Math.ceil(threatLevel / 2);
     }
+    var claimerPotencyForReservation = 3;
     return {
         upgraderPotency: idealUpgraderPotency,
         wallBuilderPotency: idealWallBuilderPotency,
         transporterPotency: idealTransporterPotency,
-        claimerPotencyForReservation: 3,
+        claimerPotencyForReservation: claimerPotencyForReservation,
         ravagerPotency: ravagerPotency,
         harvesterPotencyPerSource: idealHarvesterPotencyPerSource,
         harvesterPotencyPerMineral: idealHarvesterPotencyPerMineral

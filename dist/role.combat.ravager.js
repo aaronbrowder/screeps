@@ -49,7 +49,7 @@ function run(creep) {
         if (targetCreep && attack(targetCreep))
             return;
         // no creeps to attack. there's probably walls blocking the way. attack the weakest one
-        var walls = _.sortBy(creep.room.find(FIND_HOSTILE_STRUCTURES, {
+        var walls = _.sortBy(creep.room.find(FIND_STRUCTURES, {
             filter: o => (o.structureType == STRUCTURE_WALL || o.structureType == STRUCTURE_RAMPART)
         }), o => o.hits);
         for (var i in walls) {

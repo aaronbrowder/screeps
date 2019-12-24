@@ -1,4 +1,3 @@
-import * as I from './interfaces';
 import * as util from './util';
 import * as rooms from './rooms';
 import * as spawnSiege from './manager.spawn.siege';
@@ -55,8 +54,8 @@ function processOrders(roomName: string) {
 
     const room = Game.rooms[roomName];
     if (room) {
-        const activeSources = room.find<Source | Mineral>(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
-        const activeMinerals = room.find<Source | Mineral>(FIND_MINERALS, { filter: (o: Mineral) => util.isMineralActive(o) });
+        const activeSources = room.find(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) }) as Array<Source | Mineral>;
+        const activeMinerals = room.find(FIND_MINERALS, { filter: (o: Mineral) => util.isMineralActive(o) }) as Array<Source | Mineral>;
         const activeSourcesAndMinerals = activeSources.concat(activeMinerals);
 
         for (let i in activeSourcesAndMinerals) {
@@ -71,7 +70,7 @@ function processOrders(roomName: string) {
     }
 }
 
-function spawnFromQueue(spawn: Spawn) {
+function spawnFromQueue(spawn: StructureSpawn) {
     // TODO if the spawn room is in wartime, it should devote all its attention to spawning mercenaries
     // instead of reading from the queue
     if (spawn.spawning) return;
@@ -94,7 +93,7 @@ function spawnFromQueue(spawn: Spawn) {
             assignedRoomName: item.assignedRoomName,
             doClaim: item.doClaim
         }
-    };
+    } as any;
     if (item.role === 'harvester' && !item.assignmentId) {
         throw 'trying to spawn a harvester with no assignmentId';
     }
@@ -106,7 +105,7 @@ function spawnFromQueue(spawn: Spawn) {
     }
 }
 
-function getItemFromQueue(spawn: Spawn): I.SpawnQueueItem {
+function getItemFromQueue(spawn: StructureSpawn): SpawnQueueItem {
     const queue = util.getSpawnMemory(spawn).queue;
     if (!queue) return null;
     const eligibleItems = util.filter(queue, o => o.energyCost <= spawn.room.energyAvailable);
@@ -126,7 +125,7 @@ function getItemFromQueue(spawn: Spawn): I.SpawnQueueItem {
     return sorted[0];
 }
 
-function getSpawnDirections(spawn: Spawn, item: I.SpawnQueueItem) {
+function getSpawnDirections(spawn: StructureSpawn, item: SpawnQueueItem) {
     // spawn hubs towards the hub flag.
     // spawn other things away from the hub flag.
     var directions: number[] = [TOP, TOP_RIGHT, RIGHT, BOTTOM_RIGHT, BOTTOM, BOTTOM_LEFT, LEFT, TOP_LEFT];
@@ -143,7 +142,7 @@ function getSpawnDirections(spawn: Spawn, item: I.SpawnQueueItem) {
     return directions;
 }
 
-function generateBody(spawn: Spawn, item: I.SpawnQueueItem) {
+function generateBody(spawn: StructureSpawn, item: SpawnQueueItem) {
     const result = bodies.generateBody(item.potency, spawn.room, item.assignedRoomName, item.role, item.subRole, item.assignmentId);
     return result ? result.body : null;
 }

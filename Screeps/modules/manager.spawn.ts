@@ -6,7 +6,7 @@ import * as spawnSiege from './manager.spawn.siege';
 import * as sourceManager from './manager.sources';
 
 interface SpawnInfo {
-    id: string;
+    id: Id<StructureSpawn>;
     maxEnergyAvailable: number;
     maxHarvesterWorkParts: number;
     maxTransporterCarryParts: number;
@@ -34,7 +34,7 @@ export function run() {
     for (let i in controlDirectives) {
         const d = controlDirectives[i];
         const room = Game.rooms[d.roomName];
-        const spawnsInRoom = room ? room.find<StructureSpawn>(FIND_MY_SPAWNS) : [];
+        const spawnsInRoom = room ? room.find(FIND_MY_SPAWNS) : [];
         for (let j in spawnsInRoom) {
             const spawn = spawnsInRoom[j];
             allSpawns.push(getSpawnInfo(spawn, d.doClaim));
@@ -50,7 +50,7 @@ export function run() {
         spawnSiege.run();
     }
 
-    function getSpawnInfo(spawn: Spawn, doClaim: boolean): SpawnInfo {
+    function getSpawnInfo(spawn: StructureSpawn, doClaim: boolean): SpawnInfo {
         const maxEnergyAvailable = spawn.room.energyCapacityAvailable;
         return {
             id: spawn.id,
@@ -64,7 +64,7 @@ export function run() {
     function runRoomSpawn(roomName: string, doClaim: boolean) {
 
         var room = Game.rooms[roomName];
-        var roomMemory = Memory.rooms[roomName] || {};
+        var roomMemory = Memory.rooms[roomName] || {} as RoomMemory;
 
         hubFlag = util.findHubFlag(room);
 
@@ -115,25 +115,25 @@ export function run() {
         roomMemory.doRefreshSpawn = false;
         Memory.rooms[roomName] = roomMemory;
 
-        var activeSources = room.find<Source>(FIND_SOURCES, {
+        var activeSources = room.find(FIND_SOURCES, {
             filter: o =>
                 _.filter(o.pos.findInRange(FIND_STRUCTURES, 2), p =>
                     p.structureType === STRUCTURE_CONTAINER || p.structureType === STRUCTURE_LINK
                 ).length
         });
-        var activeMinerals = room.find<Mineral>(FIND_MINERALS, {
+        var activeMinerals = room.find(FIND_MINERALS, {
             filter: o =>
                 o.mineralAmount > 0
                 && _.filter(o.pos.findInRange(FIND_STRUCTURES, 2), p => p.structureType === STRUCTURE_CONTAINER).length
                 && _.filter(o.pos.lookFor(LOOK_STRUCTURES), p => p.structureType === STRUCTURE_EXTRACTOR).length
         });
 
-        var towers = room.find<Tower>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_TOWER });
-        var links = room.find<Link>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_LINK });
+        var towers = room.find<StructureTower>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_TOWER });
+        var links = room.find<StructureLink>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_LINK });
         var extractors = room.find<StructureExtractor>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_EXTRACTOR });
-        var nonRoadConstructionSites = room.find<ConstructionSite>(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType !== STRUCTURE_ROAD });
-        var containers = room.find<Container>(FIND_STRUCTURES, { filter: o => o.structureType === STRUCTURE_CONTAINER });
-        var storageUnits = room.find<Storage>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_STORAGE });
+        var nonRoadConstructionSites = room.find(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType !== STRUCTURE_ROAD });
+        var containers = room.find<StructureContainer>(FIND_STRUCTURES, { filter: o => o.structureType === STRUCTURE_CONTAINER });
+        var storageUnits = room.find<StructureStorage>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_STORAGE });
 
         const totalTransportDistanceForSources: number = _.sum(activeSources.map(o =>
             sourceManager.getSourceMetrics(o).transportDistance || 10));
@@ -275,7 +275,7 @@ export function run() {
             if (doClaim) {
                 // spawn a hub
                 if (hubFlag && storageUnits.length) {
-                    const spawns = hubFlag.pos.findInRange<Spawn>(FIND_MY_SPAWNS, 1);
+                    const spawns = hubFlag.pos.findInRange(FIND_MY_SPAWNS, 1);
                     for (let i in spawns) {
                         if (spawnHub(spawns[i], hubFlag)) return;
                     }
@@ -286,7 +286,7 @@ export function run() {
         function spawnHarvesters(spawnInfo: SpawnInfo) {
             var harvesters = getCreeps(roomName, 'harvester');
             // sort sources so that we prioritize the source nearest to the spawn
-            var spawnsInRoom = room.find<StructureSpawn>(FIND_MY_SPAWNS);
+            var spawnsInRoom = room.find(FIND_MY_SPAWNS);
             if (spawnsInRoom.length) {
                 activeSources = _.sortBy(activeSources, o => o.pos.findPathTo(spawnsInRoom[0].pos).length);
             }
@@ -326,12 +326,12 @@ export function run() {
                     }
                 }
                 var moveParts = Math.max(1, Math.floor(workParts * harvesterMovePartsPerWorkPart));
-                var spawn = Game.getObjectById<Spawn>(spawnInfo.id);
+                var spawn = Game.getObjectById<StructureSpawn>(spawnInfo.id);
                 if (spawn.room.name !== roomName) {
                     moveParts++;
                     if (workParts > 3) moveParts++;
                 }
-                var body: string[] = [CARRY];
+                var body: BodyPartConstant[] = [CARRY];
                 if (workParts >= 10) {
                     body = body.concat([CARRY]);
                 }
@@ -352,10 +352,7 @@ export function run() {
                     const source = activeSources[i];
                     const key = 'b8847292-ebbb-4430-929a-efe6c7a84d32.' + source.id + '.' + spawnInfo.id;
                     idealCarryParts += cache.get(key, 117, () => {
-                        const exitDirection = source.room.findExitTo(Game.getObjectById<StructureSpawn>(spawnInfo.id).room);
-                        const exit = source.pos.findClosestByRange<RoomPosition>(exitDirection);
-                        if (!exit) return 0;
-                        const distance = source.pos.findPathTo(exit).length;
+                        const distance = source.pos.findPathTo(Game.getObjectById(spawnInfo.id)).length;
                         return 2 + Math.floor(distance / 3);
                     });
                 }
@@ -381,7 +378,7 @@ export function run() {
                     }
                 }
                 var moveParts = Math.max(1, Math.floor(carryParts * transporterMovePartsPerCarryPart));
-                var body: string[] = [];
+                var body: BodyPartConstant[] = [];
                 for (let i = 0; i < carryParts; i++) {
                     body = body.concat([CARRY]);
                 }
@@ -425,12 +422,12 @@ export function run() {
                 }
                 var carryParts = Math.max(1, Math.floor(workParts * builderCarryPartsPerWorkPart));
                 var moveParts = Math.max(1, Math.floor(workParts * builderMovePartsPerWorkPart));
-                var spawn = Game.getObjectById<Spawn>(spawnInfo.id);
+                var spawn = Game.getObjectById<StructureSpawn>(spawnInfo.id);
                 if (spawn.room.name !== roomName) {
                     moveParts++;
                     if (workParts > 3) moveParts++;
                 }
-                var body: string[] = [];
+                var body: BodyPartConstant[] = [];
                 for (let i = 0; i < workParts; i++) {
                     body = body.concat([WORK]);
                 }
@@ -444,10 +441,10 @@ export function run() {
             }
         }
 
-        function spawnHub(spawn: Spawn, hubFlag: Flag) {
+        function spawnHub(spawn: StructureSpawn, hubFlag: Flag) {
             if (getCreeps(roomName, 'hub').length) return;
             const carryParts = Math.floor(.65 * Math.sqrt(spawn.room.energyCapacityAvailable / 50));
-            var body: string[] = [];
+            var body: BodyPartConstant[] = [];
             for (let i = 0; i < carryParts; i++) {
                 body = body.concat([CARRY]);
             }
@@ -490,11 +487,11 @@ export function run() {
             return spawnCreep(spawnInfo.id, role, body);
         }
 
-        function spawnCreep(spawnId: string, role: string, body: string[], assignment?: Source | Mineral,
-            subRole?: string, directions?: number[]) {
+        function spawnCreep(spawnId: string, role: string, body: BodyPartConstant[], assignment?: Source | Mineral,
+            subRole?: string, directions?: DirectionConstant[]) {
 
             const name = role + Game.time;
-            const spawn = Game.getObjectById<Spawn>(spawnId);
+            const spawn = Game.getObjectById<StructureSpawn>(spawnId);
             var homeRoomName = spawn.room.name;
             // don't spawn a creep into a hub flag
             if (!directions && hubFlag && hubFlag.pos.inRangeTo(spawn, 1)) {
@@ -504,16 +501,17 @@ export function run() {
                     directions.splice(removeIndex, 1);
                 }
             }
+            const memory = {
+                role: role,
+                assignmentId: assignment ? assignment.id : null,
+                subRole: subRole,
+                homeRoomName: homeRoomName,
+                assignedRoomName: roomName,
+                doClaim: doClaim
+            } as CreepMemory;
             const options = {
                 directions: directions,
-                memory: {
-                    role: role,
-                    assignmentId: assignment ? assignment.id : null,
-                    subRole: subRole,
-                    homeRoomName: homeRoomName,
-                    assignedRoomName: roomName,
-                    doClaim: doClaim
-                }
+                memory: memory
             };
             if (roomName !== homeRoomName && role === 'transporter' || role === 'builder' || role === 'harvester') {
                 const remoteMiningMetrics = Memory.remoteMiningMetrics || {};
@@ -560,7 +558,7 @@ export function run() {
             }
             var role = 'builder';
             var subRole = 'colonist';
-            var body: string[] = [WORK, CARRY, MOVE, MOVE];
+            var body: BodyPartConstant[] = [WORK, CARRY, MOVE, MOVE];
             if (spawnInfo.maxEnergyAvailable >= 600 + (600 * claimParts)) {
                 body = body.concat([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE]);
             }
@@ -615,7 +613,7 @@ export function run() {
         return _.sortByAll(creeps, [o => o.body.length, o => o.ticksToLive]);
     }
 
-    function countBodyParts(bodyParts: string[], type: string) {
+    function countBodyParts(bodyParts: BodyPartConstant[], type: string) {
         return _.filter(bodyParts, (o: string) => o.toLowerCase() === type.toLowerCase()).length;
     }
 }

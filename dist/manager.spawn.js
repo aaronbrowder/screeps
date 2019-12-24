@@ -109,10 +109,6 @@ function run() {
         var idealHarvesterWorkPartsPerMineral = 18;
         var idealTotalTransporterCarryParts = Math.max(0, Math.ceil(Math.pow(totalTransportDistanceForSources, .7) * 1.9) - 4)
             + Math.ceil(room.energyCapacityAvailable / 1000);
-        // HACK because this room has a lot of remote mining operations and has to spawn a lot
-        if (roomName === 'E44N32') {
-            idealTotalTransporterCarryParts += 6;
-        }
         if (totalTransportDistanceForSources > 0 && idealTotalTransporterCarryParts <= 0) {
             idealTotalTransporterCarryParts = 2;
         }
@@ -325,11 +321,7 @@ function run() {
                     const source = activeSources[i];
                     const key = 'b8847292-ebbb-4430-929a-efe6c7a84d32.' + source.id + '.' + spawnInfo.id;
                     idealCarryParts += cache.get(key, 117, () => {
-                        const exitDirection = source.room.findExitTo(Game.getObjectById(spawnInfo.id).room);
-                        const exit = source.pos.findClosestByRange(exitDirection);
-                        if (!exit)
-                            return 0;
-                        const distance = source.pos.findPathTo(exit).length;
+                        const distance = source.pos.findPathTo(Game.getObjectById(spawnInfo.id)).length;
                         return 2 + Math.floor(distance / 3);
                     });
                 }
@@ -472,16 +464,17 @@ function run() {
                     directions.splice(removeIndex, 1);
                 }
             }
+            const memory = {
+                role: role,
+                assignmentId: assignment ? assignment.id : null,
+                subRole: subRole,
+                homeRoomName: homeRoomName,
+                assignedRoomName: roomName,
+                doClaim: doClaim
+            };
             const options = {
                 directions: directions,
-                memory: {
-                    role: role,
-                    assignmentId: assignment ? assignment.id : null,
-                    subRole: subRole,
-                    homeRoomName: homeRoomName,
-                    assignedRoomName: roomName,
-                    doClaim: doClaim
-                }
+                memory: memory
             };
             if (roomName !== homeRoomName && role === 'transporter' || role === 'builder' || role === 'harvester') {
                 const remoteMiningMetrics = Memory.remoteMiningMetrics || {};
@@ -526,11 +519,10 @@ function run() {
             }
             var role = 'builder';
             var subRole = 'colonist';
-            var body = [
-                WORK, WORK, WORK,
-                CARRY, CARRY, CARRY, CARRY,
-                MOVE, MOVE, MOVE, MOVE
-            ];
+            var body = [WORK, CARRY, MOVE, MOVE];
+            if (spawnInfo.maxEnergyAvailable >= 600 + (600 * claimParts)) {
+                body = body.concat([WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE]);
+            }
             if (spawnInfo.maxEnergyAvailable >= 1200 + (600 * claimParts)) {
                 body = body.concat([WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE]);
             }

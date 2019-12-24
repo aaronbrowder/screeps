@@ -19,12 +19,12 @@ import * as util from './util';
 
 export function run() {
 
-    const towers: Tower[] = _.filter(Game.structures, o => util.isTower(o));
+    const towers: StructureTower[] = _.filter(Game.structures, o => util.isTower(o));
     for (let i = 0; i < towers.length; i++) {
         structureTower.run(towers[i]);
     }
 
-    const terminals: Terminal[] = _.filter(Game.structures, o => util.isTerminal(o));
+    const terminals: StructureTerminal[] = _.filter(Game.structures, o => util.isTerminal(o));
     for (let i = 0; i < terminals.length; i++) {
         structureTerminal.run(terminals[i]);
     }

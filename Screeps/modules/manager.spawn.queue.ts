@@ -1,4 +1,3 @@
-import * as I from './interfaces';
 import * as util from './util';
 import * as rooms from './rooms';
 import * as cache from './cache';
@@ -6,7 +5,7 @@ import * as bodies from './manager.spawn.bodies';
 import * as spawnMetrics from './manager.spawn.metrics';
 import * as sources from './manager.sources';
 
-export function addItemToQueue(spawn: Spawn, assignedRoomName: string,
+export function addItemToQueue(spawn: StructureSpawn, assignedRoomName: string,
     role: string, subRole: string, assignmentId: string, bodyResult: bodies.BodyResult) {
 
     const item = {
@@ -31,8 +30,8 @@ export function addItemToQueue(spawn: Spawn, assignedRoomName: string,
     util.modifySpawnMemory(spawn, o => o.queue = queue);
 }
 
-export function removeItemFromQueue(item: I.SpawnQueueItem) {
-    const spawn = Game.getObjectById<Spawn>(item.spawnId);
+export function removeItemFromQueue(item: SpawnQueueItem) {
+    const spawn = Game.getObjectById<StructureSpawn>(item.spawnId);
     const queue = getQueue(spawn);
     const i = queue.findIndex(o =>
         o.spawnId === item.spawnId &&
@@ -57,7 +56,7 @@ function determineHomeRoom(role: string, assignedRoomName: string): string {
     return cache.get(key, 3000, () => {
         const spawns = util.findSpawns(assignedRoomName, maxDistance);
         // filter the spawns so we have no more than one spawn from each room
-        const filteredSpawns: Spawn[] = [];
+        const filteredSpawns: StructureSpawn[] = [];
         const roomNames: string[] = [];
         for (let i in spawns) {
             const spawn = spawns[i];
@@ -84,11 +83,11 @@ function determineHomeRoom(role: string, assignedRoomName: string): string {
         }
     }
 
-    function getPathDistance(spawn: Spawn) {
+    function getPathDistance(spawn: StructureSpawn) {
         const room = Game.rooms[assignedRoomName];
         if (room && role === 'transporter') {
             // use source metrics for transporters, because that takes into account links, etc.
-            const source = room.find<Source>(FIND_SOURCES)[0];
+            const source = room.find(FIND_SOURCES)[0];
             if (source) {
                 const sourceMetrics = sources.getSourceMetrics(source);
                 const repository = Game.getObjectById<Structure>(sourceMetrics.repositoryId);
@@ -101,16 +100,16 @@ function determineHomeRoom(role: string, assignedRoomName: string): string {
     }
 }
 
-export function getTimeLoad(spawn: Spawn): number {
+export function getTimeLoad(spawn: StructureSpawn): number {
     const queue = getQueue(spawn);
-    return (spawn.spawning ? spawn.spawning.remainingTime : 0) + _.sum(queue, (o: I.SpawnQueueItem) => o.timeCost);
+    return (spawn.spawning ? spawn.spawning.remainingTime : 0) + _.sum(queue, (o: SpawnQueueItem) => o.timeCost);
 }
 
-export function getEnergyLoad(spawn: Spawn): number {
+export function getEnergyLoad(spawn: StructureSpawn): number {
     const queue = getQueue(spawn);
-    return _.sum(queue, (o: I.SpawnQueueItem) => o.energyCost);
+    return _.sum(queue, (o: SpawnQueueItem) => o.energyCost);
 }
 
-function getQueue(spawn: Spawn) {
+function getQueue(spawn: StructureSpawn) {
     return util.getSpawnMemory(spawn).queue || [];
 }

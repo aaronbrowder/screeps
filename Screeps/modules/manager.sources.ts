@@ -1,17 +1,6 @@
 import * as util from './util';
 import * as map from './map';
 
-interface RepositoryInfo {
-    repository: Structure;
-    distance: number;
-}
-
-interface SourceMetrics {
-    timestamp: number;
-    transportDistance: number;
-    repositoryId: string;
-}
-
 export function getSourceMetrics(source: Source) {
     var metrics = getMetrics(source.id);
     if (!metrics || !metrics.timestamp || Game.time - metrics.timestamp > 10000) {
@@ -27,7 +16,7 @@ export function getSourceMetrics(source: Source) {
 }
 
 function getMetrics(sourceId: string): SourceMetrics {
-    Memory.sourceMetrics = Memory.sourceMetrics || {};
+    Memory.sourceMetrics = Memory.sourceMetrics || {} as Array<SourceMetrics>;
     return Memory.sourceMetrics[sourceId];
 }
 

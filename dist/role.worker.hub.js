@@ -48,11 +48,12 @@ function run(creep) {
     // 3. if link is not empty, deliver to storage or terminal
     if (totalCarry > 0) {
         for (let i in creep.carry) {
+            const resource = i;
             if (_.sum(storage.store) < storage.storeCapacity * .998) {
-                creep.transfer(storage, i);
+                creep.transfer(storage, resource);
             }
             else if (terminal) {
-                creep.transfer(terminal, i);
+                creep.transfer(terminal, resource);
             }
         }
     }
