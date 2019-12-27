@@ -10,10 +10,17 @@ interface SourceMetrics {
     repositoryId: string;
 }
 
+interface RaidWave {
+    id: number;
+    ready?: boolean;
+}
+
 interface Memory {
+    // LEGACY
     siegeMode: boolean;
     sourceMetrics: Array<SourceMetrics>;
     remoteMiningMetrics: any;
+    raidWaves: Array<RaidWave>;
 }
 
 interface CreepMemory {
@@ -37,6 +44,7 @@ interface CreepMemory {
     doClaim: boolean;
     charge: boolean;
     wait: boolean;
+    raidWaveId: number;
 }
 
 interface SpawnMapInfo {
@@ -58,7 +66,8 @@ interface RoomOrder {
     hubPotency: number;
     claimerPotency: number;
     scoutPotency: number;
-    ravagerPotency: number;
+    defenderPotency: number;
+    raidWaveSize: number;
 }
 
 interface RoomMemory {
@@ -87,6 +96,7 @@ interface SpawnQueueItem {
     potency: number;
     energyCost: number;
     timeCost: number;
+    raidWaveId: number
 }
 
 interface SpawnMemory {

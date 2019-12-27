@@ -21,6 +21,14 @@ export function filter<T>(items: T[], func: (o: T) => boolean): T[] {
     return _.filter(items, func);
 }
 
+export function firstOrDefault<T>(items: T[], func: (o: T) => boolean): T {
+    const results: T[] = _.filter(items, func);
+    if (results.length) {
+        return results[0];
+    }
+    return null;
+}
+
 export function sortBy<T>(items: T[], func: (o: T) => number): T[] {
     return _.sortBy(items, func);
 }
@@ -97,10 +105,11 @@ export function findSpawns(roomName: string, maxDistanceToSearch: number, distan
     }
     // always search at the desired distance plus 1, in case there is a shorter route through a greater number of rooms
     const maxDistance = Math.min(distance + 1, maxDistanceToSearch);
-    return _.filter(Game.spawns, (o: StructureSpawn) => {
+    const spawns = _.filter(Game.spawns, (o: StructureSpawn) => {
         const d = Game.map.getRoomLinearDistance(o.room.name, roomName);
         return d >= distance && d <= maxDistance;
     });
+    return sortBy(spawns, o => Game.map.getRoomLinearDistance(o.room.name, roomName));
 }
 
 function isCreepWorker(creep: Creep) {
@@ -123,9 +132,9 @@ export function findNearestStructure(pos, type, maxRange?) {
 }
 
 export function transferTo(creep: Creep, target: Structure) {
-    for (const carry in creep.carry) {
+    for (const carry in creep.store) {
         const resource = carry as ResourceConstant;
-        if (creep.carry[resource] > 0) {
+        if (creep.store[resource] > 0) {
             var transferResult = creep.transfer(target, resource);
             if (transferResult == ERR_NOT_IN_RANGE) {
                 setMoveTarget(creep, target, 1);
@@ -155,14 +164,10 @@ export function deliverToSpawn(creep: Creep, spawn: StructureSpawn) {
 }
 
 export function goToRecycle(creep: Creep) {
-    var homeRoom = Game.rooms[creep.memory.homeRoomName];
-    if (!homeRoom) {
-        return false;
-    }
-    const spawn = homeRoom.find(FIND_MY_SPAWNS)[0];
-    if (spawn) {
-        setMoveTarget(creep, spawn);
-        spawn.recycleCreep(creep);
+    const spawns = findSpawns(creep.room.name, 2);
+    if (spawns.length) {
+        setMoveTarget(creep, spawns[0]);
+        spawns[0].recycleCreep(creep);
         return true;
     }
     return false;

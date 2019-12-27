@@ -7,7 +7,7 @@ export function run(creep: Creep) {
     var assignedRoom = Game.rooms[creep.memory.assignedRoomName];
     var homeRoom = Game.rooms[creep.memory.homeRoomName];
 
-    var totalCarry = _.sum(creep.carry);
+    var totalCarry = _.sum(creep.store);
     var threatLevel = util.getThreatLevel(creep.room);
 
     // filter and sort assignments
@@ -26,7 +26,7 @@ export function run(creep: Creep) {
     }
 
     function collect() {
-        if (creep.carry.getFreeCapacity() === 0) {
+        if (creep.store.getFreeCapacity() === 0) {
             return false;
         }
         var assignment = assignments.length ? Game.getObjectById(assignments[0].id) : null;
@@ -60,7 +60,7 @@ export function run(creep: Creep) {
                     util.setMoveTarget(creep, target, 1);
                     return;
                 }
-                if (_.sum(creep.carry) === creep.carryCapacity) {
+                if (_.sum(creep.store) === creep.store.getCapacity()) {
                     return;
                 }
             }
@@ -156,7 +156,7 @@ export function run(creep: Creep) {
         }
 
         function getResourceCollectTargetValue<T extends RoomObject>(target: T, amount: number) {
-            var value = 10 * Math.min(2, amount / creep.carry.getFreeCapacity());
+            var value = 10 * Math.min(2, amount / creep.store.getFreeCapacity());
             const path = creep.pos.findPathTo(target.pos);
             value -= path.length;
             return value;
@@ -181,7 +181,7 @@ export function run(creep: Creep) {
             return;
         }
         // if creep is carrying any minerals, deliver them to storage
-        if (creep.carry.energy !== totalCarry) {
+        if (creep.store[RESOURCE_ENERGY] !== totalCarry) {
             if (homeRoom.storage) {
                 if (util.transferTo(creep, homeRoom.storage)) return;
             }
@@ -231,7 +231,7 @@ export function run(creep: Creep) {
                 //if (creep.memory.assignedRoomName !== creep.memory.homeRoomName) {
                 //    const remoteMiningMetrics = Memory.remoteMiningMetrics || {};
                 //    const roomMetrics = remoteMiningMetrics[creep.memory.assignedRoomName] || { cost: 0, income: 0 };
-                //    roomMetrics.income += Math.min(creep.carry.energy, util.getEmptySpace(assignment));
+                //    roomMetrics.income += Math.min(creep.store[RESOURCE_ENERGY], util.getEmptySpace(assignment));
                 //    remoteMiningMetrics[creep.memory.assignedRoomName] = roomMetrics;
                 //    Memory.remoteMiningMetrics = remoteMiningMetrics;
                 //}
@@ -245,7 +245,7 @@ export function run(creep: Creep) {
             filter: o =>
                 util.isContainer(o)
                 && !o.pos.findInRange(FIND_SOURCES, 2).length
-                && _.sum(o.store) <= o.storeCapacity - creep.carry.energy
+                && _.sum(o.store) <= o.storeCapacity - creep.store[RESOURCE_ENERGY]
         });
         return convenienceContainers[0];
     }

@@ -31,10 +31,10 @@ export function run(creep: Creep) {
     }
 
     // remote transporters can spontaneously unload energy into empty convenience containers they happen to pass by
-    if (creep.memory.role === 'transporter' && util.isCreepRemote(creep) && creep.carry.energy > 0 && !creep.memory.isCollecting) {
+    if (creep.memory.role === 'transporter' && util.isCreepRemote(creep) && creep.store[RESOURCE_ENERGY] > 0 && !creep.memory.isCollecting) {
 
         const nearbyConvenienceContainers = creep.pos.findInRange<StructureContainer>(FIND_STRUCTURES, 1, {
-            filter: o => util.isContainer(o) && o.storeCapacity - _.sum(o.store) >= creep.carry.energy
+            filter: o => util.isContainer(o) && o.storeCapacity - _.sum(o.store) >= creep.store[RESOURCE_ENERGY]
                 && !o.pos.findInRange(FIND_SOURCES, 2).length && !o.pos.findInRange(FIND_MINERALS, 2).length
         });
         if (nearbyConvenienceContainers.length) {

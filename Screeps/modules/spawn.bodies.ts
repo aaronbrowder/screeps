@@ -1,18 +1,26 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const util = require("./util");
-const rooms = require("./rooms");
-const potencyUtil = require("./util.potency");
-const idealsManager = require("./manager.spawn.ideals");
+import * as util from './util';
+import * as rooms from './rooms';
+import * as potencyUtil from './util.potency';
+import * as idealsManager from './spawn.ideals';
+
 const harvesterMovePartsPerWorkPart = 0.33;
 const harvesterExtraCarryPartsPerWorkPart = 0.1;
 const transporterMovePartsPerCarryPart = 0.5;
 const builderCarryPartsPerWorkPart = 0.75;
 const builderMovePartsPerWorkPart = 0.5;
+
 const ravagerRangedAttackPartsPerAttackPart = 1;
 const ravagerToughPartsPerAttackPart = 1;
 const ravagerMovePartsPerAttackPart = 1.5;
-function generateBody(desiredPotency, spawnRoom, assignedRoomName, role, subRole, assignmentId) {
+
+export interface BodyResult {
+    body: BodyPartConstant[];
+    potency: number;
+}
+
+export function generateBody(desiredPotency: number, spawnRoom: Room, assignedRoomName: string,
+    role: string, subRole?: string, assignmentId?: string): BodyResult {
+
     switch (role) {
         case 'harvester': return generateHarvesterBody(desiredPotency, spawnRoom, assignedRoomName, assignmentId);
         case 'transporter': return generateTransporterBody(desiredPotency, spawnRoom, assignedRoomName);
@@ -24,13 +32,17 @@ function generateBody(desiredPotency, spawnRoom, assignedRoomName, role, subRole
         default: return null;
     }
 }
-exports.generateBody = generateBody;
-function generateHarvesterBody(desiredPotency, spawnRoom, assignedRoomName, assignmentId) {
-    const doClaim = rooms.getDoClaim(assignedRoomName);
+
+function generateHarvesterBody(desiredPotency: number, spawnRoom: Room, assignedRoomName: string, assignmentId: string): BodyResult {
+
+    const doClaim = rooms.getDirective(assignedRoomName) === rooms.DIRECTIVE_CLAIM;
+
     const maxPotency = Math.floor((spawnRoom.energyCapacityAvailable - 50) /
         (100 + (50 * harvesterMovePartsPerWorkPart) + (50 * harvesterExtraCarryPartsPerWorkPart)))
-        - (doClaim ? 0 : 1);
+        - (doClaim ? 0 : 1)
+
     var potency = Math.min(desiredPotency || 1, maxPotency);
+
     if (potency < maxPotency) {
         // There's no reason for us to ever have more than one harvester that is smaller than the maximum size.
         // If there are two that are smaller than the maximum size, we can always replace them with a bigger one
@@ -38,23 +50,26 @@ function generateHarvesterBody(desiredPotency, spawnRoom, assignedRoomName, assi
         // number of harvesters we're supporting. Fewer harvesters means less traffic and less CPU. If the
         // max potency per harvester is >= the ideal potency, we can get by with just one harvester (which is ideal).
         const activeHarvesters = potencyUtil.getActiveCreeps(assignedRoomName, 'harvester', undefined, assignmentId);
-        const sourceOrMineral = Game.getObjectById(assignmentId);
+        const sourceOrMineral: Source | Mineral = Game.getObjectById(assignmentId);
         const ideals = idealsManager.getIdeals(assignedRoomName);
+
         const idealPotency = util.isSource(sourceOrMineral)
             ? ideals.harvesterPotencyPerSource
             : ideals.harvesterPotencyPerMineral;
+
         var smallHarvestersCount = _.filter(activeHarvesters, o => potencyUtil.getCreepPotency(o) < maxPotency).length;
         if (maxPotency >= idealPotency || smallHarvestersCount > 0) {
             potency = Math.min(maxPotency, idealPotency);
         }
     }
+
     var moveParts = Math.max(1, Math.floor(potency * harvesterMovePartsPerWorkPart));
     if (spawnRoom.name !== assignedRoomName) {
         moveParts++;
-        if (potency > 3)
-            moveParts++;
+        if (potency > 3) moveParts++;
     }
-    var body = [CARRY];
+
+    var body: BodyPartConstant[] = [CARRY];
     if (potency >= 10) {
         body = body.concat([CARRY]);
     }
@@ -64,16 +79,22 @@ function generateHarvesterBody(desiredPotency, spawnRoom, assignedRoomName, assi
     for (let i = 0; i < moveParts; i++) {
         body = body.concat([MOVE]);
     }
+
     return {
         body: body,
         potency: potency
     };
 }
-function generateTransporterBody(desiredPotency, spawnRoom, assignedRoomName) {
-    const doClaim = rooms.getDoClaim(assignedRoomName);
+
+function generateTransporterBody(desiredPotency: number, spawnRoom: Room, assignedRoomName: string): BodyResult {
+
+    const doClaim = rooms.getDirective(assignedRoomName) === rooms.DIRECTIVE_CLAIM;
+
     var maxPotency = Math.floor(spawnRoom.energyCapacityAvailable / (50 + (50 * transporterMovePartsPerCarryPart)));
     maxPotency = Math.min(doClaim ? 5 : 24, maxPotency);
+
     var potency = Math.min(desiredPotency || 1, maxPotency);
+
     if (potency < maxPotency) {
         const activeTransporters = potencyUtil.getActiveCreeps(assignedRoomName, 'transporter');
         const ideals = idealsManager.getIdeals(assignedRoomName);
@@ -82,22 +103,26 @@ function generateTransporterBody(desiredPotency, spawnRoom, assignedRoomName) {
             potency = Math.min(maxPotency, ideals.transporterPotency);
         }
     }
+
     const moveParts = Math.max(1, Math.floor(potency * transporterMovePartsPerCarryPart));
-    var body = [];
+
+    var body: BodyPartConstant[] = [];
     for (let i = 0; i < potency; i++) {
         body = body.concat([CARRY]);
     }
     for (let i = 0; i < moveParts; i++) {
         body = body.concat([MOVE]);
     }
+
     return {
         body: body,
         potency: potency
     };
 }
-function generateHubBody(desiredPotency) {
+
+function generateHubBody(desiredPotency: number): BodyResult {
     const potency = desiredPotency;
-    var body = [];
+    var body: BodyPartConstant[] = [];
     for (let i = 0; i < potency; i++) {
         body = body.concat([CARRY]);
     }
@@ -106,17 +131,25 @@ function generateHubBody(desiredPotency) {
         potency: potency
     };
 }
-function generateBuilderBody(desiredPotency, spawnRoom, assignedRoomName, subRole) {
-    const doClaim = rooms.getDoClaim(assignedRoomName);
+
+function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
+    assignedRoomName: string, subRole: string): BodyResult {
+
+    const doClaim = rooms.getDirective(assignedRoomName) === rooms.DIRECTIVE_CLAIM;
+
     var maxPotency = Math.floor(spawnRoom.energyCapacityAvailable /
         (100 + (50 * builderCarryPartsPerWorkPart) + (50 * builderMovePartsPerWorkPart)))
         - (doClaim ? 0 : 1);
+
     const ideals = idealsManager.getIdeals(assignedRoomName);
     const idealPotency = subRole === 'upgrader' ? ideals.upgraderPotency : ideals.wallBuilderPotency;
+
     // in claimed rooms, we always want to have two builders per subRole so they can work on different tasks
     const maxPotencyPerBuilder = doClaim ? Math.ceil(idealPotency / 2) : idealPotency;
     maxPotency = Math.min(maxPotencyPerBuilder, maxPotency);
+
     var potency = Math.min(desiredPotency || 1, maxPotency);
+
     if (potency < maxPotency) {
         const activeBuilders = potencyUtil.getActiveCreeps(assignedRoomName, 'builder', subRole);
         const smallBuildersCount = _.filter(activeBuilders, o => potencyUtil.getCreepPotency(o) < maxPotency).length;
@@ -124,14 +157,16 @@ function generateBuilderBody(desiredPotency, spawnRoom, assignedRoomName, subRol
             potency = Math.min(maxPotency, idealPotency);
         }
     }
+
     var carryParts = Math.max(1, Math.floor(potency * builderCarryPartsPerWorkPart));
     var moveParts = Math.max(1, Math.floor(potency * builderMovePartsPerWorkPart));
+
     if (spawnRoom.name !== assignedRoomName) {
         moveParts++;
-        if (potency > 3)
-            moveParts++;
+        if (potency > 3) moveParts++;
     }
-    var body = [];
+
+    var body: BodyPartConstant[] = [];
     for (let i = 0; i < potency; i++) {
         body = body.concat([WORK]);
     }
@@ -141,19 +176,20 @@ function generateBuilderBody(desiredPotency, spawnRoom, assignedRoomName, subRol
     for (let i = 0; i < moveParts; i++) {
         body = body.concat([MOVE]);
     }
+
     return {
         body: body,
         potency: potency
     };
 }
-function generateClaimerBody(desiredPotency, spawnRoom) {
+
+function generateClaimerBody(desiredPotency: number, spawnRoom: Room): BodyResult {
     var potency = 0;
-    var body = [];
+    var body: BodyPartConstant[] = [];
     var energyCost = 0;
     for (let i = 0; i < desiredPotency; i++) {
         energyCost += 650;
-        if (spawnRoom.energyCapacityAvailable < energyCost)
-            break;
+        if (spawnRoom.energyCapacityAvailable < energyCost) break;
         potency++;
         body = body.concat([CLAIM, MOVE]);
     }
@@ -162,23 +198,30 @@ function generateClaimerBody(desiredPotency, spawnRoom) {
         potency: potency
     };
 }
-function generateScoutBody() {
+
+function generateScoutBody(): BodyResult {
     return {
         body: [MOVE],
         potency: 1
     };
 }
-function generateRavagerBody(desiredPotency, spawnRoom) {
+
+function generateRavagerBody(desiredPotency: number, spawnRoom: Room): BodyResult {
+
     const maxPotency = Math.floor(spawnRoom.energyCapacityAvailable / (80 +
         (150 * ravagerRangedAttackPartsPerAttackPart) +
         (10 * ravagerToughPartsPerAttackPart) +
         (50 * ravagerMovePartsPerAttackPart)));
+
     const potency = Math.min(desiredPotency || 1, maxPotency);
+
     var attackParts = potency;
     var rangedAttackParts = Math.floor(potency * ravagerRangedAttackPartsPerAttackPart);
     var toughParts = Math.floor(potency * ravagerToughPartsPerAttackPart);
     var moveParts = Math.max(1, Math.floor(potency * ravagerMovePartsPerAttackPart));
-    var body = [];
+
+    var body: BodyPartConstant[] = [];
+
     while (attackParts > 0 || rangedAttackParts > 0 || toughParts > 0 || moveParts > 0) {
         if (toughParts > 0) {
             body = body.concat([TOUGH]);
@@ -202,7 +245,8 @@ function generateRavagerBody(desiredPotency, spawnRoom) {
         potency: potency
     };
 }
-function getEnergyCost(body) {
+
+export function getEnergyCost(body: string[]) {
     return (util.countBodyParts(body, WORK) * 100)
         + (util.countBodyParts(body, CARRY) * 50)
         + (util.countBodyParts(body, MOVE) * 50)
@@ -212,16 +256,14 @@ function getEnergyCost(body) {
         + (util.countBodyParts(body, TOUGH) * 10)
         + (util.countBodyParts(body, HEAL) * 250);
 }
-exports.getEnergyCost = getEnergyCost;
-function getTimeCost(body) {
+
+export function getTimeCost(body: string[]): number {
     return body.length * 3;
 }
-exports.getTimeCost = getTimeCost;
-function getUnladenSpeedOnRoads(body) {
+
+export function getUnladenSpeedOnRoads(body: string[]): number {
     const moveParts = util.countBodyParts(body, MOVE);
     const carryParts = util.countBodyParts(body, CARRY);
     const heavyParts = body.length - moveParts - carryParts;
     return Math.min(1, 2 * moveParts / heavyParts);
 }
-exports.getUnladenSpeedOnRoads = getUnladenSpeedOnRoads;
-//# sourceMappingURL=manager.spawn.bodies.js.map

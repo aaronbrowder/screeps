@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const spawnManager = require("./manager.spawn.new");
+const spawnManager = require("./spawn");
 const battleManager = require("./manager.battle");
 const roleManager = require("./manager.roles");
 const mobilization = require("./mobilization");
@@ -11,6 +11,9 @@ exports.loop = () => {
     Memory.siegeMode = false;
     if (!Memory.rooms) {
         Memory.rooms = {};
+    }
+    if (!Memory.raidWaves) {
+        Memory.raidWaves = [];
     }
     mobilization.runDefenseSystems();
     // manager order matters!

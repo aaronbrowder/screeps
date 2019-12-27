@@ -1,4 +1,5 @@
 import * as map from './map';
+import * as rooms from './rooms';
 import * as util from './util';
 
 /* OVERVIEW
@@ -62,10 +63,21 @@ export function run(creep: Creep) {
     //    return;
     //}
 
+    // if creep is part of a wave and the wave is not ready, it should move to the meetup flag
+    if (creep.memory.raidWaveId) {
+        const wave = util.firstOrDefault(Memory.raidWaves, o => o.id === creep.memory.raidWaveId);
+        if (!wave.ready) {
+            const meetupFlag = Game.flags[rooms.getRaidWaveMeetupFlagName(creep.memory.assignedRoomName)];
+            if (meetupFlag) {
+                util.setMoveTargetFlag(creep, meetupFlag);
+                return;
+            }
+        }
+    }
+
     // if creep is not in its assigned room, navigate there
     if (creep.room.name !== creep.memory.assignedRoomName) {
-        var waitOutside = !creep.memory.charge && (creep.hits < creep.hitsMax || creep.memory.wait);
-        map.navigateToRoom(creep, creep.memory.assignedRoomName, waitOutside);
+        map.navigateToRoom(creep, creep.memory.assignedRoomName);
         return;
     }
 

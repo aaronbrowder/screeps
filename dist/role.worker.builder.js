@@ -33,7 +33,7 @@ function run(creep) {
     if (creep.memory.isCollecting) {
         collect();
     }
-    else if (creep.carry.energy > 0) {
+    else if (creep.store[RESOURCE_ENERGY] > 0) {
         deliver();
     }
     function collect() {
@@ -81,7 +81,7 @@ function run(creep) {
             return value;
         }
         function getCollectTargetValue(target, energyFunc) {
-            var value = 10 * Math.min(1, energyFunc(target) / (creep.carryCapacity - creep.carry.energy));
+            var value = 10 * Math.min(1, energyFunc(target) / (creep.store.getCapacity() - creep.store[RESOURCE_ENERGY]));
             const path = creep.pos.findPathTo(target.pos);
             if (!path)
                 return -1000;

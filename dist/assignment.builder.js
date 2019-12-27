@@ -135,11 +135,11 @@ function switchModes() {
         if (creep.memory.role !== 'builder')
             continue;
         // if creep is empty, switch to collect mode
-        if (!creep.memory.isCollecting && creep.carry.energy === 0) {
+        if (!creep.memory.isCollecting && creep.store[RESOURCE_ENERGY] === 0) {
             switchModes(true);
         }
         // if creep is full, switch to deliver mode
-        if (creep.memory.isCollecting && creep.carry.energy === creep.carryCapacity) {
+        if (creep.memory.isCollecting && creep.store[RESOURCE_ENERGY] === creep.store.getCapacity()) {
             switchModes(false);
         }
         function switchModes(isCollecting) {

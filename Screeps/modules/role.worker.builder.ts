@@ -37,7 +37,7 @@ export function run(creep: Creep) {
     if (creep.memory.isCollecting) {
         collect();
     }
-    else if (creep.carry.energy > 0) {
+    else if (creep.store[RESOURCE_ENERGY] > 0) {
         deliver();
     }
 
@@ -91,7 +91,7 @@ export function run(creep: Creep) {
         }
 
         function getCollectTargetValue<T extends StructureContainer | StructureStorage | Source>(target: T, energyFunc: (target: T) => number) {
-            var value = 10 * Math.min(1, energyFunc(target) / (creep.carryCapacity - creep.carry.energy));
+            var value = 10 * Math.min(1, energyFunc(target) / (creep.store.getCapacity() - creep.store[RESOURCE_ENERGY]));
             const path = creep.pos.findPathTo(target.pos);
             if (!path) return -1000;
             return value - path.length;

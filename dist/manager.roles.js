@@ -8,10 +8,6 @@ const roleHub = require("./role.worker.hub");
 const roleClaimer = require("./role.worker.claimer");
 const roleScout = require("./role.scout");
 const roleRavager = require("./role.battle.ravager");
-const roleMercenary = require("./role.mercenary");
-const roleCrusher = require("./role.siege.crusher");
-const roleMedic = require("./role.siege.medic");
-const roleHunter = require("./role.siege.hunter");
 const structureTower = require("./structure.tower");
 const structureTerminal = require("./structure.terminal");
 const util = require("./util");
@@ -28,12 +24,7 @@ function run() {
         var creep = Game.creeps[name];
         if (creep.spawning)
             continue;
-        // if the creep is dying, tell the spawn to run the spawn script on the next tick
-        // LEGACY
-        if (creep.ticksToLive <= 1) {
-            util.refreshSpawn(creep.memory.homeRoomName);
-        }
-        const elderlyThreshold = creep.memory.role !== 'hub' ? 10 : 100;
+        const elderlyThreshold = creep.memory.role === 'hub' ? 10 : 100;
         if (creep.ticksToLive < elderlyThreshold && !creep.memory.isElderly) {
             creep.memory.isElderly = true;
             util.refreshOrders(creep.memory.assignedRoomName);
@@ -70,18 +61,6 @@ function run() {
         }
         if (creep.memory.role === 'ravager') {
             roleRavager.run(creep);
-        }
-        if (creep.memory.role === 'meleeMercenary' || creep.memory.role === 'rangedMercenary') {
-            roleMercenary.run(creep);
-        }
-        if (creep.memory.role === 'crusher') {
-            roleCrusher.run(creep);
-        }
-        if (creep.memory.role === 'medic') {
-            roleMedic.run(creep);
-        }
-        if (creep.memory.role === 'hunter') {
-            roleHunter.run(creep);
         }
     }
 }

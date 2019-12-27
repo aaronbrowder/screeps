@@ -1,24 +1,18 @@
 import * as util from './util';
 import * as rooms from './rooms';
-import * as spawnSiege from './manager.spawn.siege';
 import * as sourceManager from './manager.sources';
-import * as spawnOrders from './manager.spawn.orders';
-import * as bodies from './manager.spawn.bodies';
-import * as spawnQueue from './manager.spawn.queue';
+import * as spawnOrders from './spawn.orders';
+import * as bodies from './spawn.bodies';
+import * as raid from './spawn.raid';
+import * as spawnQueue from './spawn.queue';
 
 export function run() {
 
-    const controlDirectives: rooms.ControlDirective[] = util.filter(rooms.getControlDirectives(), o => o.doClaim || o.doReserve);
-
-    const roomsToProcess = getRoomsToProcess(controlDirectives);
+    const roomsToProcess = getRoomsToProcess(rooms.getActiveControlDirectives());
 
     for (let i in roomsToProcess) {
         processOrders(roomsToProcess[i]);
     }
-
-    //if (Memory['siegeMode']) {
-    //    spawnSiege.run();
-    //}
 
     for (let i in Game.spawns) {
         const spawn = Game.spawns[i];
@@ -71,8 +65,6 @@ function processOrders(roomName: string) {
 }
 
 function spawnFromQueue(spawn: StructureSpawn) {
-    // TODO if the spawn room is in wartime, it should devote all its attention to spawning mercenaries
-    // instead of reading from the queue
     if (spawn.spawning) return;
     const item = getItemFromQueue(spawn);
     if (!item) return;
@@ -91,7 +83,8 @@ function spawnFromQueue(spawn: StructureSpawn) {
             subRole: item.subRole,
             homeRoomName: item.homeRoomName,
             assignedRoomName: item.assignedRoomName,
-            doClaim: item.doClaim
+            doClaim: item.doClaim,
+            raidWaveId: item.raidWaveId
         }
     } as any;
     if (item.role === 'harvester' && !item.assignmentId) {
@@ -100,8 +93,6 @@ function spawnFromQueue(spawn: StructureSpawn) {
     const result = spawn.spawnCreep(body, creepName, options);
     if (result === OK) {
         spawnQueue.removeItemFromQueue(item);
-        // record the expense
-        //updateRemoteMiningMetrics(item.assignedRoomName, item.homeRoomName, item.role, body);
     }
 }
 
@@ -114,12 +105,11 @@ function getItemFromQueue(spawn: StructureSpawn): SpawnQueueItem {
         const room = Game.rooms[o.assignedRoomName];
         if (o.role === 'hub') return 0;
         if (o.role === 'scout') return 1;
-        if (o.role === 'meleeMercenary' || o.role === 'rangedMercenary') return 2;
-        if (o.role === 'ravager') return 3;
-        if (o.role === 'transporter' && room && room.storage) return 4;
+        if (o.role === 'ravager') return 2;
+        if (o.role === 'transporter' && room && room.storage && room.storage.store[RESOURCE_ENERGY] > 2000) return 3;
+        if (o.role === 'harvester') return 4;
         if (o.role === 'builder') return 5;
-        if (o.role === 'harvester') return 6;
-        if (o.role === 'transporter') return 7;
+        if (o.role === 'transporter') return 6;
         return 100;
     });
     return sorted[0];

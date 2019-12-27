@@ -8,7 +8,7 @@ export interface Ideals {
     wallBuilderPotency: number;
     transporterPotency: number;
     claimerPotencyForReservation: number;
-    ravagerPotency: number;
+    defenderPotency: number;
     harvesterPotencyPerSource: number;
     harvesterPotencyPerMineral: number;
 }
@@ -16,12 +16,12 @@ export interface Ideals {
 export function getIdeals(roomName: string) {
     const room = Game.rooms[roomName];
     const threatLevel = room ? util.getThreatLevel(room) : 0;
-    const doClaim = rooms.getDoClaim(roomName);
-    const key = '5621016b-1eae-4322-950d-e51a2043a0d5.' + roomName + '.' + doClaim + '.' + threatLevel;
-    return cache.get(key, 93, () => getIdealsInternal(roomName, doClaim, threatLevel));
+    const directive = rooms.getDirective(roomName);
+    const key = '5621016b-1eae-4322-950d-e51a2043a0d5.' + roomName + '.' + directive + '.' + threatLevel;
+    return cache.get(key, 93, () => getIdealsInternal(roomName, directive, threatLevel));
 }
 
-function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: number): Ideals {
+function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant, threatLevel: number): Ideals {
 
     const room = Game.rooms[roomName];
     if (!room) return null;
@@ -34,7 +34,9 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
     const extensions = room.find<StructureExtension>(FIND_MY_STRUCTURES, { filter: o => util.isExtension(o) && o.isActive });
     const links = room.find<StructureLink>(FIND_MY_STRUCTURES, { filter: o => util.isLink(o) });
     const extractors = room.find<StructureExtractor>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_EXTRACTOR });
+    const roadConstructionSites = room.find(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType === STRUCTURE_ROAD });
     const nonRoadConstructionSites = room.find(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType !== STRUCTURE_ROAD });
+    const nonWallStructures = room.find(FIND_STRUCTURES, { filter: o => !util.isWall(o) });
     const containers = room.find<StructureContainer>(FIND_STRUCTURES, { filter: o => util.isContainer(o) });
     const storageUnits = room.find<StructureStorage>(FIND_MY_STRUCTURES, { filter: o => util.isStorage(o) });
 
@@ -57,10 +59,23 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
         idealTransporterPotency = 2;
     }
 
-    var idealUpgraderPotency = Math.max(3, Math.ceil(3.5 * activeSources.length));
-    var idealWallBuilderPotency = Math.max(2, Math.ceil(3.5 * activeSources.length));
+    var sourceValue = activeSources.length;
+    // TODO is this right?
+    if (!room.controller.my) {
+        sourceValue /= 2;
+    }
 
-    if (doClaim) {
+    var idealUpgraderPotency = Math.max(3, Math.ceil(3.5 * sourceValue));
+    var idealWallBuilderPotency = Math.max(2, Math.ceil(3.5 * sourceValue));
+
+    if (directive === rooms.DIRECTIVE_HARVEST || directive === rooms.DIRECTIVE_RESERVE) {
+        idealWallBuilderPotency = 0;
+        idealUpgraderPotency =
+            Math.ceil(nonWallStructures.length / 20) +
+            (2 * nonRoadConstructionSites.length) +
+            Math.ceil(roadConstructionSites.length / 5);
+    }
+    else if (directive === rooms.DIRECTIVE_CLAIM) {
         idealTransporterPotency += 6;
         if (threatLevel > 20) {
             idealTransporterPotency += 6;
@@ -100,9 +115,11 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
             idealUpgraderPotency = 6;
             idealWallBuilderPotency = 0;
         }
-    } else {
-        idealUpgraderPotency += idealWallBuilderPotency;
-        idealWallBuilderPotency = 0;
+        if (room.controller.level < 4) {
+            const transfer = Math.floor(idealWallBuilderPotency / 2);
+            idealUpgraderPotency += transfer;
+            idealWallBuilderPotency -= transfer;
+        }
     }
 
     if (room && room.storage) {
@@ -120,16 +137,12 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
         util.modifyRoomMemory(roomName, o => o.consumptionMode = consumptionMode);
     }
 
-    if (!doClaim && room && !room.find(FIND_MY_CONSTRUCTION_SITES).length) {
-        idealUpgraderPotency = Math.ceil(room.find(FIND_STRUCTURES).length / 12);
-        idealWallBuilderPotency = 0;
-    }
-
-    var ravagerPotency = 0;
-    if (!doClaim) {
-        // ravager potency is measured by the number of ATTACK parts, but ravagers also have some
+    var defenderPotency = 0;
+    // TODO allow defending reserved rooms using waves
+    if (directive === rooms.DIRECTIVE_CLAIM) {
+        // defender potency is measured by the number of ATTACK parts, but ravagers also have some
         // RANGED_ATTACK and TOUGH parts. we should take this into account when examining the threat level.
-        ravagerPotency = Math.ceil(threatLevel / 2);
+        defenderPotency = Math.ceil(threatLevel / 2);
     }
 
     var claimerPotencyForReservation = 3;
@@ -139,7 +152,7 @@ function getIdealsInternal(roomName: string, doClaim: boolean, threatLevel: numb
         wallBuilderPotency: idealWallBuilderPotency,
         transporterPotency: idealTransporterPotency,
         claimerPotencyForReservation: claimerPotencyForReservation,
-        ravagerPotency: ravagerPotency,
+        defenderPotency: defenderPotency,
         harvesterPotencyPerSource: idealHarvesterPotencyPerSource,
         harvesterPotencyPerMineral: idealHarvesterPotencyPerMineral
     }

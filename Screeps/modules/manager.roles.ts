@@ -5,16 +5,9 @@ import * as roleTransporter from './role.worker.transporter';
 import * as roleHub from './role.worker.hub';
 import * as roleClaimer from './role.worker.claimer';
 import * as roleScout from './role.scout';
-
 import * as roleRavager from './role.battle.ravager';
-import * as roleMercenary from './role.mercenary';
-import * as roleCrusher from './role.siege.crusher';
-import * as roleMedic from './role.siege.medic';
-import * as roleHunter from './role.siege.hunter';
-
 import * as structureTower from './structure.tower';
 import * as structureTerminal from './structure.terminal';
-
 import * as util from './util';
 
 export function run() {
@@ -34,13 +27,7 @@ export function run() {
 
         if (creep.spawning) continue;
 
-        // if the creep is dying, tell the spawn to run the spawn script on the next tick
-        // LEGACY
-        if (creep.ticksToLive <= 1) {
-            util.refreshSpawn(creep.memory.homeRoomName);
-        }
-
-        const elderlyThreshold = creep.memory.role !== 'hub' ? 10 : 100;
+        const elderlyThreshold = creep.memory.role === 'hub' ? 10 : 100;
         if (creep.ticksToLive < elderlyThreshold && !creep.memory.isElderly) {
             creep.memory.isElderly = true;
             util.refreshOrders(creep.memory.assignedRoomName);
@@ -80,22 +67,6 @@ export function run() {
 
         if (creep.memory.role === 'ravager') {
             roleRavager.run(creep);
-        }
-
-        if (creep.memory.role === 'meleeMercenary' || creep.memory.role === 'rangedMercenary') {
-            roleMercenary.run(creep);
-        }
-
-        if (creep.memory.role === 'crusher') {
-            roleCrusher.run(creep);
-        }
-
-        if (creep.memory.role === 'medic') {
-            roleMedic.run(creep);
-        }
-
-        if (creep.memory.role === 'hunter') {
-            roleHunter.run(creep);
         }
     }
 }

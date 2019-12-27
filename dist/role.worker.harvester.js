@@ -6,7 +6,7 @@ function run(creep) {
     var assignment = Game.getObjectById(creep.memory.assignmentId);
     if (!assignment)
         return;
-    if (_.sum(creep.carry) < creep.carryCapacity) {
+    if (_.sum(creep.store) < creep.store.getCapacity()) {
         // harvest
         if (creep.harvest(assignment) == ERR_NOT_IN_RANGE) {
             util.setMoveTarget(creep, assignment, 1);
@@ -47,7 +47,7 @@ function run(creep) {
         return;
     }
     // there's nowhere to put the resources, so just drop them on the ground.
-    for (var resourceType in creep.carry) {
+    for (var resourceType in creep.store) {
         creep.drop(resourceType);
     }
 }

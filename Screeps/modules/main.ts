@@ -1,4 +1,4 @@
-import * as spawnManager from './manager.spawn.new';
+import * as spawnManager from './spawn';
 import * as battleManager from './manager.battle';
 import * as roleManager from './manager.roles';
 import * as mobilization from './mobilization';
@@ -12,6 +12,9 @@ export const loop = () => {
 
     if (!Memory.rooms) {
         Memory.rooms = {};
+    }
+    if (!Memory.raidWaves) {
+        Memory.raidWaves = [];
     }
 
     mobilization.runDefenseSystems();

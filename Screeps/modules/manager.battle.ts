@@ -1,5 +1,23 @@
 import * as util from './util';
 
+/* NOTES
+ * We want to spawn "waves" of creeps.
+ * The spawn will place its creeps into a wave object and give each creep a reference to its wave object.
+ * The wave object keeps track of its target room as well as its current target structure.
+ * All creeps in the wave will try to attack the target structure.
+ * Creeps in a wave will wait until the wave is finished spawning before moving out.
+ * The leader of a wave is implicitly the first creep in the wave's creep array.
+ * The number of creeps in a wave is calculated based on the total amount of time required to spawn the entire
+ * wave plus the time required to travel to the destination plus the estimated battle duration, compared with
+ * the lifetime of creeps.
+ * We will only begin spawning a wave if we have enough energy in storage to spawn the whole wave.
+ * 
+ * Each creep calculates a "boldness" factor for itself that represents its melee strength compared with its ranged strength.
+ * Creeps with higher boldness want to be on the front line to melee attack the target structure.
+ * If a creep with high boldness is behind a creep with a lower boldness, the two creeps will negotiate with each
+ * other and then switch places.
+*/
+
 export function run() {
 
     if (!Memory.siegeMode) return;
@@ -91,6 +109,8 @@ export function run() {
         // a target based on how threatening that target is and how long it will take to get there.
         // We will choose a path using a custom cost matrix which treats hostile structures as walkable
         // spaces with cost equal to the estimated time to break that structure.
+
+        // TODO treat ramparts as harder to traverse than walls
         var costMatrix = getCostMatrix(leader.room.name);
         var myDamageOutput: number = _.sum(myCreeps, getDamageOutput);
         var targets = leader.room.find<Structure>(FIND_HOSTILE_STRUCTURES, {

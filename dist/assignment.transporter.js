@@ -92,7 +92,7 @@ function getWorkload(transporter) {
     const assignments = transporter.memory.assignments;
     if (!assignments || !assignments.length)
         return 0;
-    return _.sum(assignments, o => o.amount * (600 - o.priority)) / transporter.carryCapacity;
+    return _.sum(assignments, o => o.amount * (600 - o.priority)) / transporter.store.getCapacity();
 }
 function switchModes(roomName) {
     var dump = false;
@@ -101,11 +101,11 @@ function switchModes(roomName) {
         if (creep.memory.role !== 'transporter' || creep.memory.assignedRoomName !== roomName)
             continue;
         // if creep is empty, switch to collect mode
-        if (!creep.memory.isCollecting && _.sum(creep.carry) === 0) {
+        if (!creep.memory.isCollecting && _.sum(creep.store) === 0) {
             switchModes(true);
         }
         // if creep is full, switch to deliver mode
-        if (creep.memory.isCollecting && _.sum(creep.carry) === creep.carryCapacity) {
+        if (creep.memory.isCollecting && _.sum(creep.store) === creep.store.getCapacity()) {
             switchModes(false);
             dump = true;
         }

@@ -1,24 +1,25 @@
 import * as util from './util';
 import * as rooms from './rooms';
 import * as cache from './cache';
-import * as bodies from './manager.spawn.bodies';
-import * as spawnMetrics from './manager.spawn.metrics';
+import * as bodies from './spawn.bodies';
+import * as spawnMetrics from './spawn.metrics';
 import * as sources from './manager.sources';
 
-export function addItemToQueue(spawn: StructureSpawn, assignedRoomName: string,
-    role: string, subRole: string, assignmentId: string, bodyResult: bodies.BodyResult) {
+export function addItemToQueue(spawn: StructureSpawn, assignedRoomName: string, role: string,
+    subRole: string, assignmentId: string, bodyResult: bodies.BodyResult, raidWaveId: number) {
 
-    const item = {
+    const item: SpawnQueueItem = {
         spawnId: spawn.id,
         role: role,
         subRole: subRole,
         assignmentId: assignmentId,
         assignedRoomName: assignedRoomName,
         homeRoomName: determineHomeRoom(role, assignedRoomName),
-        doClaim: rooms.getDoClaim(assignedRoomName),
+        doClaim: rooms.getDirective(assignedRoomName) === rooms.DIRECTIVE_CLAIM,
         potency: bodyResult.potency,
         energyCost: bodies.getEnergyCost(bodyResult.body),
-        timeCost: bodies.getTimeCost(bodyResult.body)
+        timeCost: bodies.getTimeCost(bodyResult.body),
+        raidWaveId: raidWaveId
     };
     const queue = getQueue(spawn);
     queue.push(item);
@@ -41,7 +42,8 @@ export function removeItemFromQueue(item: SpawnQueueItem) {
         o.assignedRoomName === item.assignedRoomName &&
         o.homeRoomName === item.homeRoomName &&
         o.doClaim === item.doClaim &&
-        o.potency === item.potency
+        o.potency === item.potency &&
+        o.raidWaveId === item.raidWaveId
     );
     if (i === -1) return false;
     queue.splice(i, 1);
