@@ -43,7 +43,7 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
     const totalTransportDistanceForSources: number = _.sum(activeSources.map(o =>
         sourceManager.getSourceMetrics(o).transportDistance || 10));
 
-    const idealHarvesterPotencyPerSource = 7;
+    var idealHarvesterPotencyPerSource = 7;
     var idealHarvesterPotencyPerMineral = 18;
 
     // HACK - stop harvesting if we already have more than 500,000 minerals stored in the room
@@ -59,19 +59,19 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
         idealTransporterPotency = 2;
     }
 
-    var sourceValue = activeSources.length;
-    // TODO is this right?
-    if (!room.controller.my) {
-        sourceValue /= 2;
+    // sources have half as much energy capacity if the room is unowned and unreserved
+    if (!room.controller.my && !room.controller.reservation) {
+        idealHarvesterPotencyPerSource = Math.ceil(idealHarvesterPotencyPerSource / 2);
+        idealTransporterPotency = Math.ceil(idealTransporterPotency / 2);
     }
 
-    var idealUpgraderPotency = Math.max(3, Math.ceil(3.5 * sourceValue));
-    var idealWallBuilderPotency = Math.max(2, Math.ceil(3.5 * sourceValue));
+    var idealUpgraderPotency = Math.max(3, Math.ceil(3.5 * activeSources.length));
+    var idealWallBuilderPotency = Math.max(2, Math.ceil(3.5 * activeSources.length));
 
     if (directive === rooms.DIRECTIVE_HARVEST || directive === rooms.DIRECTIVE_RESERVE) {
         idealWallBuilderPotency = 0;
         idealUpgraderPotency =
-            Math.ceil(nonWallStructures.length / 20) +
+            Math.ceil(nonWallStructures.length / 10) +
             (2 * nonRoadConstructionSites.length) +
             Math.ceil(roadConstructionSites.length / 5);
     }
@@ -124,10 +124,11 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
 
     if (room && room.storage) {
         var consumptionMode = util.getRoomMemory(roomName).consumptionMode;
-        if (!consumptionMode && _.sum(room.storage.store) > 950000) {
+        const bounds = util.getConsumptionModeBoundaries(room);
+        if (!consumptionMode && _.sum(room.storage.store) > bounds.upper) {
             consumptionMode = true;
         }
-        else if (consumptionMode && _.sum(room.storage.store) < 900000) {
+        else if (consumptionMode && _.sum(room.storage.store) < bounds.lower) {
             consumptionMode = false;
         }
         if (consumptionMode) {

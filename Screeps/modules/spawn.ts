@@ -1,6 +1,7 @@
 import * as util from './util';
 import * as rooms from './rooms';
 import * as sourceManager from './manager.sources';
+import * as battleManager from './manager.battle';
 import * as spawnOrders from './spawn.orders';
 import * as bodies from './spawn.bodies';
 import * as raid from './spawn.raid';
@@ -44,7 +45,10 @@ function processOrders(roomName: string) {
 
     const roomOrder = spawnOrders.getRoomOrder(roomName);
     var didFulfillOrder = spawnOrders.fulfillRoomOrder(roomOrder);
-    if (didFulfillOrder) needsRefresh = true;
+    if (didFulfillOrder) {
+        needsRefresh = true;
+        battleManager.assignCreepsToWaves();
+    }
 
     const room = Game.rooms[roomName];
     if (room) {

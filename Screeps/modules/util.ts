@@ -94,7 +94,7 @@ export function findHubFlag(room: Room) {
     return room.find(FIND_FLAGS, { filter: (o: Flag) => o.name.startsWith('Hub') })[0];
 }
 
-export function findSpawns(roomName: string, maxDistanceToSearch: number, distance?: number): StructureSpawn[] {
+export function findSpawns(roomName: string, maxDistanceToSearch: number, distance?: number): Array<StructureSpawn> {
     distance = distance || 0;
     if (distance > maxDistanceToSearch) return [];
     const spawnsAtMinDistance: StructureSpawn[] = _.filter(Game.spawns, (o: StructureSpawn) => {
@@ -105,11 +105,22 @@ export function findSpawns(roomName: string, maxDistanceToSearch: number, distan
     }
     // always search at the desired distance plus 1, in case there is a shorter route through a greater number of rooms
     const maxDistance = Math.min(distance + 1, maxDistanceToSearch);
-    const spawns = _.filter(Game.spawns, (o: StructureSpawn) => {
+    const spawns: StructureSpawn[] = _.filter(Game.spawns, (o: StructureSpawn) => {
         const d = Game.map.getRoomLinearDistance(o.room.name, roomName);
         return d >= distance && d <= maxDistance;
     });
     return sortBy(spawns, o => Game.map.getRoomLinearDistance(o.room.name, roomName));
+}
+
+export function findRoomsForSpawning(roomName: string, maxDistanceToSearch: number, distance?: number) {
+    const spawns = findSpawns(roomName, maxDistanceToSearch, distance);
+    const rooms: Array<Room> = [];
+    for (let i = 0; i < spawns.length; i++) {
+        if (rooms.findIndex(o => o.name === spawns[i].room.name) === -1) {
+            rooms.push(spawns[i].room);
+        }
+    }
+    return rooms;
 }
 
 function isCreepWorker(creep: Creep) {
@@ -138,9 +149,6 @@ export function transferTo(creep: Creep, target: Structure) {
             var transferResult = creep.transfer(target, resource);
             if (transferResult == ERR_NOT_IN_RANGE) {
                 setMoveTarget(creep, target, 1);
-            }
-            else if (transferResult === OK && (target.structureType === STRUCTURE_EXTENSION || target.structureType === STRUCTURE_SPAWN)) {
-                refreshSpawn(target.room.name);
             }
             return true;
         }
@@ -193,12 +201,6 @@ export function countCreeps(role: string, filter?) {
     return count;
 }
 
-// LEGACY
-export function isWartime(room) {
-    var hostiles = room.find(FIND_HOSTILE_CREEPS, { filter: o => o.body.some(p => p.type == ATTACK || p.type == RANGED_ATTACK) });
-    return !!hostiles.length;
-}
-
 export function getThreatLevel(room: Room) {
     const hostileCreeps = room.find(FIND_HOSTILE_CREEPS, {
         filter: (o: Creep) => o.getActiveBodyparts(ATTACK) > 0 || o.getActiveBodyparts(RANGED_ATTACK) > 0
@@ -210,11 +212,6 @@ export function getThreatLevel(room: Room) {
         (150 * o.getActiveBodyparts(RANGED_ATTACK)) +
         (10 * o.getActiveBodyparts(TOUGH)) +
         (250 * o.getActiveBodyparts(HEAL)));
-}
-
-// LEGACY
-export function refreshSpawn(roomName) {
-    modifyRoomMemory(roomName, o => o.doRefreshSpawn = true);
 }
 
 export function refreshOrders(roomName: string) {
@@ -261,56 +258,74 @@ export function getEmptySpace(structure: Structure) {
     return 0;
 }
 
+interface ConsumptionModeBoundaries {
+    lower: number;
+    upper: number;
+}
+
+export function getConsumptionModeBoundaries(room: Room) {
+    if (room.controller.level < 5) {
+        return { lower: 150000, upper: 200000 };
+    }
+    if (room.controller.level < 6) {
+        return { lower: 350000, upper: 400000 };
+    }
+    if (room.controller.level < 7) {
+        return { lower: 650000, upper: 700000 };
+    }
+    return { lower: 900000, upper: 950000 };
+}
+
 export function isNumber(x: any): x is number {
     return typeof x === "number";
 }
 
 export function isSpawn(structure: Structure): structure is StructureSpawn {
-    return structure.structureType === STRUCTURE_SPAWN;
+    return structure && structure.structureType === STRUCTURE_SPAWN;
 }
 
 export function isExtension(structure: Structure): structure is StructureExtension {
-    return structure.structureType === STRUCTURE_EXTENSION;
+    return structure && structure.structureType === STRUCTURE_EXTENSION;
 }
 
 export function isTower(structure: Structure): structure is StructureTower {
-    return structure.structureType === STRUCTURE_TOWER;
+    return structure && structure.structureType === STRUCTURE_TOWER;
 }
 
 export function isContainer(structure: Structure): structure is StructureContainer {
-    return structure.structureType === STRUCTURE_CONTAINER;
+    return structure && structure.structureType === STRUCTURE_CONTAINER;
 }
 
 export function isStorage(structure: Structure): structure is StructureStorage {
-    return structure.structureType === STRUCTURE_STORAGE;
+    return structure && structure.structureType === STRUCTURE_STORAGE;
 }
 
 export function isLink(structure: Structure): structure is StructureLink {
-    return structure.structureType === STRUCTURE_LINK;
+    return structure && structure.structureType === STRUCTURE_LINK;
 }
 
 export function isExtractor(structure: Structure): structure is StructureExtractor {
-    return structure.structureType === STRUCTURE_EXTRACTOR;
+    return structure && structure.structureType === STRUCTURE_EXTRACTOR;
 }
 
 export function isController(structure: Structure): structure is StructureController {
-    return structure.structureType === STRUCTURE_CONTROLLER;
+    return structure && structure.structureType === STRUCTURE_CONTROLLER;
 }
 
 export function isTerminal(structure: Structure): structure is StructureTerminal {
-    return structure.structureType === STRUCTURE_TERMINAL;
+    return structure && structure.structureType === STRUCTURE_TERMINAL;
 }
 
 export function isRampart(structure: Structure): structure is StructureRampart {
-    return structure.structureType === STRUCTURE_RAMPART;
+    return structure && structure.structureType === STRUCTURE_RAMPART;
 }
 
 export function isWall(structure: Structure): structure is StructureWall {
-    return structure.structureType === STRUCTURE_WALL;
+    return structure && structure.structureType === STRUCTURE_WALL;
 }
 
 export function isStructure(o: Structure | ConstructionSite): o is Structure {
-    return o['hitsMax'] || o.structureType === STRUCTURE_CONTROLLER;
+    return o && o['hitsMax'] || o.structureType === STRUCTURE_CONTROLLER;
 }
 
 export function findLinks(room: Room) {

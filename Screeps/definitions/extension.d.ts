@@ -12,12 +12,15 @@ interface SourceMetrics {
 
 interface RaidWave {
     id: number;
+    targetRoomName: string;
+    deadline: number;
     ready?: boolean;
+    creeps?: Array<Creep>;
+    leaderId?: Id<Creep>;
+    targetStructureId?: Id<Structure>;
 }
 
 interface Memory {
-    // LEGACY
-    siegeMode: boolean;
     sourceMetrics: Array<SourceMetrics>;
     remoteMiningMetrics: any;
     raidWaves: Array<RaidWave>;
@@ -28,7 +31,7 @@ interface CreepMemory {
     subRole: string;
     assignedRoomName: string;
     isCollecting: boolean;
-    assignments: Array<any>;
+    assignments: Array<TransporterAssignment>;
     preferredWallId: Id<StructureWall | StructureRampart>;
     assignmentId: Id<any>;
     moveTargetId: Id<any>;
@@ -45,6 +48,12 @@ interface CreepMemory {
     charge: boolean;
     wait: boolean;
     raidWaveId: number;
+}
+
+interface TransporterAssignment {
+    id: Id<Structure>;
+    amount: number;
+    priority: number;
 }
 
 interface SpawnMapInfo {
@@ -74,10 +83,7 @@ interface RoomMemory {
     order: RoomOrder;
     sourceOrders: { [id: string]: SourceOrder };
     consumptionMode: boolean;
-    // LEGACY - all below
-    doRefreshSpawn: boolean;
-    lastFoundNearbySpawns: number;
-    nearbySpawns: SpawnMapInfo[];
+    isConquered: boolean;
 }
 
 interface SpawnDistance {

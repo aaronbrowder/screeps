@@ -12,24 +12,6 @@ function run(creep) {
         map.navigateToRoom(creep, creep.memory.assignedRoomName);
         return;
     }
-    // LEGACY
-    //if (creep.memory.subRole === 'colonist' && controller && !controller.my) {
-    //    var hasClaimParts = _.filter(creep.body, o => o.type === CLAIM).length;
-    //    if (!hasClaimParts) return;
-    //    if (controller.owner) {
-    //        if (creep.attackController(controller) === ERR_NOT_IN_RANGE) {
-    //            creep.moveTo(controller);
-    //        }
-    //    } else {
-    //        if (util.signController(creep, controller)) return;
-    //        creep.moveTo(controller);
-    //        var claimResult = creep.claimController(controller);
-    //        if (claimResult === ERR_GCL_NOT_ENOUGH || claimResult === ERR_FULL) {
-    //            creep.reserveController(controller);
-    //        }
-    //    }
-    //    return;
-    //}
     if (creep.memory.isCollecting) {
         collect();
     }

@@ -103,34 +103,3 @@ export function routeCallback(roomName: string, fromRoomName: string): number {
     // the room is owned by no one
     return 2;
 }
-
-// LEGACY
-export function findNearbySpawns(roomName: string) {
-    // use cache if it exists and is younger than 100 ticks
-    var roomMemory = util.getRoomMemory(roomName);
-    if (roomMemory.nearbySpawns && roomMemory.lastFoundNearbySpawns > Game.time - 100) {
-        return roomMemory.nearbySpawns;
-    }
-
-    var spawns: SpawnMapInfo[] = [];
-
-    for (var i in Game.spawns) {
-        var spawn = Game.spawns[i];
-        if (roomName === spawn.room.name) {
-            spawns.push({ id: spawn.id, distance: 0 });
-        }
-        else if (Game.map.getRoomLinearDistance(roomName, spawn.room.name) <= 4) {
-            var route = Game.map.findRoute(spawn.room.name, roomName);
-            if (route !== ERR_NO_PATH) {
-                spawns.push({ id: spawn.id, distance: (route as any).length });
-            }
-        }
-    }
-
-    util.modifyRoomMemory(roomName, o => {
-        o.nearbySpawns = spawns;
-        o.lastFoundNearbySpawns = Game.time;
-    });
-
-    return spawns;
-}

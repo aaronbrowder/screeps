@@ -3,21 +3,25 @@ import * as map from './map';
 import * as rooms from './rooms';
 
 export function getPathDistance(spawn: StructureSpawn, roomName: string) {
+    const flag = rooms.getFlag(roomName);
+    if (!flag) {
+        console.log('WARNING: cant get spawn distance for room ' + roomName + ' because there is no flag there');
+        return null;
+    }
+    return getPathDistanceToFlag(spawn, flag);
+}
 
+export function getPathDistanceToFlag(spawn: StructureSpawn, flag: Flag) {
     util.modifySpawnMemory(spawn, o => o.distances = o.distances || {});
-    var spawnDistance = util.getSpawnMemory(spawn).distances[roomName];
+    var spawnDistance = util.getSpawnMemory(spawn).distances[flag.name];
 
     if (!spawnDistance || Game.time - spawnDistance.timestamp > 10000) {
-        const flag = rooms.getFlag(roomName);
-        if (!flag) {
-            console.log('WARNING: cant get spawn distance for room ' + roomName + ' because there is no flag there');
-            return null;
-        }
+
         spawnDistance = {
             timestamp: Game.time,
             distance: map.measurePathDistance(spawn.pos, flag.pos)
         }
-        util.modifySpawnMemory(spawn, o => o.distances[roomName] = spawnDistance);
+        util.modifySpawnMemory(spawn, o => o.distances[flag.name] = spawnDistance);
     }
 
     return spawnDistance.distance;

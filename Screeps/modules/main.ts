@@ -8,8 +8,6 @@ import * as transporterAssignment from './assignment.transporter';
 
 export const loop = () => {
 
-    Memory.siegeMode = false;
-
     if (!Memory.rooms) {
         Memory.rooms = {};
     }

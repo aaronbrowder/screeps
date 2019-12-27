@@ -29,7 +29,7 @@ function canSendEnergy(terminal: StructureTerminal) {
 }
 
 function canReceiveEnergy(terminal: StructureTerminal) {
-    // if in consumption mode, the terminal wants to accumulate energy
+    // if not in consumption mode, the terminal wants to accumulate energy
     const energy: number = terminal.store[RESOURCE_ENERGY];
     return energy < 10000 || (energy < 200000 && !getIsConsumptionMode(terminal));
 }

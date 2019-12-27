@@ -91,7 +91,7 @@ function generateTransporterBody(desiredPotency: number, spawnRoom: Room, assign
     const doClaim = rooms.getDirective(assignedRoomName) === rooms.DIRECTIVE_CLAIM;
 
     var maxPotency = Math.floor(spawnRoom.energyCapacityAvailable / (50 + (50 * transporterMovePartsPerCarryPart)));
-    maxPotency = Math.min(doClaim ? 5 : 24, maxPotency);
+    maxPotency = Math.min(doClaim ? 9 : 24, maxPotency);
 
     var potency = Math.min(desiredPotency || 1, maxPotency);
 
@@ -104,7 +104,7 @@ function generateTransporterBody(desiredPotency: number, spawnRoom: Room, assign
         }
     }
 
-    const moveParts = Math.max(1, Math.floor(potency * transporterMovePartsPerCarryPart));
+    const moveParts = Math.max(1, Math.ceil(potency * transporterMovePartsPerCarryPart));
 
     var body: BodyPartConstant[] = [];
     for (let i = 0; i < potency; i++) {
@@ -266,4 +266,17 @@ export function getUnladenSpeedOnRoads(body: string[]): number {
     const carryParts = util.countBodyParts(body, CARRY);
     const heavyParts = body.length - moveParts - carryParts;
     return Math.min(1, 2 * moveParts / heavyParts);
+}
+
+export function getRavagerMoveSpeed() {
+    const fatigueGeneratingParts = 1 + ravagerRangedAttackPartsPerAttackPart + ravagerToughPartsPerAttackPart;
+    return Math.min(1, ravagerMovePartsPerAttackPart / fatigueGeneratingParts);
+}
+
+export function getRavagerSpawnTimePerPotency() {
+    return 3 * (1 + ravagerRangedAttackPartsPerAttackPart + ravagerToughPartsPerAttackPart + ravagerMovePartsPerAttackPart);
+}
+
+export function getRavagerSpawnEnergyPerPotency() {
+    return 80 + (150 * ravagerRangedAttackPartsPerAttackPart) + (10 * ravagerToughPartsPerAttackPart) + (50 * ravagerMovePartsPerAttackPart);
 }

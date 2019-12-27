@@ -31,6 +31,13 @@ function getRaidWaveMeetupFlagName(roomName) {
     return d.raidWaveMeetupFlagName;
 }
 exports.getRaidWaveMeetupFlagName = getRaidWaveMeetupFlagName;
+function getRaidWaveMeetupFlag(roomName) {
+    const d = getControlDirective(roomName);
+    if (!d)
+        return null;
+    return Game.flags[d.raidWaveMeetupFlagName];
+}
+exports.getRaidWaveMeetupFlag = getRaidWaveMeetupFlag;
 function getDirective(roomName) {
     const d = getControlDirective(roomName);
     if (!d)
@@ -38,6 +45,13 @@ function getDirective(roomName) {
     return d.directive;
 }
 exports.getDirective = getDirective;
+function getRaidDirective(roomName) {
+    const d = getControlDirective(roomName);
+    if (!d)
+        return null;
+    return d.raidDirective;
+}
+exports.getRaidDirective = getRaidDirective;
 function getControlDirective(roomName) {
     const controlDirectives = getControlDirectives();
     return _.filter(controlDirectives, (o) => o.roomName === roomName)[0];

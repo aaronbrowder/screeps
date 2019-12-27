@@ -2,11 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const util = require("./util");
 function run(creep) {
-    const storage = creep.pos.findInRange(FIND_MY_STRUCTURES, 1, { filter: o => util.isStorage(o) })[0];
+    const structures = creep.pos.findInRange(FIND_MY_STRUCTURES, 1);
+    const storage = util.filter(structures, o => util.isStorage(o))[0];
     if (!storage)
         return;
-    const terminal = creep.pos.findInRange(FIND_MY_STRUCTURES, 1, { filter: o => util.isTerminal(o) })[0];
-    const totalCarry = _.sum(creep.store);
+    const terminal = util.filter(structures, o => util.isTerminal(o))[0];
+    const totalCarry = creep.store.getUsedCapacity();
     // 1. if hub is empty, collect from dropped resources, link, storage, or terminal
     if (totalCarry === 0) {
         const droppedResources = creep.pos.findInRange(FIND_DROPPED_RESOURCES, 1);
@@ -14,7 +15,7 @@ function run(creep) {
             creep.pickup(droppedResources[0]);
             return;
         }
-        const links = creep.pos.findInRange(FIND_MY_STRUCTURES, 1, { filter: o => util.isLink(o) });
+        const links = util.filter(structures, o => util.isLink(o));
         const nonEmptyLinks = _.filter(links, (o) => o.energy > 0);
         if (nonEmptyLinks.length) {
             creep.withdraw(nonEmptyLinks[0], RESOURCE_ENERGY);
@@ -28,12 +29,8 @@ function run(creep) {
         creep.withdraw(storage, RESOURCE_ENERGY);
         return;
     }
-    const nonFullTowers = _.sortBy(creep.pos.findInRange(FIND_MY_STRUCTURES, 1, {
-        filter: o => util.isTower(o) && o.energy < Math.max(o.energyCapacity - creep.store.getCapacity(), o.energyCapacity / 2)
-    }), o => o.energy);
-    const nonFullSpawns = creep.pos.findInRange(FIND_MY_SPAWNS, 1, {
-        filter: (o) => o.energy < o.energyCapacity
-    });
+    const nonFullTowers = _.sortBy(util.filter(structures, o => util.isTower(o) && o.energy < Math.max(o.energyCapacity - creep.store.getCapacity(), o.energyCapacity / 2)), o => o.energy);
+    const nonFullSpawns = util.filter(structures, o => util.isSpawn(o) && o.energy < o.energyCapacity);
     // 2. if tower or spawn needs energy, deliver
     if (creep.store[RESOURCE_ENERGY] > 0 && (nonFullTowers.length || nonFullSpawns.length)) {
         if (nonFullSpawns.length) {

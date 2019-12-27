@@ -8,7 +8,6 @@ const structureLink = require("./structure.link");
 const builderAssignment = require("./assignment.builder");
 const transporterAssignment = require("./assignment.transporter");
 exports.loop = () => {
-    Memory.siegeMode = false;
     if (!Memory.rooms) {
         Memory.rooms = {};
     }

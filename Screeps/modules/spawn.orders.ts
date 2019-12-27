@@ -11,6 +11,7 @@ interface OrderPartOptions {
     subRole?: string;
     assignmentId?: string;
     raidWaveId?: number;
+    meetupFlagName?: string;
     onlyOneCreep?: boolean;
 }
 
@@ -35,7 +36,7 @@ export function getRoomOrder(roomName: string) {
         // If we're raiding, we don't need eyes in the room to begin spawning raiders. The raiders will be our eyes.
         // TODO this will be a problem if we conquer a room but forget to turn off the raid directive,
         // as it will cause us to continually spawn new waves forever.
-        if (directive === rooms.DIRECTIVE_RAID) {
+        if (directive === rooms.DIRECTIVE_RAID && !!room.memory.isConquered) {
             raidWaveSize = raid.getWaveSize(roomName);
         } else {
             const scoutPotency = potency.getPotency(roomName, 'scout');
@@ -67,7 +68,7 @@ export function getRoomOrder(roomName: string) {
                         claimerPotencyNeeded = 0;
                     }
                 }
-            } else if (directive === rooms.DIRECTIVE_RAID) {
+            } else if (directive === rooms.DIRECTIVE_RAID && !!room.memory.isConquered) {
                 raidWaveSize = raid.getWaveSize(roomName);
             }
         }
@@ -187,7 +188,7 @@ export function fulfillRoomOrder(order: RoomOrder) {
         // the order is empty, so there's nothing to do
         return false;
     }
-    const spawns: StructureSpawn[] = util.findSpawns(order.roomName, 2);
+    const spawns = util.findSpawns(order.roomName, 3);
     // if there are no nearby spawns, we can't fulfill the order
     if (!spawns.length) return false;
     assignRoomOrderToSpawns(spawns, order);
@@ -210,10 +211,13 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
         assignOrderPartToSpawns(spawns, order.defenderPotency, order.roomName, 'ravager', {});
     }
     if (order.raidWaveSize) {
-        const waveId = raid.createWave();
-        assignOrderPartToSpawns(spawns, order.raidWaveSize, order.roomName, 'ravager', {
-            raidWaveId: waveId
-        });
+        const waveId = raid.createWave(order.roomName);
+        if (waveId) {
+            assignOrderPartToSpawns(spawns, order.raidWaveSize, order.roomName, 'ravager', {
+                raidWaveId: waveId,
+                meetupFlagName: rooms.getRaidWaveMeetupFlagName(order.roomName)
+            });
+        }
     }
     // we should never try to spawn workers if we don't have eyes in the room. this will cause an error.
     const room = Game.rooms[order.roomName];
@@ -260,7 +264,7 @@ function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number, room
 
     const spawn = util.getBestValue(spawns.map(o => {
         const bodyResult = bodies.generateBody(potency, o.room, roomName, role, opts.subRole, opts.assignmentId);
-        return getSpawnValue(o, roomName, potency, bodyResult);
+        return getSpawnValue(o, roomName, potency, bodyResult, opts.meetupFlagName);
     }));
 
     const bodyResult = bodies.generateBody(potency, spawn.room, roomName, role, opts.subRole, opts.assignmentId);
@@ -278,10 +282,16 @@ function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number, room
     }
 }
 
-function getSpawnValue(spawn: StructureSpawn, roomName: string, desiredPotency: number, bodyResult: bodies.BodyResult): util.ValueData<StructureSpawn> {
+function getSpawnValue(spawn: StructureSpawn, roomName: string, desiredPotency: number,
+    bodyResult: bodies.BodyResult, meetupFlagName: string): util.ValueData<StructureSpawn> {
     // The distance the spawned creep will need to travel to get to its assignment should be our primary consideration.
     // We want the distance to be as low as possible.
-    const pathDistance = spawnMetrics.getPathDistance(spawn, roomName);
+    var pathDistance;
+    if (meetupFlagName) {
+        pathDistance = spawnMetrics.getPathDistanceToFlag(spawn, Game.flags[meetupFlagName]);
+    } else {
+        pathDistance = spawnMetrics.getPathDistance(spawn, roomName);
+    }
     // Ideally we will only need one creep, but that depends on the spawn room's energy capacity being enough to cover
     // the body of a large creep. If the energy capacity is low, we may need to spawn two or more creeps in order to
     // fulfill the desired potency. A spawn that can fulfill the desired potency with a single creep is preferable

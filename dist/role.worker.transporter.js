@@ -6,12 +6,12 @@ const structureLink = require("./structure.link");
 function run(creep) {
     var assignedRoom = Game.rooms[creep.memory.assignedRoomName];
     var homeRoom = Game.rooms[creep.memory.homeRoomName];
-    var totalCarry = _.sum(creep.store);
+    var totalCarry = creep.store.getUsedCapacity();
     var threatLevel = util.getThreatLevel(creep.room);
     // filter and sort assignments
     if (!creep.memory.assignments)
         creep.memory.assignments = [];
-    var assignments = _.sortBy(_.filter(creep.memory.assignments, o => !isAssignmentCompleted(o)), o => o.priority);
+    var assignments = util.sortBy(util.filter(creep.memory.assignments, o => !isAssignmentCompleted(o)), o => o.priority);
     creep.memory.assignments = assignments;
     if (creep.memory.isCollecting) {
         var result = collect();
@@ -27,9 +27,9 @@ function run(creep) {
             return false;
         }
         var assignment = assignments.length ? Game.getObjectById(assignments[0].id) : null;
-        if (isAssignmentMineralContainer(assignment)) {
-            // assignment is a mining container for minerals. this is the one type of assignment that requires collecting instead of delivering.
-            collectMinerals(assignment);
+        if (isAssignmentMiningContainer(assignment)) {
+            // assignment is a mining container. this is the one type of assignment that requires collecting instead of delivering.
+            collectFromMiningContainer(assignment);
             return true;
         }
         else {
@@ -49,7 +49,7 @@ function run(creep) {
         }
         return false;
     }
-    function collectMinerals(target) {
+    function collectFromMiningContainer(target) {
         for (let i in target.store) {
             const resource = i;
             if (target.store[resource] > 0) {
@@ -70,7 +70,7 @@ function run(creep) {
         var tombstones = assignedRoom.find(FIND_TOMBSTONES).map(o => {
             return { target: o, value: getTombstoneValue(o) };
         });
-        const roomHasStorage = assignedRoom.find(FIND_STRUCTURES, { filter: o => util.isStorage(o) });
+        const roomHasStorage = assignedRoom.find(FIND_STRUCTURES, { filter: o => util.isStorage(o) }).length > 0;
         const stores = assignedRoom.find(FIND_STRUCTURES, {
             filter: o => (util.isContainer(o) || util.isStorage(o)) && o.store[RESOURCE_ENERGY] > 0
         }).map(o => {
@@ -123,7 +123,7 @@ function run(creep) {
             else {
                 // only pull from storage under special circumstances
                 var consumptionMode = util.getRoomMemory(creep.memory.assignedRoomName).consumptionMode;
-                if (!threatLevel && !Memory.siegeMode && !consumptionMode && !isSpawnHungry()) {
+                if (!threatLevel && !consumptionMode && !isSpawnHungry()) {
                     value -= 1000000;
                 }
             }
@@ -175,7 +175,7 @@ function run(creep) {
             }
         }
         // no minerals. deliver energy to assignment
-        var deliveryAssignments = _.filter(assignments, o => !isAssignmentMineralContainer(o));
+        var deliveryAssignments = _.filter(assignments, o => !isAssignmentMiningContainer(Game.getObjectById(o.id)));
         var assignment = (deliveryAssignments.length ? Game.getObjectById(deliveryAssignments[0].id) : null);
         // if there's no assignment, deliver to storage
         if (!assignment) {
@@ -205,18 +205,6 @@ function run(creep) {
             if (transferResult == ERR_NOT_IN_RANGE) {
                 util.setMoveTarget(creep, assignment, 1);
             }
-            else if (transferResult === OK) {
-                if (assignment.structureType === STRUCTURE_EXTENSION || assignment.structureType === STRUCTURE_SPAWN) {
-                    util.refreshSpawn(assignment.room.name);
-                }
-                //if (creep.memory.assignedRoomName !== creep.memory.homeRoomName) {
-                //    const remoteMiningMetrics = Memory.remoteMiningMetrics || {};
-                //    const roomMetrics = remoteMiningMetrics[creep.memory.assignedRoomName] || { cost: 0, income: 0 };
-                //    roomMetrics.income += Math.min(creep.store[RESOURCE_ENERGY], util.getEmptySpace(assignment));
-                //    remoteMiningMetrics[creep.memory.assignedRoomName] = roomMetrics;
-                //    Memory.remoteMiningMetrics = remoteMiningMetrics;
-                //}
-            }
             return;
         }
     }
@@ -224,12 +212,15 @@ function run(creep) {
         var convenienceContainers = room.find(FIND_STRUCTURES, {
             filter: o => util.isContainer(o)
                 && !o.pos.findInRange(FIND_SOURCES, 2).length
+                && !o.pos.findInRange(FIND_MINERALS, 2).length
                 && _.sum(o.store) <= o.storeCapacity - creep.store[RESOURCE_ENERGY]
         });
         return convenienceContainers[0];
     }
-    function isAssignmentMineralContainer(assignment) {
-        return assignment && util.isContainer(assignment) && assignment.pos.findInRange(FIND_MINERALS, 2).length;
+    function isAssignmentMiningContainer(assignment) {
+        return assignment && util.isContainer(assignment) &&
+            (assignment.pos.findInRange(FIND_MINERALS, 2).length > 0 ||
+                assignment.pos.findInRange(FIND_SOURCES, 2).length > 0);
     }
     function isAssignmentCompleted(assignment) {
         const target = Game.getObjectById(assignment.id);

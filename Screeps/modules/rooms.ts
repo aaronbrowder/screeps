@@ -18,7 +18,12 @@ export interface ControlDirective {
     roomName: string;
     flagName: string;
     directive: DirectiveConstant;
+    raidDirective?: RaidDirective;
     raidWaveMeetupFlagName?: string;
+}
+
+export interface RaidDirective {
+    targetStructureIds: Array<Id<Structure>>;
 }
 
 export function getControlDirectives(): ControlDirective[] {
@@ -44,10 +49,22 @@ export function getRaidWaveMeetupFlagName(roomName: string) {
     return d.raidWaveMeetupFlagName;
 }
 
+export function getRaidWaveMeetupFlag(roomName: string) {
+    const d = getControlDirective(roomName);
+    if (!d) return null;
+    return Game.flags[d.raidWaveMeetupFlagName];
+}
+
 export function getDirective(roomName: string) {
     const d = getControlDirective(roomName);
     if (!d) return null;
     return d.directive;
+}
+
+export function getRaidDirective(roomName: string) {
+    const d = getControlDirective(roomName);
+    if (!d) return null;
+    return d.raidDirective;
 }
 
 function getControlDirective(roomName: string): ControlDirective {
