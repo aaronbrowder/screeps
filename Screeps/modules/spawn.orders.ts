@@ -1,6 +1,7 @@
 import * as util from './util';
 import * as potency from './util.potency';
 import * as rooms from './rooms';
+import * as enums from './enums';
 import * as idealsManager from './spawn.ideals';
 import * as spawnQueue from './spawn.queue';
 import * as raid from './spawn.raid';
@@ -49,11 +50,11 @@ export function getRoomOrder(roomName: string) {
         const ideals = idealsManager.getIdeals(roomName);
 
         if (room.controller && !room.controller.my) {
-            if (directive === rooms.DIRECTIVE_CLAIM) {
+            if (directive === enums.DIRECTIVE_CLAIM) {
                 if (potency.getPotency(roomName, 'claimer') === 0) {
                     claimerPotencyNeeded = 1;
                 }
-            } else if (directive === rooms.DIRECTIVE_RESERVE || directive === rooms.DIRECTIVE_RESERVE_AND_HARVEST) {
+            } else if (directive === enums.DIRECTIVE_RESERVE || directive === enums.DIRECTIVE_RESERVE_AND_HARVEST) {
                 if (room.controller.reservation &&
                     room.controller.reservation.username === _.find(Game.structures).owner.username &&
                     room.controller.reservation.ticksToEnd > 3500) {
@@ -213,8 +214,11 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
     if (order.raidWaveSize) {
         const waveId = raid.createWave(order.roomName);
         if (waveId) {
+            const raidDirective = rooms.getRaidDirective(order.roomName);
+            const subRole = raidDirective.raiderBodyType === enums.SLAYER ? 'slayer' : null;
             assignOrderPartToSpawns(spawns, order.raidWaveSize, order.roomName, 'ravager', {
                 raidWaveId: waveId,
+                subRole: subRole,
                 meetupFlagName: rooms.getRaidWaveMeetupFlagName(order.roomName)
             });
         }

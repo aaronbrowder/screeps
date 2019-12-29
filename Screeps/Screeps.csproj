@@ -66,6 +66,7 @@
     <TypeScriptCompile Include="definitions\index.d.ts" />
     <TypeScriptCompile Include="definitions\lodash.d.ts" />
     <TypeScriptCompile Include="modules\assignment.builder.ts" />
+    <TypeScriptCompile Include="modules\enums.ts" />
     <TypeScriptCompile Include="modules\main.ts" />
   </ItemGroup>
   <ItemGroup>

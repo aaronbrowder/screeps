@@ -12,8 +12,8 @@ export function assignBuilders() {
     // 4. controller critically downgrading
     // 5. significantly damaged structure besides roads, walls, and ramparts
     // 6. container construction site
-    // 7. significantly damaged road
-    // 8. spawn construction site
+    // 7. spawn construction site
+    // 8. significantly damaged road
     // 9. extension construction site when number of extensions < 5
     // 10. road construction site over a swamp
     // 12. other non-road construction site
@@ -55,7 +55,7 @@ export function assignBuilders() {
                 assign(target, 5);
             }
             else if (target.structureType == STRUCTURE_ROAD && target.hits < target.hitsMax * 0.8) {
-                assign(target, 7);
+                assign(target, 8);
             }
         }
 
@@ -66,7 +66,7 @@ export function assignBuilders() {
                 assign(target, 3);
             }
             else if (target.structureType == STRUCTURE_SPAWN) {
-                assign(target, 8);
+                assign(target, 7);
             }
             else if (target.structureType == STRUCTURE_EXTENSION && extensions.length < 5) {
                 assign(target, 9);

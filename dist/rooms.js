@@ -1,23 +1,33 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const util = require("./util");
-exports.DIRECTIVE_NONE = 0;
-exports.DIRECTIVE_CLAIM = 1;
-exports.DIRECTIVE_RESERVE = 2;
-exports.DIRECTIVE_HARVEST = 3;
-exports.DIRECTIVE_RAID = 4;
-exports.DIRECTIVE_RESERVE_AND_HARVEST = 5;
+const enums = require("./enums");
 function getControlDirectives() {
     return [
-        { roomName: 'W17S6', flagName: 'Colony1', directive: exports.DIRECTIVE_CLAIM },
-        { roomName: 'W17S7', flagName: 'Colony2', directive: exports.DIRECTIVE_RESERVE_AND_HARVEST },
-        { roomName: 'W18S5', flagName: 'Colony3', directive: exports.DIRECTIVE_RESERVE },
-        { roomName: 'W18S6', flagName: 'Colony4', directive: exports.DIRECTIVE_RESERVE_AND_HARVEST },
+        { roomName: 'W17S6', flagName: 'Colony1', directive: enums.DIRECTIVE_CLAIM },
+        { roomName: 'W17S7', flagName: 'Colony2', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
+        { roomName: 'W18S5', flagName: 'Colony3', directive: enums.DIRECTIVE_CLAIM },
+        { roomName: 'W18S6', flagName: 'Colony4', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
+        {
+            roomName: 'W16S6',
+            flagName: 'Lair1',
+            directive: enums.DIRECTIVE_NONE,
+            raidWaveMeetupFlagName: 'Meetup1',
+            raidDirective: {
+                maxPotency: 10,
+                automateTargets: false,
+                autoDeclareVictory: false,
+                raiderBodyType: enums.SLAYER,
+                targetStructureIds: [
+                    '5bbcac009099fc012e634aa7'
+                ]
+            }
+        }
     ];
 }
 exports.getControlDirectives = getControlDirectives;
 function getActiveControlDirectives() {
-    return util.filter(getControlDirectives(), o => o.directive !== exports.DIRECTIVE_NONE);
+    return util.filter(getControlDirectives(), o => o.directive !== enums.DIRECTIVE_NONE);
 }
 exports.getActiveControlDirectives = getActiveControlDirectives;
 function getFlag(roomName) {
@@ -49,7 +59,7 @@ function getDirective(roomName) {
 }
 exports.getDirective = getDirective;
 function getDoRaid(roomName) {
-    if (getDirective(roomName) !== exports.DIRECTIVE_RAID)
+    if (getDirective(roomName) !== enums.DIRECTIVE_RAID)
         return false;
     const roomMemory = Memory.rooms[roomName];
     if (!roomMemory)

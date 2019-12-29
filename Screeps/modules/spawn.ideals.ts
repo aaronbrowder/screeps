@@ -1,6 +1,7 @@
 import * as util from './util';
 import * as cache from './cache';
 import * as rooms from './rooms';
+import * as enums from './enums';
 import * as sourceManager from './manager.sources';
 
 export interface Ideals {
@@ -33,11 +34,11 @@ export function getIdeals(roomName: string) {
     return cache.get(key, 93, () => getIdealsInternal(roomName, directive, threatLevel));
 }
 
-function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant, threatLevel: number): Ideals {
+function getIdealsInternal(roomName: string, directive: enums.DirectiveConstant, threatLevel: number): Ideals {
 
-    if (directive !== rooms.DIRECTIVE_CLAIM &&
-        directive !== rooms.DIRECTIVE_HARVEST &&
-        directive !== rooms.DIRECTIVE_RESERVE_AND_HARVEST) {
+    if (directive !== enums.DIRECTIVE_CLAIM &&
+        directive !== enums.DIRECTIVE_HARVEST &&
+        directive !== enums.DIRECTIVE_RESERVE_AND_HARVEST) {
         return defaultIdeals();
     }
 
@@ -86,14 +87,14 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
     var idealUpgraderPotency = Math.max(3, Math.ceil(3.5 * activeSources.length));
     var idealWallBuilderPotency = Math.max(1, Math.ceil(2 * activeSources.length));
 
-    if (directive === rooms.DIRECTIVE_HARVEST || directive === rooms.DIRECTIVE_RESERVE_AND_HARVEST) {
+    if (directive === enums.DIRECTIVE_HARVEST || directive === enums.DIRECTIVE_RESERVE_AND_HARVEST) {
         idealWallBuilderPotency = 0;
         idealUpgraderPotency =
             Math.ceil(nonWallStructures.length / 10) +
             (2 * nonRoadConstructionSites.length) +
             Math.ceil(roadConstructionSites.length / 5);
     }
-    else if (directive === rooms.DIRECTIVE_CLAIM) {
+    else if (directive === enums.DIRECTIVE_CLAIM) {
         idealTransporterPotency += 6;
         if (threatLevel > 20) {
             idealTransporterPotency += 6;
@@ -153,8 +154,12 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
             consumptionMode = false;
         }
         if (consumptionMode) {
-            const forWalls = Math.floor(room.controller.level * 1.5);
-            const forUpgrading = 19 - forWalls;
+            const total = 19;
+            var forWalls = Math.floor(room.controller.level * 1.5);
+            if (room.controller.level === 8) {
+                forWalls = total;
+            }
+            const forUpgrading = total - forWalls;
             idealTransporterPotency += 5;
             idealWallBuilderPotency += forWalls;
             idealUpgraderPotency += forUpgrading;
@@ -164,7 +169,7 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
 
     var defenderPotency = 0;
     // TODO allow defending reserved rooms using waves
-    if (directive === rooms.DIRECTIVE_CLAIM) {
+    if (directive === enums.DIRECTIVE_CLAIM) {
         // defender potency is measured by the number of ATTACK parts, but ravagers also have some
         // RANGED_ATTACK and TOUGH parts. we should take this into account when examining the threat level.
         defenderPotency = Math.ceil(threatLevel / 2);

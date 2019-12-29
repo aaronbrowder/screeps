@@ -1,64 +1,48 @@
 import * as util from './util';
-
-type DIRECTIVE_NONE = 0;
-type DIRECTIVE_CLAIM = 1;
-type DIRECTIVE_RESERVE = 2;
-type DIRECTIVE_HARVEST = 3;
-type DIRECTIVE_RAID = 4;
-type DIRECTIVE_RESERVE_AND_HARVEST = 5;
-
-export const DIRECTIVE_NONE: DIRECTIVE_NONE = 0;
-export const DIRECTIVE_CLAIM: DIRECTIVE_CLAIM = 1;
-export const DIRECTIVE_RESERVE: DIRECTIVE_RESERVE = 2;
-export const DIRECTIVE_HARVEST: DIRECTIVE_HARVEST = 3;
-export const DIRECTIVE_RAID: DIRECTIVE_RAID = 4;
-export const DIRECTIVE_RESERVE_AND_HARVEST: DIRECTIVE_RESERVE_AND_HARVEST = 5;
-
-export type DirectiveConstant =
-    DIRECTIVE_NONE |
-    DIRECTIVE_CLAIM |
-    DIRECTIVE_RESERVE |
-    DIRECTIVE_HARVEST |
-    DIRECTIVE_RAID |
-    DIRECTIVE_RESERVE_AND_HARVEST;
+import * as enums from './enums';
 
 export interface ControlDirective {
     roomName: string;
     flagName: string;
-    directive: DirectiveConstant;
+    directive: enums.DirectiveConstant;
     raidDirective?: RaidDirective;
     raidWaveMeetupFlagName?: string;
 }
 
 export interface RaidDirective {
     targetStructureIds: Array<Id<Structure>>;
+    automateTargets: boolean;
+    autoDeclareVictory: boolean;
+    raiderBodyType: enums.BodyTypeConstant;
     maxPotency?: number;
 }
 
 export function getControlDirectives(): ControlDirective[] {
     return [
-        { roomName: 'W17S6', flagName: 'Colony1', directive: DIRECTIVE_CLAIM },
-        { roomName: 'W17S7', flagName: 'Colony2', directive: DIRECTIVE_RESERVE_AND_HARVEST },
-        { roomName: 'W18S5', flagName: 'Colony3', directive: DIRECTIVE_RESERVE },
-        { roomName: 'W18S6', flagName: 'Colony4', directive: DIRECTIVE_RESERVE_AND_HARVEST },
-        //{
-        //    roomName: 'W18S3',
-        //    flagName: 'Colony5',
-        //    directive: DIRECTIVE_RAID,
-        //    raidWaveMeetupFlagName: 'Meetup1',
-        //    raidDirective: {
-        //        maxPotency: 10,
-        //        targetStructureIds: [
-        //            '5dfcf93d9becb565c9579097' as Id<Structure>,  // Spawn
-        //            '5dfe9ad0d2e45379cfad931c' as Id<Structure>   // Tower 
-        //        ]
-        //    }
-        //}
+        { roomName: 'W17S6', flagName: 'Colony1', directive: enums.DIRECTIVE_CLAIM },
+        { roomName: 'W17S7', flagName: 'Colony2', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
+        { roomName: 'W18S5', flagName: 'Colony3', directive: enums.DIRECTIVE_CLAIM },
+        { roomName: 'W18S6', flagName: 'Colony4', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
+        {
+            roomName: 'W16S6',
+            flagName: 'Lair1',
+            directive: enums.DIRECTIVE_NONE,
+            raidWaveMeetupFlagName: 'Meetup1',
+            raidDirective: {
+                maxPotency: 10,
+                automateTargets: false,
+                autoDeclareVictory: false,
+                raiderBodyType: enums.SLAYER,
+                targetStructureIds: [
+                    '5bbcac009099fc012e634aa7' as Id<Structure>
+                ]
+            }
+        }
     ];
 }
 
 export function getActiveControlDirectives(): ControlDirective[] {
-    return util.filter(getControlDirectives(), o => o.directive !== DIRECTIVE_NONE);
+    return util.filter(getControlDirectives(), o => o.directive !== enums.DIRECTIVE_NONE);
 }
 
 export function getFlag(roomName: string) {
@@ -86,7 +70,7 @@ export function getDirective(roomName: string) {
 }
 
 export function getDoRaid(roomName: string) {
-    if (getDirective(roomName) !== DIRECTIVE_RAID) return false;
+    if (getDirective(roomName) !== enums.DIRECTIVE_RAID) return false;
     const roomMemory = Memory.rooms[roomName];
     if (!roomMemory) return true;
     return !roomMemory.isConquered;

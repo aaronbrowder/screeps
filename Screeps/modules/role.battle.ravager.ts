@@ -19,6 +19,12 @@ export function run(creep: Creep) {
         return;
     }
 
+    const directive = rooms.getRaidDirective(creep.memory.assignedRoomName);
+    if (!directive) {
+        console.warn(creep.name + ' has no raid directive, so it will do nothing.');
+        return;
+    }
+
     if (wave && wave.targetStructureId && Game.getObjectById(wave.targetStructureId)) {
         const targetStructure = Game.getObjectById(wave.targetStructureId);
         const range = creep.pos.getRangeTo(targetStructure);
@@ -33,28 +39,18 @@ export function run(creep: Creep) {
         }
     } else {
         // no assignments. just try to kill hostile creeps
-        if (hostileCreeps.length) {
+        if (directive.automateTargets && hostileCreeps.length) {
             var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
             if (targetCreep) {
                 attack(targetCreep);
             }
-        } else if (wave) {
-            // nothing to do. we have won!!
+        } else if (wave && directive.autoDeclareVictory) {
             if (!creep.room.memory.isConquered) {
                 battleManager.declareVictory(wave);
             }
             return;
         }
     }
-
-    // if we've strayed too far from the leader, try to get closer to it
-    // TODO this is no good, because the leader will generally be far ahead and will not wait up
-    //if (wave && wave.leaderId && wave.leaderId !== creep.id) {
-    //    const leader = Game.getObjectById(wave.leaderId);
-    //    if (leader && leader.room.name === creep.room.name && leader.pos.getRangeTo(creep) > 2) {
-    //        util.setMoveTarget(creep, leader, 1, false);
-    //    }
-    //}
 
     util.moveToMoveTarget(creep);
 

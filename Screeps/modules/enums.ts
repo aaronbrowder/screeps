@@ -1,0 +1,50 @@
+﻿
+type HARVESTER = 0;
+type TRANSPORTER = 1;
+type BUILDER = 2;
+type CLAIMER = 3;
+type SCOUT = 4;
+type HUB = 5;
+type RAVAGER = 6;
+type SLAYER = 7;
+
+export const HARVESTER: HARVESTER = 0;
+export const TRANSPORTER: TRANSPORTER = 1;
+export const BUILDER: BUILDER = 2;
+export const CLAIMER: CLAIMER = 3;
+export const SCOUT: SCOUT = 4;
+export const HUB: HUB = 5;
+export const RAVAGER: RAVAGER = 6;
+export const SLAYER: SLAYER = 7;
+
+export type BodyTypeConstant =
+    HARVESTER |
+    TRANSPORTER |
+    BUILDER |
+    CLAIMER |
+    SCOUT |
+    HUB |
+    RAVAGER |
+    SLAYER;
+
+type DIRECTIVE_NONE = 0;
+type DIRECTIVE_CLAIM = 1;
+type DIRECTIVE_RESERVE = 2;
+type DIRECTIVE_HARVEST = 3;
+type DIRECTIVE_RAID = 4;
+type DIRECTIVE_RESERVE_AND_HARVEST = 5;
+
+export const DIRECTIVE_NONE: DIRECTIVE_NONE = 0;
+export const DIRECTIVE_CLAIM: DIRECTIVE_CLAIM = 1;
+export const DIRECTIVE_RESERVE: DIRECTIVE_RESERVE = 2;
+export const DIRECTIVE_HARVEST: DIRECTIVE_HARVEST = 3;
+export const DIRECTIVE_RAID: DIRECTIVE_RAID = 4;
+export const DIRECTIVE_RESERVE_AND_HARVEST: DIRECTIVE_RESERVE_AND_HARVEST = 5;
+
+export type DirectiveConstant =
+    DIRECTIVE_NONE |
+    DIRECTIVE_CLAIM |
+    DIRECTIVE_RESERVE |
+    DIRECTIVE_HARVEST |
+    DIRECTIVE_RAID |
+    DIRECTIVE_RESERVE_AND_HARVEST;

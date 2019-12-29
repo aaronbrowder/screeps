@@ -1,5 +1,6 @@
 import * as util from './util';
 import * as rooms from './rooms';
+import * as enums from './enums';
 import * as cache from './cache';
 import * as bodies from './spawn.bodies';
 import * as spawnMetrics from './spawn.metrics';
@@ -15,10 +16,10 @@ export function addItemToQueue(spawn: StructureSpawn, assignedRoomName: string, 
         assignmentId: assignmentId,
         assignedRoomName: assignedRoomName,
         homeRoomName: determineHomeRoom(role, assignedRoomName),
-        doClaim: rooms.getDirective(assignedRoomName) === rooms.DIRECTIVE_CLAIM,
+        doClaim: rooms.getDirective(assignedRoomName) === enums.DIRECTIVE_CLAIM,
         potency: bodyResult.potency,
-        energyCost: bodies.getEnergyCost(bodyResult.body),
-        timeCost: bodies.getTimeCost(bodyResult.body),
+        energyCost: bodies.getCost(bodyResult.body),
+        timeCost: bodies.getSpawnTime(bodyResult.body),
         raidWaveId: raidWaveId
     };
     const queue = getQueue(spawn);
