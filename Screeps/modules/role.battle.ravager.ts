@@ -29,7 +29,7 @@ export function run(creep: Creep) {
             creep.attack(targetStructure);
         }
         if (creep.memory.moveTargetId !== targetStructure.id) {
-            util.setMoveTarget(creep, targetStructure);
+            util.setMoveTarget(creep, targetStructure, 1, false);
         }
     } else {
         // no assignments. just try to kill hostile creeps
@@ -46,6 +46,15 @@ export function run(creep: Creep) {
             return;
         }
     }
+
+    // if we've strayed too far from the leader, try to get closer to it
+    // TODO this is no good, because the leader will generally be far ahead and will not wait up
+    //if (wave && wave.leaderId && wave.leaderId !== creep.id) {
+    //    const leader = Game.getObjectById(wave.leaderId);
+    //    if (leader && leader.room.name === creep.room.name && leader.pos.getRangeTo(creep) > 2) {
+    //        util.setMoveTarget(creep, leader, 1, false);
+    //    }
+    //}
 
     util.moveToMoveTarget(creep);
 

@@ -9,9 +9,10 @@ const transporterMovePartsPerCarryPart = 0.5;
 const builderCarryPartsPerWorkPart = 0.75;
 const builderMovePartsPerWorkPart = 0.5;
 
-const ravagerRangedAttackPartsPerAttackPart = 1;
-const ravagerToughPartsPerAttackPart = 1;
-const ravagerMovePartsPerAttackPart = 1.5;
+const ravagerRangedAttackPartsPerAttackPart = 0.8;
+const ravagerToughPartsPerAttackPart = 2;
+// this many move parts means we will always move 2 spaces/tick on normal terrain
+const ravagerMovePartsPerAttackPart = (1 + ravagerRangedAttackPartsPerAttackPart + ravagerToughPartsPerAttackPart) / 2;
 
 export interface BodyResult {
     body: BodyPartConstant[];
@@ -226,19 +227,17 @@ function generateRavagerBody(desiredPotency: number, spawnRoom: Room): BodyResul
         body = body.concat([TOUGH]);
         toughParts--;
     }
-    while (attackParts > 0 || rangedAttackParts > 0 || moveParts > 0) {
-        if (attackParts > 0) {
-            body = body.concat([ATTACK]);
-            attackParts--;
-        }
-        if (rangedAttackParts > 0) {
-            body = body.concat([RANGED_ATTACK]);
-            rangedAttackParts--;
-        }
-        if (moveParts > 0) {
-            body = body.concat([MOVE]);
-            moveParts--;
-        }
+    while (moveParts > 0) {
+        body = body.concat([MOVE]);
+        moveParts--;
+    }
+    while (attackParts > 0) {
+        body = body.concat([ATTACK]);
+        attackParts--;
+    }
+    while (rangedAttackParts > 0) {
+        body = body.concat([RANGED_ATTACK]);
+        rangedAttackParts--;
     }
     return {
         body: body,
@@ -279,4 +278,8 @@ export function getRavagerSpawnTimePerPotency() {
 
 export function getRavagerSpawnEnergyPerPotency() {
     return 80 + (150 * ravagerRangedAttackPartsPerAttackPart) + (10 * ravagerToughPartsPerAttackPart) + (50 * ravagerMovePartsPerAttackPart);
+}
+
+export function measureRavagerPotency(creep: Creep) {
+    return util.count(creep.body, o => o.type === ATTACK);
 }

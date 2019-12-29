@@ -32,23 +32,25 @@ export interface ControlDirective {
 
 export interface RaidDirective {
     targetStructureIds: Array<Id<Structure>>;
+    maxPotency?: number;
 }
 
 export function getControlDirectives(): ControlDirective[] {
     return [
         { roomName: 'W17S6', flagName: 'Colony1', directive: DIRECTIVE_CLAIM },
         { roomName: 'W17S7', flagName: 'Colony2', directive: DIRECTIVE_HARVEST },
-        { roomName: 'W18S5', flagName: 'Colony3', directive: DIRECTIVE_NONE },
+        { roomName: 'W18S5', flagName: 'Colony3', directive: DIRECTIVE_RESERVE },
         { roomName: 'W18S6', flagName: 'Colony4', directive: DIRECTIVE_RESERVE_AND_HARVEST },
         //{
-        //    roomName: 'W18S5',
-        //    flagName: 'Colony3',
+        //    roomName: 'W18S3',
+        //    flagName: 'Colony5',
         //    directive: DIRECTIVE_RAID,
         //    raidWaveMeetupFlagName: 'Meetup1',
         //    raidDirective: {
+        //        maxPotency: 10,
         //        targetStructureIds: [
-        //            //'5dfd81b4d7c51483382f94df' as Id<Structure>, // Spawn
-        //            '5dffba4029303d1acf3e0f38' as Id<Structure>  // Tower 
+        //            '5dfcf93d9becb565c9579097' as Id<Structure>,  // Spawn
+        //            '5dfe9ad0d2e45379cfad931c' as Id<Structure>   // Tower 
         //        ]
         //    }
         //}

@@ -53,7 +53,7 @@ export function getRoomOrder(roomName: string) {
                 if (potency.getPotency(roomName, 'claimer') === 0) {
                     claimerPotencyNeeded = 1;
                 }
-            } else if (directive === rooms.DIRECTIVE_RESERVE) {
+            } else if (directive === rooms.DIRECTIVE_RESERVE || directive === rooms.DIRECTIVE_RESERVE_AND_HARVEST) {
                 if (room.controller.reservation &&
                     room.controller.reservation.username === _.find(Game.structures).owner.username &&
                     room.controller.reservation.ticksToEnd > 3500) {

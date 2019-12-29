@@ -5,7 +5,7 @@ import * as spawnMetrics from './spawn.metrics';
 import * as bodies from './spawn.bodies';
 
 const creepLifetime = 1500;
-const battleTime = 500;
+const battleTime = 250;
 
 export function createWave(targetRoomName: string) {
     if (!Memory.raidWaves) {
@@ -41,7 +41,10 @@ export function getWaveSize(roomName: string) {
         const distance = distanceBetweenFlags + spawnMetrics.getPathDistanceToFlag(spawn, meetupFlag);
         waveSize += getWaveSizeForSpawn(spawn, distance);
     }
-    return Math.floor(waveSize);
+    const wavesForRoom = util.filter(Memory.raidWaves, o => o.targetRoomName === roomName);
+    const existingRaidPotency = util.sum(wavesForRoom, o => util.sum(o.creeps.map(id => Game.getObjectById(id)), c => bodies.measureRavagerPotency(c)));
+    const maxSize = Math.max(0, (rooms.getRaidDirective(roomName).maxPotency || 100000) - existingRaidPotency);
+    return Math.min(Math.floor(waveSize), maxSize);
 }
 
 function getWaveSizeForSpawn(spawn: StructureSpawn, distance: number) {

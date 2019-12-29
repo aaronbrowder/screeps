@@ -47,7 +47,6 @@ function processOrders(roomName: string) {
     var didFulfillOrder = spawnOrders.fulfillRoomOrder(roomOrder);
     if (didFulfillOrder) {
         needsRefresh = true;
-        battleManager.assignCreepsToWaves();
     }
 
     const room = Game.rooms[roomName];
@@ -97,6 +96,9 @@ function spawnFromQueue(spawn: StructureSpawn) {
     const result = spawn.spawnCreep(body, creepName, options);
     if (result === OK) {
         spawnQueue.removeItemFromQueue(item);
+        if (item.raidWaveId) {
+            battleManager.assignCreepsToWaves();
+        }
     }
 }
 

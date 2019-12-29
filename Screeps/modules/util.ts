@@ -45,12 +45,15 @@ export function count<T>(items: T[], func: (o: T) => boolean): number {
     return filter(items, func).length;
 }
 
-export function setMoveTarget(creep: Creep, target: Creep | Structure | ConstructionSite | Source, desiredDistance?: number) {
+export function setMoveTarget(creep: Creep, target: Creep | Structure | ConstructionSite | Source, desiredDistance?: number, moveImmediately?: boolean) {
+    if (moveImmediately === undefined) {
+        moveImmediately = true;
+    }
     creep.memory.moveTargetId = target ? target.id : null;
     creep.memory.moveTargetFlagName = null;
     creep.memory.moveTargetDesiredDistance = desiredDistance;
-    if (target) {
-        creep.moveTo(target, { visualizePathStyle: { stroke: '#fff' } });
+    if (moveImmediately && target) {
+        moveToMoveTarget(creep);
     }
 }
 
@@ -61,7 +64,8 @@ export function setMoveTargetFlag(creep: Creep, target: Flag, desiredDistance?: 
     if (target) {
         creep.moveTo(target, {
             visualizePathStyle: { stroke: '#fff' },
-            reusePath: 10
+            ignoreCreeps: true,
+            reusePath: 25
         });
     }
 }
@@ -82,9 +86,19 @@ export function moveToMoveTarget(creep: Creep) {
         setMoveTarget(creep, null);
         return false;
     }
+    var reusePath = 5;
+    var ignoreCreeps = false;
+    if (isCreepWorker(creep)) {
+        reusePath = isCreepRemote(creep) ? 30 : 15;
+    }
+    if (creep.memory.moveTargetFlagId && !creep.memory.moveTargetId) {
+        reusePath = 25;
+        ignoreCreeps = true;
+    }
     const options = {
         visualizePathStyle: { stroke: '#fff' },
-        reusePath: isCreepWorker(creep) ? (isCreepRemote(creep) ? 30 : 15) : 5
+        reusePath: reusePath,
+        ignoreCreeps: ignoreCreeps
     };
     const target = creep.memory.moveTargetId
         ? Game.getObjectById<RoomObject>(creep.memory.moveTargetId)

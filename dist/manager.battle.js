@@ -26,7 +26,8 @@ function run() {
         if (wave.ready) {
             const creeps = wave.creeps.map(o => Game.getObjectById(o));
             const leader = util.firstOrDefault(creeps, o => o && o.room.name === wave.targetRoomName);
-            if (leader && !wave.targetStructureId) {
+            if (leader && (!wave.targetStructureId || !Game.getObjectById(wave.targetStructureId))) {
+                wave.leaderId = leader.id;
                 const targetStructure = determineTarget(wave, leader);
                 if (targetStructure) {
                     wave.targetStructureId = targetStructure.id;
@@ -87,6 +88,7 @@ function getIsWaveReady(wave) {
     }
     // if any creep in the wave is not ready, the wave is not ready
     for (let i = 0; i < wave.creeps.length; i++) {
+        // TODO why is this still not working?
         const creep = Game.getObjectById(wave.creeps[i]);
         if (!creep)
             continue;
