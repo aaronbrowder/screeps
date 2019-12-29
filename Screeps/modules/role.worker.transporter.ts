@@ -1,6 +1,6 @@
 import * as map from './map';
 import * as util from './util';
-import * as structureLink from './structure.link';
+import * as linkLogic from './structure.link';
 
 export function run(creep: Creep) {
 
@@ -91,7 +91,7 @@ export function run(creep: Creep) {
         });
 
         const links: Array<CollectTarget> = assignedRoom.find<StructureLink>(FIND_MY_STRUCTURES, {
-            filter: o => util.isLink(o) && o.energy > 0 && structureLink.isDestination(o)
+            filter: o => util.isLink(o) && o.energy > 0 && linkLogic.isDestination(o) && !linkLogic.isNearController(o)
         }).map(o => {
             return { target: o, value: getLinkValue(o) };
         });
@@ -206,20 +206,24 @@ export function run(creep: Creep) {
                 map.navigateToRoom(creep, assignment.room.name);
                 return;
             }
+            // I'm disabling this because it's not working in my current situation. I have a source link
+            // by storage and a destination link by the controller and a tower. Transporters are trying to
+            // send energy to the tower by sending it through the link, which does nothing because both
+            // links are already full, so the transporters just sit there next to the link forever.
             // look at links. we may be able to deliver more efficiently by sending energy through a link.
-            var links = assignment.room.find(FIND_MY_STRUCTURES, {
-                filter: o => o.structureType == STRUCTURE_LINK
-            });
-            var closestSourceLink = creep.pos.findClosestByPath(links, { filter: o => structureLink.isSource(o) });
-            var closestDestinationLink = creep.pos.findClosestByPath(links, { filter: o => structureLink.isDestination(o) });
-            if (closestSourceLink && closestDestinationLink) {
-                var distanceA = creep.pos.findPathTo(closestSourceLink.pos).length;
-                var distanceB = assignment.pos.findPathTo(closestDestinationLink.pos).length;
-                var distanceC = creep.pos.findPathTo(assignment.pos).length;
-                if (distanceA + distanceB < distanceC) {
-                    assignment = closestSourceLink;
-                }
-            }
+            //var links = assignment.room.find(FIND_MY_STRUCTURES, {
+            //    filter: o => o.structureType == STRUCTURE_LINK
+            //});
+            //var closestSourceLink = creep.pos.findClosestByPath(links, { filter: o => linkLogic.isSource(o) });
+            //var closestDestinationLink = creep.pos.findClosestByPath(links, { filter: o => linkLogic.isDestination(o) });
+            //if (closestSourceLink && closestDestinationLink) {
+            //    var distanceA = creep.pos.findPathTo(closestSourceLink.pos).length;
+            //    var distanceB = assignment.pos.findPathTo(closestDestinationLink.pos).length;
+            //    var distanceC = creep.pos.findPathTo(assignment.pos).length;
+            //    if (distanceA + distanceB < distanceC) {
+            //        assignment = closestSourceLink;
+            //    }
+            //}
             // try to transfer to assignment
             const transferResult = creep.transfer(assignment, RESOURCE_ENERGY);
             if (transferResult == ERR_NOT_IN_RANGE) {

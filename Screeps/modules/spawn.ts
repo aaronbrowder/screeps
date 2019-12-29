@@ -103,7 +103,7 @@ function spawnFromQueue(spawn: StructureSpawn) {
 function getItemFromQueue(spawn: StructureSpawn): SpawnQueueItem {
     const queue = util.getSpawnMemory(spawn).queue;
     if (!queue) return null;
-    const eligibleItems = util.filter(queue, o => o.energyCost <= spawn.room.energyAvailable);
+    const eligibleItems = util.filter(queue, o => o.energyCost <= spawn.room.energyCapacityAvailable);
     if (!eligibleItems.length) return null;
     const sorted = util.sortBy(eligibleItems, o => {
         const room = Game.rooms[o.assignedRoomName];
@@ -140,17 +140,3 @@ function generateBody(spawn: StructureSpawn, item: SpawnQueueItem) {
     const result = bodies.generateBody(item.potency, spawn.room, item.assignedRoomName, item.role, item.subRole, item.assignmentId);
     return result ? result.body : null;
 }
-
-//function updateRemoteMiningMetrics(roomName: string, homeRoomName: string, role: string, body: string[]) {
-//    if (roomName !== homeRoomName && role === 'transporter' || role === 'builder' || role === 'harvester') {
-//        const remoteMiningMetrics = Memory.remoteMiningMetrics || {};
-//        const roomMetrics = remoteMiningMetrics[roomName] || { cost: 0, income: 0 };
-//        const cost = (util.countBodyParts(body, 'WORK') * 100)
-//            + (util.countBodyParts(body, 'MOVE') * 50)
-//            + (util.countBodyParts(body, 'CARRY') * 50)
-//            + (util.countBodyParts(body, 'CLAIM') * 600);
-//        roomMetrics.cost += cost;
-//        remoteMiningMetrics[roomName] = roomMetrics;
-//        Memory.remoteMiningMetrics = remoteMiningMetrics;
-//    }
-//}

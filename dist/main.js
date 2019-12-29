@@ -5,6 +5,7 @@ const battleManager = require("./manager.battle");
 const roleManager = require("./manager.roles");
 const mobilization = require("./mobilization");
 const structureLink = require("./structure.link");
+const structureTower = require("./structure.tower");
 const builderAssignment = require("./assignment.builder");
 const transporterAssignment = require("./assignment.transporter");
 exports.loop = () => {
@@ -23,6 +24,7 @@ exports.loop = () => {
     builderAssignment.assignBuilders();
     transporterAssignment.assignTransporters();
     structureLink.runAll();
+    structureTower.runAll();
     collectGarbage();
     function collectGarbage() {
         for (var i in Memory.creeps) {

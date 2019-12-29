@@ -15,8 +15,7 @@ interface RaidWave {
     targetRoomName: string;
     deadline: number;
     ready?: boolean;
-    creeps?: Array<Creep>;
-    leaderId?: Id<Creep>;
+    creeps: Array<Id<Creep>>;
     targetStructureId?: Id<Structure>;
 }
 

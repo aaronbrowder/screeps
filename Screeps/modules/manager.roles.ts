@@ -6,7 +6,6 @@ import * as roleHub from './role.worker.hub';
 import * as roleClaimer from './role.worker.claimer';
 import * as roleScout from './role.scout';
 import * as roleRavager from './role.battle.ravager';
-import * as structureTower from './structure.tower';
 import * as structureTerminal from './structure.terminal';
 import * as util from './util';
 
@@ -31,11 +30,6 @@ benchmarkArray['scout'] = { time: 0, number: 0 };
 benchmarkArray['ravager'] = { time: 0, number: 0 };
 
 export function run() {
-
-    const towers: StructureTower[] = _.filter(Game.structures, o => util.isTower(o));
-    for (let i = 0; i < towers.length; i++) {
-        structureTower.run(towers[i]);
-    }
 
     const terminals: StructureTerminal[] = _.filter(Game.structures, o => util.isTerminal(o));
     for (let i = 0; i < terminals.length; i++) {

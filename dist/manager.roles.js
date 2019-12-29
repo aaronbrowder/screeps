@@ -8,7 +8,6 @@ const roleHub = require("./role.worker.hub");
 const roleClaimer = require("./role.worker.claimer");
 const roleScout = require("./role.scout");
 const roleRavager = require("./role.battle.ravager");
-const structureTower = require("./structure.tower");
 const structureTerminal = require("./structure.terminal");
 const util = require("./util");
 function benchmark(place) {
@@ -29,10 +28,6 @@ benchmarkArray['claimer'] = { time: 0, number: 0 };
 benchmarkArray['scout'] = { time: 0, number: 0 };
 benchmarkArray['ravager'] = { time: 0, number: 0 };
 function run() {
-    const towers = _.filter(Game.structures, o => util.isTower(o));
-    for (let i = 0; i < towers.length; i++) {
-        structureTower.run(towers[i]);
-    }
     const terminals = _.filter(Game.structures, o => util.isTerminal(o));
     for (let i = 0; i < terminals.length; i++) {
         structureTerminal.run(terminals[i]);

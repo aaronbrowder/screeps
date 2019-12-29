@@ -51,6 +51,29 @@ export function removeItemFromQueue(item: SpawnQueueItem) {
     return true;
 }
 
+export function removeItemsFromAllQueues(func: (o: SpawnQueueItem) => boolean) {
+    for (let i in Game.spawns) {
+        const spawn = Game.spawns[i];
+        const queue = getQueue(spawn);
+        while (true) {
+            const result = queue.findIndex(func);
+            if (result === -1) break;
+            queue.splice(result, 1);
+        }
+        util.modifySpawnMemory(spawn, o => o.queue = queue);
+    }
+}
+
+export function countItemsInAllQueues(func: (o: SpawnQueueItem) => boolean): number {
+    var count = 0;
+    for (let i in Game.spawns) {
+        const spawn = Game.spawns[i];
+        const queue = getQueue(spawn);
+        count += util.count(queue, func);
+    }
+    return count;
+}
+
 function determineHomeRoom(role: string, assignedRoomName: string): string {
     if (role === 'harvester' || role === 'builder') return assignedRoomName;
     const maxDistance = getMaxDistance();

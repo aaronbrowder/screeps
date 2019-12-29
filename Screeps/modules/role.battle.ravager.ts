@@ -1,36 +1,7 @@
 import * as map from './map';
 import * as rooms from './rooms';
 import * as util from './util';
-
-/* OVERVIEW
- * There are three types of battle environments:
- * 1. Enemy-controlled room. We want to pierce enemy defenses and destroy key structures.
- * 2. Ally-controlled room. We want to destroy invading creeps.
- * 3. Neutral room. We want to engage enemy creeps in the field.
- * A Ravager is spawned with one of these specific purposes in mind. It is assigned a target room upon spawning.
- * A Ravager is a general-purpose combat unit that can perform both melee and ranged attacks. It can pursue
- * and engage in combat with enemy creeps, as well as lay seige to structures.
- * A Ravager does not operate alone but acts as part of a combat unit. Ravagers in a unit follow their leader.
- * They can follow independent paths if there are nearby enemy creeps to attack, but they will abandon combat
- * and return to their leader if the leader gets too far away.
-*/
-
-/* ENEMY-CONTROLLED ROOM
- * The primary objective is to destroy all spawns. However, if the spawn is surrounded by walls, and there are
- * other key structures that are not protected, it may be better to go for the other key structures.
- * We can also potentially shut off towers by disrupting enemy supply lines.
- * The priority value of an enemy structure can be calculated as the intrinsic value of that structure
- * divided by the amount of time it will take to destroy it (including the time required to travel to it,
- * and the time required to destroy any walls blocking the way).
- * If the structure with the highest priority value is behind walls, we must calculate a path ignoring
- * walls and then choose the first wall we encounter to be our temporary target.
- * Once we have decided on a target, all Ravagers in the unit will begin attacking that target.
- * This may involve localized decision making if there are enemy creeps near the target.
- * Ravagers with low melee damage (or higher ranged damage than melee damage) should move out of the
- * way so that Ravagers with higher melee damage can be adjacent to the target.
- * If we cannot reach the target structure at a distance of 1 but we can reach it at a distance of
- * 2 or 3, it may sometimes be better to go ahead and ranged attack it rather than breaking obstacles.
-*/
+import * as battleManager from './manager.battle';
 
 export function run(creep: Creep) {
 
@@ -40,55 +11,43 @@ export function run(creep: Creep) {
 
     const wave = util.firstOrDefault(Memory.raidWaves, o => o.id === creep.memory.raidWaveId);
 
-    const controller = creep.room.controller;
-    const isEnemyRoom = controller && !controller.my && controller.owner;
-
     if (checkForCombat()) return;
     if (checkForWaveMeetup(wave)) return;
 
-    // if creep is not in its assigned room, navigate there
     if (creep.room.name !== creep.memory.assignedRoomName) {
         map.navigateToRoom(creep, creep.memory.assignedRoomName);
         return;
     }
 
-    if (wave && !Game.getObjectById(wave.leaderId)) {
-        // first come, first serve!
-        wave.leaderId = creep.id;
-    }
-
-    if (isEnemyRoom && isWaveLeader()) {
-        wave.targetStructureId = findDirectiveTargetStructureId();
-    }
-
-    if (util.moveToMoveTarget(creep)) return;
-
-    if (!isEnemyRoom) {
-        // this room is mine or neutral. just try to kill hostile creeps.
-        // TODO we should spawn waves for defense rather than marching in one at a time
-        // TODO if this is my room, we should try to hide in ramparts
-        var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
-        if (targetCreep) {
-            attack(targetCreep);
+    if (wave && wave.targetStructureId && Game.getObjectById(wave.targetStructureId)) {
+        const targetStructure = Game.getObjectById(wave.targetStructureId);
+        const range = creep.pos.getRangeTo(targetStructure);
+        if (range <= 3 && hasRangedAttackPart) {
+            creep.rangedAttack(targetStructure);
+        }
+        if (range <= 1) {
+            creep.attack(targetStructure);
+        }
+        if (creep.memory.moveTargetId !== targetStructure.id) {
+            util.setMoveTarget(creep, targetStructure);
+        }
+    } else {
+        // no assignments. just try to kill hostile creeps
+        if (hostileCreeps.length) {
+            var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
+            if (targetCreep) {
+                attack(targetCreep);
+            }
+        } else if (wave) {
+            // nothing to do. we have won!!
+            if (!creep.room.memory.isConquered) {
+                battleManager.declareVictory(wave);
+            }
+            return;
         }
     }
 
-    function isWaveLeader() {
-        return wave && wave.leaderId === creep.id;
-    }
-
-    function findDirectiveTargetStructureId(): Id<Structure> {
-        const raidDirective = rooms.getRaidDirective(creep.room.name);
-        if (!raidDirective || !raidDirective.targetStructureIds.length) return null;
-        const firstTarget = raidDirective.targetStructureIds[0];
-        if (!Game.getObjectById(firstTarget)) {
-            // The target no longer exists. Let's remove it from the list and start the function over.
-            raidDirective.targetStructureIds.shift();
-            return findDirectiveTargetStructureId();
-        }
-
-        return null;
-    }
+    util.moveToMoveTarget(creep);
 
     function checkForWaveMeetup(wave: RaidWave) {
         if (wave && !wave.ready) {

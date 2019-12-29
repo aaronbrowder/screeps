@@ -29,12 +29,20 @@ export function firstOrDefault<T>(items: T[], func: (o: T) => boolean): T {
     return null;
 }
 
+export function any<T>(items: T[], func: (o: T) => boolean): boolean {
+    return _.filter(items, func).length > 0;
+}
+
 export function sortBy<T>(items: T[], func: (o: T) => number): T[] {
     return _.sortBy(items, func);
 }
 
 export function sum<T>(items: T[], func: (o: T) => number): number {
     return _.sum(items, func);
+}
+
+export function count<T>(items: T[], func: (o: T) => boolean): number {
+    return filter(items, func).length;
 }
 
 export function setMoveTarget(creep: Creep, target: Creep | Structure | ConstructionSite | Source, desiredDistance?: number) {
@@ -51,7 +59,10 @@ export function setMoveTargetFlag(creep: Creep, target: Flag, desiredDistance?: 
     creep.memory.moveTargetFlagName = target ? target.name : null;
     creep.memory.moveTargetDesiredDistance = desiredDistance;
     if (target) {
-        creep.moveTo(target, { visualizePathStyle: { stroke: '#fff' } });
+        creep.moveTo(target, {
+            visualizePathStyle: { stroke: '#fff' },
+            reusePath: 10
+        });
     }
 }
 
@@ -71,12 +82,9 @@ export function moveToMoveTarget(creep: Creep) {
         setMoveTarget(creep, null);
         return false;
     }
-    //const hubFlag = findHubFlag(creep.room);
     const options = {
         visualizePathStyle: { stroke: '#fff' },
         reusePath: isCreepWorker(creep) ? (isCreepRemote(creep) ? 30 : 15) : 5
-        //ignoreCreeps: isWorker,
-        //avoid: [hubFlag]
     };
     const target = creep.memory.moveTargetId
         ? Game.getObjectById<RoomObject>(creep.memory.moveTargetId)
@@ -265,13 +273,13 @@ interface ConsumptionModeBoundaries {
 
 export function getConsumptionModeBoundaries(room: Room) {
     if (room.controller.level < 5) {
-        return { lower: 150000, upper: 200000 };
+        return { lower: 100000, upper: 150000 };
     }
     if (room.controller.level < 6) {
-        return { lower: 350000, upper: 400000 };
+        return { lower: 300000, upper: 350000 };
     }
     if (room.controller.level < 7) {
-        return { lower: 650000, upper: 700000 };
+        return { lower: 600000, upper: 650000 };
     }
     return { lower: 900000, upper: 950000 };
 }

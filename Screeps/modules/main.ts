@@ -3,6 +3,7 @@ import * as battleManager from './manager.battle';
 import * as roleManager from './manager.roles';
 import * as mobilization from './mobilization';
 import * as structureLink from './structure.link';
+import * as structureTower from './structure.tower';
 import * as builderAssignment from './assignment.builder';
 import * as transporterAssignment from './assignment.transporter';
 
@@ -24,6 +25,7 @@ export const loop = () => {
     builderAssignment.assignBuilders();
     transporterAssignment.assignTransporters();
     structureLink.runAll();
+    structureTower.runAll();
     collectGarbage();
 
     function collectGarbage() {

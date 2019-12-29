@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const util = require("./util");
+const linkLogic = require("./structure.link");
 function run(creep) {
     const structures = creep.pos.findInRange(FIND_MY_STRUCTURES, 1);
     const storage = util.filter(structures, o => util.isStorage(o))[0];
@@ -15,10 +16,10 @@ function run(creep) {
             creep.pickup(droppedResources[0]);
             return;
         }
-        const links = util.filter(structures, o => util.isLink(o));
-        const nonEmptyLinks = _.filter(links, (o) => o.energy > 0);
-        if (nonEmptyLinks.length) {
-            creep.withdraw(nonEmptyLinks[0], RESOURCE_ENERGY);
+        const destinationLinks = util.filter(structures, o => util.isLink(o) && linkLogic.isDestination(o));
+        const nonEmptyDestinationLinks = _.filter(destinationLinks, (o) => o.energy > 0);
+        if (nonEmptyDestinationLinks.length) {
+            creep.withdraw(nonEmptyDestinationLinks[0], RESOURCE_ENERGY);
             return;
         }
         var consumptionMode = util.getRoomMemory(creep.memory.assignedRoomName).consumptionMode;
@@ -29,10 +30,13 @@ function run(creep) {
         creep.withdraw(storage, RESOURCE_ENERGY);
         return;
     }
-    const nonFullTowers = _.sortBy(util.filter(structures, o => util.isTower(o) && o.energy < Math.max(o.energyCapacity - creep.store.getCapacity(), o.energyCapacity / 2)), o => o.energy);
+    var nonFullTowers = util.filter(structures, o => util.isTower(o) &&
+        o.energy < Math.max(o.energyCapacity - creep.store.getCapacity(), o.energyCapacity / 2));
+    nonFullTowers = util.sortBy(nonFullTowers, o => o.energy);
     const nonFullSpawns = util.filter(structures, o => util.isSpawn(o) && o.energy < o.energyCapacity);
+    const nonFullSourceLinks = util.filter(structures, o => util.isLink(o) && linkLogic.isSource(o) && o.energy < o.energyCapacity);
     // 2. if tower or spawn needs energy, deliver
-    if (creep.store[RESOURCE_ENERGY] > 0 && (nonFullTowers.length || nonFullSpawns.length)) {
+    if (creep.store[RESOURCE_ENERGY] > 0 && (nonFullTowers.length || nonFullSpawns.length || nonFullSourceLinks.length)) {
         if (nonFullSpawns.length) {
             creep.transfer(nonFullSpawns[0], RESOURCE_ENERGY);
             return;
@@ -41,8 +45,12 @@ function run(creep) {
             creep.transfer(nonFullTowers[0], RESOURCE_ENERGY);
             return;
         }
+        if (nonFullSourceLinks.length) {
+            creep.transfer(nonFullSourceLinks[0], RESOURCE_ENERGY);
+            return;
+        }
     }
-    // 3. if link is not empty, deliver to storage or terminal
+    // 3. deliver to storage or terminal
     if (totalCarry > 0) {
         for (let i in creep.store) {
             const resource = i;

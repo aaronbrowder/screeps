@@ -63,7 +63,7 @@ function generateHarvesterBody(desiredPotency: number, spawnRoom: Room, assigned
         }
     }
 
-    var moveParts = Math.max(1, Math.floor(potency * harvesterMovePartsPerWorkPart));
+    var moveParts = Math.max(1, Math.ceil(potency * harvesterMovePartsPerWorkPart));
     if (spawnRoom.name !== assignedRoomName) {
         moveParts++;
         if (potency > 3) moveParts++;
@@ -159,7 +159,7 @@ function generateBuilderBody(desiredPotency: number, spawnRoom: Room,
     }
 
     var carryParts = Math.max(1, Math.floor(potency * builderCarryPartsPerWorkPart));
-    var moveParts = Math.max(1, Math.floor(potency * builderMovePartsPerWorkPart));
+    var moveParts = Math.max(1, Math.ceil(potency * builderMovePartsPerWorkPart));
 
     if (spawnRoom.name !== assignedRoomName) {
         moveParts++;
@@ -218,15 +218,15 @@ function generateRavagerBody(desiredPotency: number, spawnRoom: Room): BodyResul
     var attackParts = potency;
     var rangedAttackParts = Math.floor(potency * ravagerRangedAttackPartsPerAttackPart);
     var toughParts = Math.floor(potency * ravagerToughPartsPerAttackPart);
-    var moveParts = Math.max(1, Math.floor(potency * ravagerMovePartsPerAttackPart));
+    var moveParts = Math.max(1, Math.ceil(potency * ravagerMovePartsPerAttackPart));
 
     var body: BodyPartConstant[] = [];
 
-    while (attackParts > 0 || rangedAttackParts > 0 || toughParts > 0 || moveParts > 0) {
-        if (toughParts > 0) {
-            body = body.concat([TOUGH]);
-            toughParts--;
-        }
+    while (toughParts > 0) {
+        body = body.concat([TOUGH]);
+        toughParts--;
+    }
+    while (attackParts > 0 || rangedAttackParts > 0 || moveParts > 0) {
         if (attackParts > 0) {
             body = body.concat([ATTACK]);
             attackParts--;

@@ -4,12 +4,8 @@ import * as map from './map';
 import * as spawnMetrics from './spawn.metrics';
 import * as bodies from './spawn.bodies';
 
-// TODO When the final hostile structure/creep is felled, the creep that destroyed it will call a method that cancels all
-// spawning ravagers and marks living ravagers for recycle. It will also set a property on the room memory ("isConquered")
-// which acts as an override for the hard-coded raid directive.
-
 const creepLifetime = 1500;
-const battleTime = 250;
+const battleTime = 500;
 
 export function createWave(targetRoomName: string) {
     if (!Memory.raidWaves) {
@@ -27,7 +23,8 @@ export function createWave(targetRoomName: string) {
     const wave: RaidWave = {
         id: Game.time,
         targetRoomName: targetRoomName,
-        deadline: Game.time + (creepLifetime - travelTime - battleTime)
+        deadline: Game.time + (creepLifetime - travelTime - battleTime),
+        creeps: []
     };
     Memory.raidWaves.push(wave);
     return wave.id;
@@ -63,15 +60,20 @@ function getMaxPotencyGivenEnergyConstraints(spawn: StructureSpawn) {
     const energyDevotedToQueues = util.sum(spawnsInRoom, o => {
         return util.sum(o.memory.queue, q => q.energyCost);
     });
+    console.log('energy devoted to queues: ' + energyDevotedToQueues);
     const buffer = 3000;
     const totalEnergyAvailable = Math.max(0, room.storage.store[RESOURCE_ENERGY] - energyDevotedToQueues - buffer);
     const energyAvailableToSpawn = totalEnergyAvailable / spawnsInRoom.length;
+    console.log('energy available to spawn: ' + energyAvailableToSpawn);
+    console.log('max potency given energy constraints: ' + energyAvailableToSpawn / bodies.getRavagerSpawnEnergyPerPotency());
     return energyAvailableToSpawn / bodies.getRavagerSpawnEnergyPerPotency();
 }
 
 function getMaxPotencyGivenTimeConstraints(distance: number) {
     const travelTime = distance / bodies.getRavagerMoveSpeed();
+    console.log('travel time: ' + travelTime);
     const timeLeftForSpawning = Math.max(0, creepLifetime - travelTime - battleTime);
+    console.log('max potency given time constraints: ' + timeLeftForSpawning / bodies.getRavagerSpawnTimePerPotency());
     return timeLeftForSpawning / bodies.getRavagerSpawnTimePerPotency();
 }
 

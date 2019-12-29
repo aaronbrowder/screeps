@@ -1,8 +1,13 @@
 import * as util from './util';
 import * as rooms from './rooms';
+import * as queue from './spawn.queue';
+import { assignBuilders } from './assignment.builder';
 
-/* NOTES
+/* IDEAS
  *
+ * We should spawn waves for defense rather than just marching in one at a time.
+ * If ravager is in a room controlled by me, it should hide in ramparts if possible.
+ * 
  * Each creep calculates a "boldness" factor for itself that represents its melee strength compared with its ranged strength.
  * Creeps with higher boldness want to be on the front line to melee attack the target structure.
  * If a creep with high boldness is behind a creep with a lower boldness, the two creeps will negotiate with each
@@ -10,81 +15,106 @@ import * as rooms from './rooms';
 */
 
 export function run() {
-    cleanUpWaves();
+    cleanUpOldWaves();
     for (let i = 0; i < Memory.raidWaves.length; i++) {
         const wave = Memory.raidWaves[i];
+        if (!wave.creeps) {
+            assignCreepsToWaves();
+        }
         if (!wave.ready) {
             wave.ready = getIsWaveReady(wave);
         }
         if (wave.ready) {
-            const room = Game.rooms[wave.targetRoomName];
-            if (room) {
-                manageBattleInRoom(room);
+            const creeps = wave.creeps.map(o => Game.getObjectById(o));
+            const leader = util.firstOrDefault(creeps, o => o && o.room.name === wave.targetRoomName);
+            if (leader && !wave.targetStructureId) {
+                const targetStructure = determineTarget(wave, leader);
+                if (targetStructure) {
+                    wave.targetStructureId = targetStructure.id;
+                }
             }
         }
     }
 }
 
+export function declareVictory(wave: RaidWave) {
+    console.log('VICTORY!!!');
+    util.modifyRoomMemory(wave.targetRoomName, o => o.isConquered = true);
+    // All creeps spawned to fight in this room will wait around until they die.
+    // We don't want to recycle them, in case enemy reinforcements arrive.
+    // We do however want to cancel all ravagers in spawn queues.
+    queue.removeItemsFromAllQueues(o => o.assignedRoomName === wave.targetRoomName);
+}
+
 export function assignCreepsToWaves() {
+    const waves = Memory.raidWaves;
+    if (!waves || !waves.length) {
+        return;
+    }
+    for (let i = 0; i < waves.length; i++) {
+        waves[i].creeps = [];
+    }
     for (let name in Game.creeps) {
         const creep = Game.creeps[name];
         if (!creep.memory.raidWaveId) continue;
-        const wave = Memory.raidWaves[creep.memory.raidWaveId];
-        wave.creeps = [];
-        wave.creeps.push(creep);
+        const wave = util.firstOrDefault(Memory.raidWaves, o => o.id === creep.memory.raidWaveId);
+        if (wave) {
+            wave.creeps.push(creep.id);
+        }
     }
 }
 
-function cleanUpWaves() {
+function cleanUpOldWaves() {
     if (Game.time % 237 === 0) {
-        Memory.raidWaves = util.filter(Memory.raidWaves, o => o.creeps.length > 0);
+        Memory.raidWaves = util.filter(Memory.raidWaves, w => util.any(w.creeps, c => !!c));
     }
 }
 
 function getIsWaveReady(wave: RaidWave) {
+    if (Memory.rooms[wave.targetRoomName].isConquered) {
+        return false;
+    }
     if (Game.time >= wave.deadline) {
+        // time's up. no point in spawning any more creeps in this wave.
+        queue.removeItemsFromAllQueues(o => o.raidWaveId === wave.id);
         return true;
     }
     const meetupFlag = Game.flags[rooms.getRaidWaveMeetupFlagName(wave.targetRoomName)];
     if (!meetupFlag) return false;
+    // if there are still creeps in spawn queues, the wave is not ready
+    if (queue.countItemsInAllQueues(o => o.raidWaveId === wave.id) > 0) {
+        return false;
+    }
     // if any creep in the wave is not ready, the wave is not ready
     for (let i = 0; i < wave.creeps.length; i++) {
-        const creep = wave.creeps[i];
+        const creep = Game.getObjectById(wave.creeps[i]);
+        if (!creep) continue;
+        if (creep.spawning) return false;
         if (creep.room.name !== meetupFlag.room.name) return false;
-        if (creep.pos.getRangeTo(meetupFlag) > 7) return false;
+        if (meetupFlag.pos.getRangeTo(creep) > 3) return false;
     }
     return true;
 }
 
-function manageBattleInRoom(room: Room) {
-    // Treat all my creeps as a unit. They all want to go to the same place.
-    // Maybe they are not all in the same place, but we can assume that if there is a solid
-    // wall, all my creeps are on the same side of it.
-    // We should designate one living creep as the leader. The leader will calculate a path
-    // to the target area and move to it. The other creeps will try not to be too far away from
-    // the leader, while still doing independent things such as attacking nearby targets.
-    if (!room) return;
-    var myCreeps: Creep[] = room.find(FIND_MY_CREEPS);
-    var crushers: Creep[] = _.filter(myCreeps, o => o.role === 'crusher');
-    if (!crushers.length) return;
-    var leader = assignLeader(crushers);
-    if (pursueTarget(leader)) return;
-    var target = findTarget(leader, myCreeps);
-    if (!target) return;
-    leader.memory.leaderTargetId = target.id;
-    leader.memory.leaderTargetTime = Game.time;
-    pursueTarget(leader);
+function determineTarget(wave: RaidWave, leader: Creep): Structure {
+    const raidDirective = rooms.getRaidDirective(wave.targetRoomName);
+    if (!raidDirective || !raidDirective.targetStructureIds.length) {
+        return null;
+    }
+    const targets = raidDirective.targetStructureIds.map(o => Game.getObjectById(o));
+    const firstTarget = util.firstOrDefault(targets, o => !!o);
+    if (!firstTarget) return null;
+    return determineIntermediateTarget(wave, firstTarget);
 }
 
-function assignLeader(creeps: Creep[]) {
-    var leader = util.filter(creeps, o => o.memory.isLeader === true)[0];
-    if (!leader) {
-        // TODO use more sophisticated leader selection
-        leader = creeps[0];
-        leader.memory.isLeader = true;
-    }
-    return leader;
+function determineIntermediateTarget(wave: RaidWave, target: Structure): Structure {
+    // TODO implement
+    return target;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////
+// LEGACY //////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function pursueTarget(leader: Creep) {
     // TODO make sure the leader is not leaving its followers behind

@@ -1,29 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const util = require("./util");
-function run(tower) {
-    var enemies = tower.room.find(FIND_HOSTILE_CREEPS);
-    var damagedAllies = tower.room.find(FIND_MY_CREEPS, { filter: o => o.hits < o.hitsMax });
-    if (enemies.length || damagedAllies.length) {
-        if (attackEnemiesInRange(5))
-            return;
-        if (healAlliesInRange(5))
-            return;
-        if (attackEnemiesInRange(10))
-            return;
-        if (healAlliesInRange(10))
-            return;
-        if (attackEnemiesInRange(19))
-            return;
-        if (healAlliesInRange(19))
-            return;
-        if (attackEnemiesInRange(100))
-            return;
-        if (healAllies())
-            return;
-        if (attackEnemies())
-            return;
+function runAll() {
+    for (let roomName in Game.rooms) {
+        const room = Game.rooms[roomName];
+        const towers = room.find(FIND_MY_STRUCTURES, { filter: o => util.isTower(o) });
+        for (let i = 0; i < towers.length; i++) {
+            if (attackOrHeal(towers[i]))
+                continue;
+            repair(towers[i]);
+        }
     }
+}
+exports.runAll = runAll;
+function repair(tower) {
     if (Game.time % 7 === 0) {
         const damagedStructures = tower.room.find(FIND_STRUCTURES, {
             filter: o => {
@@ -33,8 +23,6 @@ function run(tower) {
                     // towers should only repair structures that are slightly damaged (major damage should be repaired by builders)
                     && o.hits / o.hitsMax >= 0.8
                     && o.hits < o.hitsMax
-                    // don't repair roads that haven't been used in a long time (we apparently don't need those roads anymore)
-                    //&& (o.structureType != STRUCTURE_ROAD || (Memory.roadUsage[o.id] && Memory.roadUsage[o.id] > Game.time - 1000))
                     // this tower should not repair a structure if there is another tower in the room that is closer to that structure
                     && (util.findNearestStructure(o.pos, STRUCTURE_TOWER).id === tower.id);
             }
@@ -43,6 +31,31 @@ function run(tower) {
             tower.repair(damagedStructures[0]);
         }
     }
+}
+function attackOrHeal(tower) {
+    var enemies = tower.room.find(FIND_HOSTILE_CREEPS);
+    var damagedAllies = tower.room.find(FIND_MY_CREEPS, { filter: o => o.hits < o.hitsMax });
+    if (enemies.length || damagedAllies.length) {
+        if (attackEnemiesInRange(5))
+            return true;
+        if (healAlliesInRange(5))
+            return true;
+        if (attackEnemiesInRange(10))
+            return true;
+        if (healAlliesInRange(10))
+            return true;
+        if (attackEnemiesInRange(19))
+            return true;
+        if (healAlliesInRange(19))
+            return true;
+        if (attackEnemiesInRange(100))
+            return true;
+        if (healAllies())
+            return true;
+        if (attackEnemies())
+            return true;
+    }
+    return false;
     function attackEnemies() {
         if (enemies.length) {
             tower.attack(enemies[0]);
@@ -74,5 +87,4 @@ function run(tower) {
         return false;
     }
 }
-exports.run = run;
 //# sourceMappingURL=structure.tower.js.map

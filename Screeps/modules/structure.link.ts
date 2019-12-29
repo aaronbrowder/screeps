@@ -30,8 +30,19 @@ export function runAll() {
 }
 
 function decideIsDestination(link: StructureLink) {
-    // a link is considered a destination if it is within 2 spaces of a storage unit
+    // if the link is near a controller, it's a destination link
+    if (isNearController(link)) return true;
+    // if there's only one other link in the room and it's near a controller, this link must be a source link
+    const otherLinksInRoom = link.room.find<StructureLink>(FIND_STRUCTURES, { filter: o => util.isLink(o) && o.id !== link.id });
+    if (otherLinksInRoom.length === 1 && util.any(otherLinksInRoom, o => isNearController(o))) {
+        return false;
+    }
+    // otherwise, this is a destination link if it's near storage
     return link.pos.findInRange(FIND_STRUCTURES, 2, { filter: o => util.isStorage(o) }).length > 0;
+}
+
+export function isNearController(link: StructureLink) {
+    return link.pos.findInRange(FIND_STRUCTURES, 4, { filter: o => util.isController(o) }).length > 0;
 }
 
 function markLinksInMemory(sourceLink: StructureLink, destinationLink: StructureLink) {

@@ -36,7 +36,7 @@ export function getRoomOrder(roomName: string) {
         // If we're raiding, we don't need eyes in the room to begin spawning raiders. The raiders will be our eyes.
         // TODO this will be a problem if we conquer a room but forget to turn off the raid directive,
         // as it will cause us to continually spawn new waves forever.
-        if (directive === rooms.DIRECTIVE_RAID && !!room.memory.isConquered) {
+        if (rooms.getDoRaid(roomName)) {
             raidWaveSize = raid.getWaveSize(roomName);
         } else {
             const scoutPotency = potency.getPotency(roomName, 'scout');
@@ -68,7 +68,7 @@ export function getRoomOrder(roomName: string) {
                         claimerPotencyNeeded = 0;
                     }
                 }
-            } else if (directive === rooms.DIRECTIVE_RAID && !!room.memory.isConquered) {
+            } else if (rooms.getDoRaid(roomName)) {
                 raidWaveSize = raid.getWaveSize(roomName);
             }
         }

@@ -13,6 +13,18 @@ export interface Ideals {
     harvesterPotencyPerMineral: number;
 }
 
+function defaultIdeals(): Ideals {
+    return {
+        upgraderPotency: 0,
+        wallBuilderPotency: 0,
+        transporterPotency: 0,
+        claimerPotencyForReservation: 0,
+        defenderPotency: 0,
+        harvesterPotencyPerSource: 0,
+        harvesterPotencyPerMineral: 0
+    }
+}
+
 export function getIdeals(roomName: string) {
     const room = Game.rooms[roomName];
     const threatLevel = room ? util.getThreatLevel(room) : 0;
@@ -23,8 +35,20 @@ export function getIdeals(roomName: string) {
 
 function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant, threatLevel: number): Ideals {
 
+    if (directive === rooms.DIRECTIVE_RESERVE) {
+        var ideals = defaultIdeals();
+        ideals.claimerPotencyForReservation = 3;
+        return ideals;
+    }
+
+    if (directive !== rooms.DIRECTIVE_CLAIM &&
+        directive !== rooms.DIRECTIVE_HARVEST &&
+        directive !== rooms.DIRECTIVE_RESERVE_AND_HARVEST) {
+        return defaultIdeals();
+    }
+
     const room = Game.rooms[roomName];
-    if (!room) return null;
+    if (!room) return defaultIdeals();
 
     const hubFlag = util.findHubFlag(room);
 
@@ -68,7 +92,7 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
     var idealUpgraderPotency = Math.max(3, Math.ceil(3.5 * activeSources.length));
     var idealWallBuilderPotency = Math.max(2, Math.ceil(3.5 * activeSources.length));
 
-    if (directive === rooms.DIRECTIVE_HARVEST || directive === rooms.DIRECTIVE_RESERVE) {
+    if (directive === rooms.DIRECTIVE_HARVEST || directive === rooms.DIRECTIVE_RESERVE_AND_HARVEST) {
         idealWallBuilderPotency = 0;
         idealUpgraderPotency =
             Math.ceil(nonWallStructures.length / 10) +
