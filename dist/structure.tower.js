@@ -1,14 +1,21 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const util = require("./util");
+const cache = require("./cache");
+// For walls within 8 spaces of the tower, it's more energy-efficient to build up the wall using
+// the tower than using builders (not to mention faster).
+exports.WALL_RANGE = 8;
 function runAll() {
     for (let roomName in Game.rooms) {
         const room = Game.rooms[roomName];
         const towers = room.find(FIND_MY_STRUCTURES, { filter: o => util.isTower(o) });
         for (let i = 0; i < towers.length; i++) {
-            if (attackOrHeal(towers[i]))
+            const tower = towers[i];
+            if (attackOrHeal(tower))
                 continue;
-            repair(towers[i]);
+            if (repair(tower))
+                continue;
+            buildUpWalls(tower);
         }
     }
 }
@@ -29,59 +36,75 @@ function repair(tower) {
         });
         if (damagedStructures.length) {
             tower.repair(damagedStructures[0]);
+            return true;
         }
+    }
+    return false;
+}
+function buildUpWalls(tower) {
+    const targetId = cache.get('4ab6a1ff-ef0a-4302-8533-a2ad19d6435b-' + tower.id, 21, () => {
+        const allWalls = tower.room.find(FIND_STRUCTURES, { filter: o => util.isWall(o) || util.isRampart(o) });
+        const maxWallHits = util.max(allWalls, o => o.hits);
+        const availableWalls = util.filter(allWalls, o => {
+            return o.hits < o.hitsMax && o.hits < maxWallHits && tower.pos.inRangeTo(o, exports.WALL_RANGE);
+        });
+        if (availableWalls.length) {
+            const sortedWalls = util.sortBy(availableWalls, o => o.hits);
+            return sortedWalls[0].id;
+        }
+        return null;
+    });
+    if (targetId && Game.getObjectById(targetId)) {
+        tower.repair(Game.getObjectById(targetId));
     }
 }
 function attackOrHeal(tower) {
-    var enemies = tower.room.find(FIND_HOSTILE_CREEPS);
-    var damagedAllies = tower.room.find(FIND_MY_CREEPS, { filter: o => o.hits < o.hitsMax });
-    if (enemies.length || damagedAllies.length) {
-        if (attackEnemiesInRange(5))
+    const enemies = tower.room.find(FIND_HOSTILE_CREEPS);
+    const allies = tower.room.find(FIND_MY_CREEPS, { filter: o => o.hits < o.hitsMax });
+    const importantAllies = util.filter(allies, o => isCreepImportant(o));
+    const unimportantAllies = util.filter(allies, o => !isCreepImportant(o));
+    if (enemies.length || allies.length) {
+        if (attackInRange(enemies, 5))
             return true;
-        if (healAlliesInRange(5))
+        if (healInRange(importantAllies, 5))
             return true;
-        if (attackEnemiesInRange(10))
+        if (attackInRange(enemies, 10))
             return true;
-        if (healAlliesInRange(10))
+        if (healInRange(importantAllies, 10))
             return true;
-        if (attackEnemiesInRange(19))
+        if (healInRange(unimportantAllies, 5))
             return true;
-        if (healAlliesInRange(19))
+        if (attackInRange(enemies, 19))
             return true;
-        if (attackEnemiesInRange(100))
+        if (healInRange(importantAllies, 19))
             return true;
-        if (healAllies())
+        if (healInRange(unimportantAllies, 10))
             return true;
-        if (attackEnemies())
+        if (attackInRange(enemies, 100))
+            return true;
+        if (healInRange(importantAllies, 100))
+            return true;
+        if (healInRange(unimportantAllies, 19))
+            return true;
+        if (healInRange(unimportantAllies, 100))
             return true;
     }
     return false;
-    function attackEnemies() {
-        if (enemies.length) {
-            tower.attack(enemies[0]);
+    function isCreepImportant(creep) {
+        return util.any(creep.body, o => o.type === ATTACK || o.type === RANGED_ATTACK || o.type === HEAL);
+    }
+    function attackInRange(creeps, range) {
+        var creepsInRange = util.filter(creeps, o => o.pos.inRangeTo(tower.pos, range));
+        if (creepsInRange.length) {
+            tower.attack(creepsInRange[0]);
             return true;
         }
         return false;
     }
-    function attackEnemiesInRange(range) {
-        var nearbyEnemies = _.filter(enemies, o => o.pos.inRangeTo(tower.pos, range));
-        if (nearbyEnemies.length) {
-            tower.attack(nearbyEnemies[0]);
-            return true;
-        }
-        return false;
-    }
-    function healAllies() {
-        if (damagedAllies.length) {
-            tower.heal(damagedAllies[0]);
-            return true;
-        }
-        return false;
-    }
-    function healAlliesInRange(range) {
-        var nearbyDamagedAllies = _.filter(damagedAllies, o => o.pos.inRangeTo(tower.pos, range));
-        if (nearbyDamagedAllies.length) {
-            tower.heal(nearbyDamagedAllies[0]);
+    function healInRange(creeps, range) {
+        var creepsInRange = util.filter(creeps, o => o.pos.inRangeTo(tower.pos, range));
+        if (creepsInRange.length) {
+            tower.heal(creepsInRange[0]);
             return true;
         }
         return false;

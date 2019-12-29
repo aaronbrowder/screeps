@@ -10,7 +10,7 @@ exports.DIRECTIVE_RESERVE_AND_HARVEST = 5;
 function getControlDirectives() {
     return [
         { roomName: 'W17S6', flagName: 'Colony1', directive: exports.DIRECTIVE_CLAIM },
-        { roomName: 'W17S7', flagName: 'Colony2', directive: exports.DIRECTIVE_HARVEST },
+        { roomName: 'W17S7', flagName: 'Colony2', directive: exports.DIRECTIVE_RESERVE_AND_HARVEST },
         { roomName: 'W18S5', flagName: 'Colony3', directive: exports.DIRECTIVE_RESERVE },
         { roomName: 'W18S6', flagName: 'Colony4', directive: exports.DIRECTIVE_RESERVE_AND_HARVEST },
     ];

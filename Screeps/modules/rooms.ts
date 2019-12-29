@@ -38,7 +38,7 @@ export interface RaidDirective {
 export function getControlDirectives(): ControlDirective[] {
     return [
         { roomName: 'W17S6', flagName: 'Colony1', directive: DIRECTIVE_CLAIM },
-        { roomName: 'W17S7', flagName: 'Colony2', directive: DIRECTIVE_HARVEST },
+        { roomName: 'W17S7', flagName: 'Colony2', directive: DIRECTIVE_RESERVE_AND_HARVEST },
         { roomName: 'W18S5', flagName: 'Colony3', directive: DIRECTIVE_RESERVE },
         { roomName: 'W18S6', flagName: 'Colony4', directive: DIRECTIVE_RESERVE_AND_HARVEST },
         //{

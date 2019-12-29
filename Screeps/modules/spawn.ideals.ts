@@ -18,7 +18,7 @@ function defaultIdeals(): Ideals {
         upgraderPotency: 0,
         wallBuilderPotency: 0,
         transporterPotency: 0,
-        claimerPotencyForReservation: 0,
+        claimerPotencyForReservation: 2,
         defenderPotency: 0,
         harvesterPotencyPerSource: 0,
         harvesterPotencyPerMineral: 0
@@ -34,12 +34,6 @@ export function getIdeals(roomName: string) {
 }
 
 function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant, threatLevel: number): Ideals {
-
-    if (directive === rooms.DIRECTIVE_RESERVE) {
-        var ideals = defaultIdeals();
-        ideals.claimerPotencyForReservation = 3;
-        return ideals;
-    }
 
     if (directive !== rooms.DIRECTIVE_CLAIM &&
         directive !== rooms.DIRECTIVE_HARVEST &&
@@ -90,7 +84,7 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
     }
 
     var idealUpgraderPotency = Math.max(3, Math.ceil(3.5 * activeSources.length));
-    var idealWallBuilderPotency = Math.max(2, Math.ceil(3.5 * activeSources.length));
+    var idealWallBuilderPotency = Math.max(1, Math.ceil(2 * activeSources.length));
 
     if (directive === rooms.DIRECTIVE_HARVEST || directive === rooms.DIRECTIVE_RESERVE_AND_HARVEST) {
         idealWallBuilderPotency = 0;
@@ -107,7 +101,7 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
         if (!towers.length) {
             idealTransporterPotency -= 2;
             idealUpgraderPotency += 2;
-            idealWallBuilderPotency += 2;
+            idealWallBuilderPotency += 3;
         }
         if (!extractors.length) {
             idealTransporterPotency += 1;
@@ -144,6 +138,9 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
             idealUpgraderPotency += transfer;
             idealWallBuilderPotency -= transfer;
         }
+        if (room.controller.level >= 4) {
+            idealWallBuilderPotency += room.controller.level - 3;
+        }
     }
 
     if (room && room.storage) {
@@ -156,8 +153,11 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
             consumptionMode = false;
         }
         if (consumptionMode) {
+            const forWalls = Math.floor(room.controller.level * 1.5);
+            const forUpgrading = 19 - forWalls;
             idealTransporterPotency += 5;
-            idealUpgraderPotency += 14;
+            idealWallBuilderPotency += forWalls;
+            idealUpgraderPotency += forUpgrading;
         }
         util.modifyRoomMemory(roomName, o => o.consumptionMode = consumptionMode);
     }
@@ -170,15 +170,14 @@ function getIdealsInternal(roomName: string, directive: rooms.DirectiveConstant,
         defenderPotency = Math.ceil(threatLevel / 2);
     }
 
-    var claimerPotencyForReservation = 3;
+    const ideals = defaultIdeals();
 
-    return {
-        upgraderPotency: idealUpgraderPotency,
-        wallBuilderPotency: idealWallBuilderPotency,
-        transporterPotency: idealTransporterPotency,
-        claimerPotencyForReservation: claimerPotencyForReservation,
-        defenderPotency: defenderPotency,
-        harvesterPotencyPerSource: idealHarvesterPotencyPerSource,
-        harvesterPotencyPerMineral: idealHarvesterPotencyPerMineral
-    }
+    ideals.upgraderPotency = idealUpgraderPotency;
+    ideals.wallBuilderPotency = idealWallBuilderPotency;
+    ideals.transporterPotency = idealTransporterPotency;
+    ideals.defenderPotency = defenderPotency;
+    ideals.harvesterPotencyPerSource = idealHarvesterPotencyPerSource;
+    ideals.harvesterPotencyPerMineral = idealHarvesterPotencyPerMineral;
+
+    return ideals;
 }

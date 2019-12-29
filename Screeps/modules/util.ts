@@ -45,6 +45,10 @@ export function count<T>(items: T[], func: (o: T) => boolean): number {
     return filter(items, func).length;
 }
 
+export function max<T>(items: T[], func: (o: T) => number): number {
+    return Math.max.apply(null, items.map(func));
+}
+
 export function setMoveTarget(creep: Creep, target: Creep | Structure | ConstructionSite | Source, desiredDistance?: number, moveImmediately?: boolean) {
     if (moveImmediately === undefined) {
         moveImmediately = true;
@@ -62,12 +66,27 @@ export function setMoveTargetFlag(creep: Creep, target: Flag, desiredDistance?: 
     creep.memory.moveTargetFlagName = target ? target.name : null;
     creep.memory.moveTargetDesiredDistance = desiredDistance;
     if (target) {
-        creep.moveTo(target, {
-            visualizePathStyle: { stroke: '#fff' },
-            ignoreCreeps: true,
-            reusePath: 25
-        });
+        creep.moveTo(target, getMoveOptions(creep));
     }
+}
+
+function getMoveOptions(creep: Creep) {
+    var reusePath = 5;
+    var waveMates: Array<Creep> = [];
+    if (isCreepWorker(creep)) {
+        reusePath = isCreepRemote(creep) ? 30 : 15;
+    }
+    if (creep.memory.moveTargetFlagId && !creep.memory.moveTargetId) {
+        reusePath = 25;
+    }
+    if (creep.memory.raidWaveId) {
+        waveMates = creep.room.find(FIND_MY_CREEPS, { filter: o => o.memory.raidWaveId === creep.memory.raidWaveId });
+    }
+    return {
+        visualizePathStyle: { stroke: '#fff' },
+        reusePath: reusePath,
+        //ignore: waveMates // TODO this doesn't work with PathFinder
+    };
 }
 
 export function isAtMoveTarget(creep: Creep) {
@@ -86,25 +105,12 @@ export function moveToMoveTarget(creep: Creep) {
         setMoveTarget(creep, null);
         return false;
     }
-    var reusePath = 5;
-    var ignoreCreeps = false;
-    if (isCreepWorker(creep)) {
-        reusePath = isCreepRemote(creep) ? 30 : 15;
-    }
-    if (creep.memory.moveTargetFlagId && !creep.memory.moveTargetId) {
-        reusePath = 25;
-        ignoreCreeps = true;
-    }
-    const options = {
-        visualizePathStyle: { stroke: '#fff' },
-        reusePath: reusePath,
-        ignoreCreeps: ignoreCreeps
-    };
+
     const target = creep.memory.moveTargetId
         ? Game.getObjectById<RoomObject>(creep.memory.moveTargetId)
         : Game.flags[creep.memory.moveTargetFlagId];
     if (target) {
-        creep.moveTo(target, options);
+        creep.moveTo(target, getMoveOptions(creep));
         return true;
     }
     setMoveTarget(creep, null);

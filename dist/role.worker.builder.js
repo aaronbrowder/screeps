@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const map = require("./map");
 const util = require("./util");
 const builderAssignment = require("./assignment.builder");
+const towerLogic = require("./structure.tower");
 function run(creep) {
     var username = _.find(Game.structures).owner.username;
     var room = Game.rooms[creep.memory.assignedRoomName];
@@ -161,7 +162,9 @@ function run(creep) {
                     return wall;
             }
             const walls = room.find(FIND_STRUCTURES, {
-                filter: o => (o.structureType === STRUCTURE_WALL || o.structureType === STRUCTURE_RAMPART) && o.hits < o.hitsMax
+                filter: o => (o.structureType === STRUCTURE_WALL || o.structureType === STRUCTURE_RAMPART) &&
+                    o.hits < o.hitsMax &&
+                    !o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, { filter: p => util.isTower(p) }).length
             });
             if (walls.length) {
                 for (let hits = 1000; hits <= 100000; hits *= 10) {
@@ -171,8 +174,8 @@ function run(creep) {
                         return wall;
                     }
                 }
-                // after reaching 100k, go up in increments of 100k until we get to 100 million
-                for (let hits = 200000; hits <= 100000000; hits += 100000) {
+                // after reaching 100k, go up in increments of 100k until we get to 300 million
+                for (let hits = 200000; hits <= 300000000; hits += 100000) {
                     const wall = creep.pos.findClosestByPath(walls, { filter: o => o.hits < hits });
                     if (wall) {
                         creep.memory.preferredWallId = wall.id;

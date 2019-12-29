@@ -41,6 +41,10 @@ function count(items, func) {
     return filter(items, func).length;
 }
 exports.count = count;
+function max(items, func) {
+    return Math.max.apply(null, items.map(func));
+}
+exports.max = max;
 function setMoveTarget(creep, target, desiredDistance, moveImmediately) {
     if (moveImmediately === undefined) {
         moveImmediately = true;
@@ -58,14 +62,27 @@ function setMoveTargetFlag(creep, target, desiredDistance) {
     creep.memory.moveTargetFlagName = target ? target.name : null;
     creep.memory.moveTargetDesiredDistance = desiredDistance;
     if (target) {
-        creep.moveTo(target, {
-            visualizePathStyle: { stroke: '#fff' },
-            ignoreCreeps: true,
-            reusePath: 25
-        });
+        creep.moveTo(target, getMoveOptions(creep));
     }
 }
 exports.setMoveTargetFlag = setMoveTargetFlag;
+function getMoveOptions(creep) {
+    var reusePath = 5;
+    var waveMates = [];
+    if (isCreepWorker(creep)) {
+        reusePath = isCreepRemote(creep) ? 30 : 15;
+    }
+    if (creep.memory.moveTargetFlagId && !creep.memory.moveTargetId) {
+        reusePath = 25;
+    }
+    if (creep.memory.raidWaveId) {
+        waveMates = creep.room.find(FIND_MY_CREEPS, { filter: o => o.memory.raidWaveId === creep.memory.raidWaveId });
+    }
+    return {
+        visualizePathStyle: { stroke: '#fff' },
+        reusePath: reusePath,
+    };
+}
 function isAtMoveTarget(creep) {
     const desiredDistance = creep.memory.moveTargetDesiredDistance || 1;
     const target = creep.memory.moveTargetId
@@ -82,25 +99,11 @@ function moveToMoveTarget(creep) {
         setMoveTarget(creep, null);
         return false;
     }
-    var reusePath = 5;
-    var ignoreCreeps = false;
-    if (isCreepWorker(creep)) {
-        reusePath = isCreepRemote(creep) ? 30 : 15;
-    }
-    if (creep.memory.moveTargetFlagId && !creep.memory.moveTargetId) {
-        reusePath = 25;
-        ignoreCreeps = true;
-    }
-    const options = {
-        visualizePathStyle: { stroke: '#fff' },
-        reusePath: reusePath,
-        ignoreCreeps: ignoreCreeps
-    };
     const target = creep.memory.moveTargetId
         ? Game.getObjectById(creep.memory.moveTargetId)
         : Game.flags[creep.memory.moveTargetFlagId];
     if (target) {
-        creep.moveTo(target, options);
+        creep.moveTo(target, getMoveOptions(creep));
         return true;
     }
     setMoveTarget(creep, null);

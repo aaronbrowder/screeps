@@ -1,6 +1,7 @@
 import * as map from './map';
 import * as util from './util';
 import * as builderAssignment from './assignment.builder';
+import * as towerLogic from './structure.tower';
 
 export function run(creep: Creep) {
 
@@ -173,7 +174,9 @@ export function run(creep: Creep) {
             }
             const walls = room.find<StructureWall | StructureRampart>(FIND_STRUCTURES, {
                 filter: o =>
-                    (o.structureType === STRUCTURE_WALL || o.structureType === STRUCTURE_RAMPART) && o.hits < o.hitsMax
+                    (o.structureType === STRUCTURE_WALL || o.structureType === STRUCTURE_RAMPART) &&
+                    o.hits < o.hitsMax &&
+                    !o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, { filter: p => util.isTower(p) }).length
             });
             if (walls.length) {
                 for (let hits = 1000; hits <= 100000; hits *= 10) {
@@ -183,8 +186,8 @@ export function run(creep: Creep) {
                         return wall;
                     }
                 }
-                // after reaching 100k, go up in increments of 100k until we get to 100 million
-                for (let hits = 200000; hits <= 100000000; hits += 100000) {
+                // after reaching 100k, go up in increments of 100k until we get to 300 million
+                for (let hits = 200000; hits <= 300000000; hits += 100000) {
                     const wall = creep.pos.findClosestByPath(walls, { filter: o => o.hits < hits });
                     if (wall) {
                         creep.memory.preferredWallId = wall.id;
