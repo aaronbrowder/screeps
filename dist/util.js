@@ -18,7 +18,7 @@ function filter(items, func) {
 }
 exports.filter = filter;
 function firstOrDefault(items, func) {
-    const results = _.filter(items, func);
+    const results = filter(items, func || (o => !!o));
     if (results.length) {
         return results[0];
     }
@@ -45,6 +45,17 @@ function max(items, func) {
     return Math.max.apply(null, items.map(func));
 }
 exports.max = max;
+function selectMany(items, func) {
+    const result = [];
+    for (let i = 0; i < items.length; i++) {
+        const subItems = func(items[i]);
+        for (let j = 0; j < subItems.length; j++) {
+            result.push(subItems[j]);
+        }
+    }
+    return result;
+}
+exports.selectMany = selectMany;
 function setMoveTarget(creep, target, desiredDistance, moveImmediately) {
     if (moveImmediately === undefined) {
         moveImmediately = true;

@@ -381,7 +381,7 @@ function countParts(d: BodyDefinition) {
 }
 
 function countFatigueGeneratingParts(d: BodyDefinition) {
-    return d.work + d.carry + d.attack + d.rangedAttack + d.tough + d.heal + d.tough + d.claim;
+    return d.work + d.carry + d.attack + d.rangedAttack + d.tough + d.heal + d.claim;
 }
 
 function getMovePartsRequiredForSpeed(d: BodyDefinition, speed: number) {

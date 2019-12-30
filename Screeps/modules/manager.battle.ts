@@ -86,14 +86,20 @@ function getIsWaveReady(wave: RaidWave) {
     if (queue.countItemsInAllQueues(o => o.raidWaveId === wave.id) > 0) {
         return false;
     }
+    console.log('no more raiders in queues. checking if all the creeps in the wave are ready.');
     // if any creep in the wave is not ready, the wave is not ready
     for (let i = 0; i < wave.creeps.length; i++) {
         // TODO why is this still not working?
         const creep = Game.getObjectById(wave.creeps[i]);
+        console.log('checking creep ' + wave.creeps[i] + ': ' + creep);
         if (!creep) continue;
+        console.log('spawning: ' + creep.spawning);
         if (creep.spawning) return false;
+        console.log('room: ' + creep.room.name);
         if (creep.room.name !== meetupFlag.room.name) return false;
+        console.log('distance from flag: ' + meetupFlag.pos.getRangeTo(creep));
         if (meetupFlag.pos.getRangeTo(creep) > 3) return false;
+        console.log('this creep is apparently ready.');
     }
     return true;
 }

@@ -1,5 +1,5 @@
 
-export function get<T>(key: string, expiresAfter: number, func: () => T): T {
+export function get<T>(key: string, expiresAfter: number, func: () => T, forceRefresh?: boolean): T {
     if (!Memory['cache']) {
         Memory['cache'] = {};
     }
@@ -7,7 +7,7 @@ export function get<T>(key: string, expiresAfter: number, func: () => T): T {
     const cache: {} = Memory['cache'];
     let data: T = cache[key];
     const timeRecorded: number = cache[timeKey];
-    if (data && timeRecorded >= Game.time - expiresAfter) {
+    if (data && timeRecorded >= Game.time - expiresAfter && !forceRefresh) {
         return data;
     }
     data = func();

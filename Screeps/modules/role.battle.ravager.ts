@@ -1,6 +1,7 @@
 import * as map from './map';
 import * as rooms from './rooms';
 import * as util from './util';
+import * as cache from './cache';
 import * as battleManager from './manager.battle';
 
 export function run(creep: Creep) {
@@ -19,40 +20,67 @@ export function run(creep: Creep) {
         return;
     }
 
-    const directive = rooms.getRaidDirective(creep.memory.assignedRoomName);
-    if (!directive) {
-        console.warn(creep.name + ' has no raid directive, so it will do nothing.');
-        return;
-    }
-
     if (wave && wave.targetStructureId && Game.getObjectById(wave.targetStructureId)) {
-        const targetStructure = Game.getObjectById(wave.targetStructureId);
-        const range = creep.pos.getRangeTo(targetStructure);
-        if (range <= 3 && hasRangedAttackPart) {
-            creep.rangedAttack(targetStructure);
-        }
-        if (range <= 1) {
-            creep.attack(targetStructure);
-        }
-        if (creep.memory.moveTargetId !== targetStructure.id) {
-            util.setMoveTarget(creep, targetStructure, 1, false);
-        }
+        attackTarget(Game.getObjectById(wave.targetStructureId));
     } else {
-        // no assignments. just try to kill hostile creeps
-        if (directive.automateTargets && hostileCreeps.length) {
-            var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
-            if (targetCreep) {
-                attack(targetCreep);
-            }
-        } else if (wave && directive.autoDeclareVictory) {
-            if (!creep.room.memory.isConquered) {
-                battleManager.declareVictory(wave);
-            }
-            return;
-        }
+        if (rapeAndPillage()) return;
     }
 
     util.moveToMoveTarget(creep);
+
+    function attackTarget(targetStructure: Structure) {
+        const target = adjustTarget(targetStructure);
+        const range = creep.pos.getRangeTo(target);
+        if (range <= 3 && hasRangedAttackPart) {
+            creep.rangedAttack(target);
+        }
+        if (range <= 1) {
+            creep.attack(target);
+        }
+        if (creep.memory.moveTargetId !== target.id) {
+            util.setMoveTarget(creep, target, 1, false);
+        }
+    }
+
+    function adjustTarget(targetStructure: Structure): Structure | Creep {
+        if (targetStructure.structureType === STRUCTURE_KEEPER_LAIR) {
+            const key = '9c918b92-9c32-418d-9443-60fff329a3b3-' + creep.id + '-' + targetStructure.id;
+            const expiresAfter = 23;
+            var targetCreep = cache.get(key, expiresAfter, findNearbyCreep, false);
+            if (!targetCreep) {
+                targetCreep = cache.get(key, expiresAfter, findNearbyCreep, true);
+            }
+            if (targetCreep) {
+                return targetCreep;
+            }
+        }
+        return targetStructure;
+
+        function findNearbyCreep(): Creep {
+            return creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS, {
+                filter: o => {
+                    return o.pos.inRangeTo(targetStructure, 10);
+                }
+            });
+        }
+    }
+
+    function rapeAndPillage() {
+        const directive = rooms.getRaidDirective(creep.memory.assignedRoomName);
+        if (hostileCreeps.length && (!directive || directive.automateTargets)) {
+            var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);
+            if (targetCreep) {
+                attack(targetCreep);
+                return true;
+            }
+        } else if (wave && directive && directive.autoDeclareVictory) {
+            if (!creep.room.memory.isConquered) {
+                battleManager.declareVictory(wave);
+            }
+            return true;
+        }
+        return false;
+    }
 
     function checkForWaveMeetup(wave: RaidWave) {
         if (wave && !wave.ready) {
@@ -66,12 +94,14 @@ export function run(creep: Creep) {
     }
 
     function checkForCombat() {
+        // TODO need more sophisticated logic for determining whether to strafe or advance
+        // TODO when strafing, avoid swamps and look more than one space away for an open area
         if (hostileCreeps.length) {
             var rangedCombatOpponents = util.filter(hostileCreeps, o =>
-                o.getActiveBodyparts(RANGED_ATTACK) > 0 && o.pos.inRangeTo(creep.pos, 3)
+                o.getActiveBodyparts(RANGED_ATTACK) > o.getActiveBodyparts(ATTACK) && o.pos.inRangeTo(creep.pos, 3)
             );
             var meleeCombatOpponents = util.filter(hostileCreeps, o =>
-                o.getActiveBodyparts(ATTACK) > 0 && o.pos.inRangeTo(creep.pos, 1)
+                o.getActiveBodyparts(ATTACK) >= o.getActiveBodyparts(RANGED_ATTACK) && o.pos.inRangeTo(creep.pos, 1)
             );
             if (rangedCombatOpponents.length || meleeCombatOpponents.length) {
                 util.setMoveTarget(creep, null);
@@ -83,16 +113,13 @@ export function run(creep: Creep) {
     }
 
     function engageInCombat(rangedOpponents: Creep[], meleeOpponents: Creep[]) {
-        if (creep.hits < creep.hitsMax / 2) {
-            flee(rangedOpponents, meleeOpponents);
-        }
-        else if (meleeOpponents.length && hasRangedAttackPart) {
-            flee(null, meleeOpponents);
+        if (meleeOpponents.length && hasRangedAttackPart) {
+            strafe(null, meleeOpponents);
         }
         else if (rangedOpponents.length && hasAttackPart) {
             var target = creep.pos.findClosestByRange<Creep>(rangedOpponents);
             if (!creep.pos.inRangeTo(target.pos, 1)) {
-                creep.moveTo(target);
+                creep.moveTo(target, { reusePath: 0 });
             }
         }
         if (hasAttackPart) {
@@ -123,7 +150,7 @@ export function run(creep: Creep) {
         }
     }
 
-    function flee(rangedOpponents: Creep[], meleeOpponents: Creep[]) {
+    function strafe(rangedOpponents: Creep[], meleeOpponents: Creep[]) {
         var goals = [];
         if (rangedOpponents && rangedOpponents.length) {
             goals = goals.concat(rangedOpponents.map(o => { return { pos: o.pos, range: 3 } }));

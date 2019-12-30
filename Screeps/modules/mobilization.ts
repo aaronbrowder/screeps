@@ -1,3 +1,5 @@
+import * as util from './util';
+
 export function runDefenseSystems() {
     for (const i in Game.structures) {
         const structure = Game.structures[i];
@@ -15,14 +17,10 @@ function runAlarmSystem(room) {
 }
 
 function detectDangerousCreeps(room) {
-    return !!room.find(FIND_HOSTILE_CREEPS, { filter: o => o.body.some(p => p.type == ATTACK || p.type == RANGED_ATTACK) }).length;
+    return room.find(FIND_HOSTILE_CREEPS, { filter: o => o.body.some(p => p.type == ATTACK || p.type == RANGED_ATTACK) }).length > 0;
 }
 
 export function detectWallBreach(room) {
-    const walls = room.find(FIND_STRUCTURES, {
-        filter: function (structure) {
-            return structure.structureType == STRUCTURE_WALL || structure.structureType == STRUCTURE_RAMPART;
-        }
-    });
-    return walls.some(o => o.hits < 1000);
+    const walls = room.find(FIND_STRUCTURES, { filter: o => util.isWall(o) || util.isRampart(o) });
+    return !walls.length || walls.some(o => o.hits < 1000);
 }

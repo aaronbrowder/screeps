@@ -76,7 +76,12 @@ export function countItemsInAllQueues(func: (o: SpawnQueueItem) => boolean): num
 }
 
 function determineHomeRoom(role: string, assignedRoomName: string): string {
-    if (role === 'harvester' || role === 'builder') return assignedRoomName;
+    if (role === 'harvester' || role === 'builder') {
+        return assignedRoomName;
+    }
+    if (role === 'transporter' && rooms.getDirective(assignedRoomName) === enums.DIRECTIVE_CLAIM) {
+        return assignedRoomName;
+    }
     const maxDistance = getMaxDistance();
     const key = '33436f72-91aa-403c-bbd2-29c2328988b5.' + assignedRoomName + '.' + maxDistance;
     return cache.get(key, 3000, () => {

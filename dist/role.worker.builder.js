@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const map = require("./map");
 const util = require("./util");
+const cache = require("./cache");
 const builderAssignment = require("./assignment.builder");
 const towerLogic = require("./structure.tower");
 function run(creep) {
@@ -161,10 +162,21 @@ function run(creep) {
                 if (wall)
                     return wall;
             }
+            const areAllWallsInTowerRange = cache.get('0947f8ac-dfa5-4609-870d-63cc483a51d9-' + room.name, 899, () => {
+                let allWalls = room.find(FIND_STRUCTURES, {
+                    filter: o => (util.isWall(o) || util.isRampart)
+                });
+                return !util.any(allWalls, o => o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, {
+                    filter: p => util.isTower(p)
+                }).length === 0);
+            });
             const walls = room.find(FIND_STRUCTURES, {
-                filter: o => (o.structureType === STRUCTURE_WALL || o.structureType === STRUCTURE_RAMPART) &&
+                filter: o => (util.isWall(o) || util.isRampart) &&
                     o.hits < o.hitsMax &&
-                    !o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, { filter: p => util.isTower(p) }).length
+                    // If not all the walls are in tower range, we want to only build up the walls not in tower range.
+                    // If all walls ARE in tower range, we can build up whichever walls we want.
+                    (areAllWallsInTowerRange ||
+                        !o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, { filter: p => util.isTower(p) }).length)
             });
             if (walls.length) {
                 for (let hits = 1000; hits <= 100000; hits *= 10) {

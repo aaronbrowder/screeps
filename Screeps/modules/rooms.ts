@@ -14,6 +14,10 @@ export interface RaidDirective {
     automateTargets: boolean;
     autoDeclareVictory: boolean;
     raiderBodyType: enums.BodyTypeConstant;
+    // If maxPotency is set, we will only spawn a limited number of creeps. The creeps
+    // will be respawned when they die or are about to die of age.
+    // If maxPotency is not set, as many creeps as possible will be spawned until the
+    // directive is turned off or until victory is declared.
     maxPotency?: number;
 }
 

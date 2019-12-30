@@ -39,10 +39,22 @@ export function getWaveSize(roomName: string) {
         const distance = distanceBetweenFlags + spawnMetrics.getPathDistanceToFlag(spawn, meetupFlag);
         waveSize += getWaveSizeForSpawn(spawn, distance, raidDirective);
     }
+    waveSize = Math.floor(waveSize);
+    if (raidDirective.maxPotency) {
+        const existingPotency = getExistingRaidPotency(roomName, raidDirective);
+        const maxSize = Math.max(0, raidDirective.maxPotency - existingPotency);
+        return Math.min(waveSize, maxSize);
+    }
+    return waveSize;
+}
+
+function getExistingRaidPotency(roomName: string, directive: RaidDirective) {
+    const estimatedSpawnTime = directive.maxPotency * bodies.getUnitSpawnTime(directive.raiderBodyType);
+    const buffer = estimatedSpawnTime + 150;
     const wavesForRoom = util.filter(Memory.raidWaves, o => o.targetRoomName === roomName);
-    const existingRaidPotency = util.sum(wavesForRoom, o => util.sum(o.creeps.map(id => Game.getObjectById(id)), c => bodies.measurePotency(c)));
-    const maxSize = Math.max(0, (rooms.getRaidDirective(roomName).maxPotency || 100000) - existingRaidPotency);
-    return Math.min(Math.floor(waveSize), maxSize);
+    const creeps = util.selectMany(wavesForRoom, o => o.creeps).map(id => Game.getObjectById(id));
+    const livingCreeps = util.filter(creeps, o => !!o && o.ticksToLive > buffer);
+    return util.sum(livingCreeps, o => bodies.measurePotency(o));
 }
 
 function getWaveSizeForSpawn(spawn: StructureSpawn, distance: number, directive: RaidDirective) {

@@ -95,10 +95,10 @@ function spawnFromQueue(spawn: StructureSpawn) {
     }
     const result = spawn.spawnCreep(body, creepName, options);
     if (result === OK) {
-        spawnQueue.removeItemFromQueue(item);
         if (item.raidWaveId) {
             battleManager.assignCreepsToWaves();
         }
+        spawnQueue.removeItemFromQueue(item);
     }
 }
 

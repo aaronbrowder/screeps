@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-function get(key, expiresAfter, func) {
+function get(key, expiresAfter, func, forceRefresh) {
     if (!Memory['cache']) {
         Memory['cache'] = {};
     }
@@ -8,7 +8,7 @@ function get(key, expiresAfter, func) {
     const cache = Memory['cache'];
     let data = cache[key];
     const timeRecorded = cache[timeKey];
-    if (data && timeRecorded >= Game.time - expiresAfter) {
+    if (data && timeRecorded >= Game.time - expiresAfter && !forceRefresh) {
         return data;
     }
     data = func();

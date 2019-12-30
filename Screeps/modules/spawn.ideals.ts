@@ -111,7 +111,8 @@ function getIdealsInternal(roomName: string, directive: enums.DirectiveConstant,
         if (links.length < 3) {
             idealTransporterPotency += 3;
         }
-        if (!containers.length) {
+        if (!storageUnits.length && containers.length < 2) {
+            idealTransporterPotency = 0;
             idealUpgraderPotency -= 5;
             idealWallBuilderPotency -= 5;
         }

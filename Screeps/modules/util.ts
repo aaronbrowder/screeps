@@ -21,8 +21,8 @@ export function filter<T>(items: T[], func: (o: T) => boolean): T[] {
     return _.filter(items, func);
 }
 
-export function firstOrDefault<T>(items: T[], func: (o: T) => boolean): T {
-    const results: T[] = _.filter(items, func);
+export function firstOrDefault<T>(items: T[], func?: (o: T) => boolean): T {
+    const results: T[] = filter(items, func || (o => !!o));
     if (results.length) {
         return results[0];
     }
@@ -47,6 +47,17 @@ export function count<T>(items: T[], func: (o: T) => boolean): number {
 
 export function max<T>(items: T[], func: (o: T) => number): number {
     return Math.max.apply(null, items.map(func));
+}
+
+export function selectMany<T1, T2>(items: Array<T1>, func: (o: T1) => Array<T2>): Array<T2> {
+    const result: Array<T2> = [];
+    for (let i = 0; i < items.length; i++) {
+        const subItems = func(items[i]);
+        for (let j = 0; j < subItems.length; j++) {
+            result.push(subItems[j]);
+        }
+    }
+    return result;
 }
 
 export function setMoveTarget(creep: Creep, target: Creep | Structure | ConstructionSite | Source, desiredDistance?: number, moveImmediately?: boolean) {
