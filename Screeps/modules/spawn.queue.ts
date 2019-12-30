@@ -97,10 +97,11 @@ function determineHomeRoom(role: string, assignedRoomName: string): string {
             }
         }
         // pick the spawn that is closest to the assigned room by path
+        // rooms with storage are preferred
         const valueData = filteredSpawns.map(o => {
             return {
                 target: o.room.name,
-                value: -getPathDistance(o)
+                value: -getPathDistance(o) + (o.room.storage ? 1000 : 0)
             };
         });
         return util.getBestValue(valueData);

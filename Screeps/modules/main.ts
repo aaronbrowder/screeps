@@ -1,4 +1,5 @@
 import * as spawnManager from './spawn';
+import * as modes from './util.modes';
 import * as battleManager from './manager.battle';
 import * as roleManager from './manager.roles';
 import * as mobilization from './mobilization';
@@ -14,6 +15,13 @@ export const loop = () => {
     }
     if (!Memory.raidWaves) {
         Memory.raidWaves = [];
+    }
+
+    for (let roomName in Game.rooms) {
+        const room = Game.rooms[roomName];
+        if (room && room.controller && room.controller.my) {
+            modes.switchModes(room);
+        }
     }
 
     mobilization.runDefenseSystems();

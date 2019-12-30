@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const util = require("./util");
+const modes = require("./util.modes");
 const cache = require("./cache");
 // For walls within 8 spaces of the tower, it's more energy-efficient to build up the wall using
 // the tower than using builders (not to mention faster).
@@ -28,8 +29,8 @@ function repair(tower) {
                 return o.structureType != STRUCTURE_WALL
                     && o.structureType != STRUCTURE_RAMPART
                     // towers should only repair structures that are slightly damaged (major damage should be repaired by builders)
-                    && o.hits / o.hitsMax >= 0.8
-                    && o.hits < o.hitsMax
+                    && o.hits / o.hitsMax >= 0.7
+                    && o.hits / o.hitsMax <= 0.9
                     // this tower should not repair a structure if there is another tower in the room that is closer to that structure
                     && (util.findNearestStructure(o.pos, STRUCTURE_TOWER).id === tower.id);
             }
@@ -43,6 +44,10 @@ function repair(tower) {
 }
 function buildUpWalls(tower) {
     const targetId = cache.get('4ab6a1ff-ef0a-4302-8533-a2ad19d6435b-' + tower.id, 21, () => {
+        // towers only build up walls if we are in consumption mode and wall build mode
+        if (!modes.getConsumptionMode(tower.room) || !modes.getWallBuildMode(tower.room)) {
+            return null;
+        }
         const allWalls = tower.room.find(FIND_STRUCTURES, { filter: o => util.isWall(o) || util.isRampart(o) });
         const maxWallHits = util.max(allWalls, o => o.hits);
         const availableWalls = util.filter(allWalls, o => {

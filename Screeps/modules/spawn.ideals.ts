@@ -1,12 +1,12 @@
 import * as util from './util';
+import * as modes from './util.modes';
 import * as cache from './cache';
 import * as rooms from './rooms';
 import * as enums from './enums';
 import * as sourceManager from './manager.sources';
 
 export interface Ideals {
-    upgraderPotency: number;
-    wallBuilderPotency: number;
+    builderPotency: number;
     transporterPotency: number;
     claimerPotencyForReservation: number;
     defenderPotency: number;
@@ -16,8 +16,7 @@ export interface Ideals {
 
 function defaultIdeals(): Ideals {
     return {
-        upgraderPotency: 0,
-        wallBuilderPotency: 0,
+        builderPotency: 0,
         transporterPotency: 0,
         claimerPotencyForReservation: 2,
         defenderPotency: 0,
@@ -47,8 +46,7 @@ function getIdealsInternal(roomName: string, directive: enums.DirectiveConstant,
 
     const hubFlag = util.findHubFlag(room);
 
-    var activeSources = room.find(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
-
+    const activeSources = room.find(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) });
     const towers = room.find<StructureTower>(FIND_MY_STRUCTURES, { filter: o => util.isTower(o) });
     const extensions = room.find<StructureExtension>(FIND_MY_STRUCTURES, { filter: o => util.isExtension(o) && o.isActive });
     const links = room.find<StructureLink>(FIND_MY_STRUCTURES, { filter: o => util.isLink(o) });
@@ -59,131 +57,121 @@ function getIdealsInternal(roomName: string, directive: enums.DirectiveConstant,
     const containers = room.find<StructureContainer>(FIND_STRUCTURES, { filter: o => util.isContainer(o) });
     const storageUnits = room.find<StructureStorage>(FIND_MY_STRUCTURES, { filter: o => util.isStorage(o) });
 
-    const totalTransportDistanceForSources: number = _.sum(activeSources.map(o =>
-        sourceManager.getSourceMetrics(o).transportDistance || 10));
-
-    var idealHarvesterPotencyPerSource = 7;
-    var idealHarvesterPotencyPerMineral = 18;
-
-    // HACK - stop harvesting if we already have more than 500,000 minerals stored in the room
-    if (room.storage && _.sum(room.storage.store) - room.storage.store[RESOURCE_ENERGY] > 500000) {
-        idealHarvesterPotencyPerMineral = 0;
-    }
-
-    var idealTransporterPotency =
-        Math.max(0, Math.ceil(Math.pow(totalTransportDistanceForSources, .7) * 1.9) - 4)
-        + Math.ceil(room.energyCapacityAvailable / 1000);
-
-    if (totalTransportDistanceForSources > 0 && idealTransporterPotency <= 0) {
-        idealTransporterPotency = 2;
-    }
-
-    // sources have half as much energy capacity if the room is unowned and unreserved
-    if (!room.controller.my && !room.controller.reservation) {
-        idealHarvesterPotencyPerSource = Math.ceil(idealHarvesterPotencyPerSource / 2);
-        idealTransporterPotency = Math.ceil(idealTransporterPotency / 2);
-    }
-
-    var idealUpgraderPotency = Math.max(3, Math.ceil(3.5 * activeSources.length));
-    var idealWallBuilderPotency = Math.max(1, Math.ceil(2 * activeSources.length));
-
-    if (directive === enums.DIRECTIVE_HARVEST || directive === enums.DIRECTIVE_RESERVE_AND_HARVEST) {
-        idealWallBuilderPotency = 0;
-        idealUpgraderPotency =
-            Math.ceil(nonWallStructures.length / 10) +
-            (2 * nonRoadConstructionSites.length) +
-            Math.ceil(roadConstructionSites.length / 5);
-    }
-    else if (directive === enums.DIRECTIVE_CLAIM) {
-        idealTransporterPotency += 6;
-        if (threatLevel > 20) {
-            idealTransporterPotency += 6;
-        }
-        if (!towers.length) {
-            idealTransporterPotency -= 2;
-            idealUpgraderPotency += 2;
-            idealWallBuilderPotency += 3;
-        }
-        if (!extractors.length) {
-            idealTransporterPotency += 1;
-            idealUpgraderPotency += 2;
-        }
-        if (links.length < 3) {
-            idealTransporterPotency += 3;
-        }
-        if (!storageUnits.length && containers.length < 2) {
-            idealTransporterPotency = 0;
-            idealUpgraderPotency -= 5;
-            idealWallBuilderPotency -= 5;
-        }
-        if (!storageUnits.length) {
-            idealUpgraderPotency += 2;
-            idealWallBuilderPotency += 2;
-            idealTransporterPotency -= 3;
-        }
-        if (storageUnits.length && hubFlag) {
-            idealTransporterPotency -= 4;
-        }
-        if (nonRoadConstructionSites.length) {
-            idealUpgraderPotency += 1;
-            idealWallBuilderPotency += 1;
-        }
-        if (!containers.length && !storageUnits.length) {
-            idealTransporterPotency = 0;
-        }
-        if (extensions.length < 5) {
-            idealUpgraderPotency = 6;
-            idealWallBuilderPotency = 0;
-        }
-        if (room.controller.level < 4) {
-            const transfer = Math.floor(idealWallBuilderPotency / 2);
-            idealUpgraderPotency += transfer;
-            idealWallBuilderPotency -= transfer;
-        }
-        if (room.controller.level >= 4) {
-            idealWallBuilderPotency += room.controller.level - 3;
-        }
-    }
-
-    if (room && room.storage) {
-        var consumptionMode = util.getRoomMemory(roomName).consumptionMode;
-        const bounds = util.getConsumptionModeBoundaries(room);
-        if (!consumptionMode && _.sum(room.storage.store) > bounds.upper) {
-            consumptionMode = true;
-        }
-        else if (consumptionMode && _.sum(room.storage.store) < bounds.lower) {
-            consumptionMode = false;
-        }
-        if (consumptionMode) {
-            const total = 19;
-            var forWalls = Math.floor(room.controller.level * 1.5);
-            if (room.controller.level === 8) {
-                forWalls = total;
-            }
-            const forUpgrading = total - forWalls;
-            idealTransporterPotency += 5;
-            idealWallBuilderPotency += forWalls;
-            idealUpgraderPotency += forUpgrading;
-        }
-        util.modifyRoomMemory(roomName, o => o.consumptionMode = consumptionMode);
-    }
-
-    var defenderPotency = 0;
-    // TODO allow defending reserved rooms using waves
-    if (directive === enums.DIRECTIVE_CLAIM) {
-        // defender potency is measured by the number of ATTACK parts, but ravagers also have some
-        // RANGED_ATTACK and TOUGH parts. we should take this into account when examining the threat level.
-        defenderPotency = Math.ceil(threatLevel / 2);
-    }
-
     const ideals = defaultIdeals();
 
-    ideals.upgraderPotency = idealUpgraderPotency;
-    ideals.wallBuilderPotency = idealWallBuilderPotency;
-    ideals.transporterPotency = idealTransporterPotency;
-    ideals.defenderPotency = defenderPotency;
-    ideals.harvesterPotencyPerSource = idealHarvesterPotencyPerSource;
-    ideals.harvesterPotencyPerMineral = idealHarvesterPotencyPerMineral;
+    ideals.builderPotency = getIdealBuilderPotency();
+    ideals.transporterPotency = getIdealTransporterPotency();
+    ideals.defenderPotency = getIdealDefenderPotency();
+    ideals.harvesterPotencyPerSource = getIdealHarvesterPotencyPerSource();
+    ideals.harvesterPotencyPerMineral = getIdealHarvesterPotencyPerMineral();
 
     return ideals;
+
+    function getIdealBuilderPotency() {
+        if (room.controller.my) {
+            const level = room.controller.level;
+            var result = 4;
+            // before getting the first spawn up, we'll need a lot of help from other rooms
+            if (!room.find(FIND_MY_SPAWNS).length) {
+                result = 10;
+            }
+            // if level is not high enough to build storage, consumption mode is not possible, so we 
+            // need to make sure we have enough builders to upgrade and build walls.
+            if (level === 2) {
+                result = 8;
+            }
+            if (level === 3) {
+                result = 12;
+            }
+            // make sure we have enough builders to build our structures
+            if (level > 3 && nonRoadConstructionSites.length) {
+                result = 12;
+            }
+            // if in consumption mode, we go all out -- enough to make the energy in storage go back down
+            if (modes.getConsumptionMode(room)) {
+                result = 24;
+            }
+            return result;
+        }
+        if (directive === enums.DIRECTIVE_HARVEST || directive === enums.DIRECTIVE_RESERVE_AND_HARVEST) {
+            return Math.ceil(nonWallStructures.length / 10) +
+                (2 * nonRoadConstructionSites.length) +
+                Math.ceil(roadConstructionSites.length / 5);
+        }
+    }
+
+    function getIdealTransporterPotency() {
+
+        const totalTransportDistanceForSources: number = _.sum(activeSources.map(o =>
+            sourceManager.getSourceMetrics(o).transportDistance || 10));
+
+        var result =
+            Math.max(0, Math.ceil(Math.pow(totalTransportDistanceForSources, .7) * 1.9) - 4)
+            + Math.ceil(room.energyCapacityAvailable / 1000);
+
+        if (totalTransportDistanceForSources > 0 && result <= 0) {
+            result = 2;
+        }
+        // sources have half as much energy capacity if the room is unowned and unreserved
+        if (!room.controller.my && !room.controller.reservation) {
+            result = Math.ceil(result / 2);
+        }
+        if (directive === enums.DIRECTIVE_CLAIM) {
+            result += 6;
+            if (threatLevel > 20) {
+                result += 6;
+            }
+            if (!towers.length) {
+                result -= 2;
+            }
+            if (!extractors.length) {
+                result += 1;
+            }
+            if (links.length < 3) {
+                result += 3;
+            }
+            if (!storageUnits.length && containers.length < 2) {
+                result = 0;
+            }
+            if (!storageUnits.length) {
+                result -= 3;
+            }
+            if (storageUnits.length && hubFlag) {
+                result -= 4;
+            }
+            if (!containers.length && !storageUnits.length) {
+                result = 0;
+            }
+        }
+        return result;
+    }
+
+    function getIdealHarvesterPotencyPerSource() {
+        var result = 7;
+        // sources have half as much energy capacity if the room is unowned and unreserved
+        if (!room.controller.my && !room.controller.reservation) {
+            result = Math.ceil(result / 2);
+        }
+        return result;
+    }
+
+    function getIdealHarvesterPotencyPerMineral() {
+        var result = 18;
+        // HACK - stop harvesting if we already have more than 500,000 minerals stored in the room
+        if (room.storage && _.sum(room.storage.store) - room.storage.store[RESOURCE_ENERGY] > 500000) {
+            result = 0;
+        }
+        return result;
+    }
+
+    function getIdealDefenderPotency() {
+        var result = 0;
+        // TODO allow defending reserved rooms using waves
+        if (directive === enums.DIRECTIVE_CLAIM) {
+            // defender potency is measured by the number of ATTACK parts, but ravagers also have some
+            // RANGED_ATTACK and TOUGH parts. we should take this into account when examining the threat level.
+            result = Math.ceil(threatLevel / 2);
+        }
+        return result;
+    }
 }

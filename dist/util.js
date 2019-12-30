@@ -26,9 +26,13 @@ function firstOrDefault(items, func) {
 }
 exports.firstOrDefault = firstOrDefault;
 function any(items, func) {
-    return _.filter(items, func).length > 0;
+    return filter(items, func).length > 0;
 }
 exports.any = any;
+function all(items, func) {
+    return filter(items, o => !func(o)).length === 0;
+}
+exports.all = all;
 function sortBy(items, func) {
     return _.sortBy(items, func);
 }
@@ -45,6 +49,10 @@ function max(items, func) {
     return Math.max.apply(null, items.map(func));
 }
 exports.max = max;
+function min(items, func) {
+    return Math.min.apply(null, items.map(func));
+}
+exports.min = min;
 function selectMany(items, func) {
     const result = [];
     for (let i = 0; i < items.length; i++) {
@@ -236,15 +244,18 @@ function countCreeps(role, filter) {
 exports.countCreeps = countCreeps;
 function getThreatLevel(room) {
     const hostileCreeps = room.find(FIND_HOSTILE_CREEPS, {
-        filter: (o) => o.getActiveBodyparts(ATTACK) > 0 || o.getActiveBodyparts(RANGED_ATTACK) > 0
+        filter: (o) => o.getActiveBodyparts(ATTACK) > 0 ||
+            o.getActiveBodyparts(RANGED_ATTACK) > 0 ||
+            o.getActiveBodyparts(HEAL) > 0
     });
     if (!hostileCreeps.length)
         return 0;
     // normalize the threat level so that a threat level of 1 means 1 attack part
-    return (1 / 80) * sum(hostileCreeps, o => (80 * o.getActiveBodyparts(ATTACK)) +
-        (150 * o.getActiveBodyparts(RANGED_ATTACK)) +
-        (10 * o.getActiveBodyparts(TOUGH)) +
-        (250 * o.getActiveBodyparts(HEAL)));
+    // TODO take boosts into consideration
+    return sum(hostileCreeps, o => (o.getActiveBodyparts(ATTACK)) +
+        (o.getActiveBodyparts(RANGED_ATTACK)) +
+        (0.25 * o.getActiveBodyparts(TOUGH)) +
+        (2 * o.getActiveBodyparts(HEAL)));
 }
 exports.getThreatLevel = getThreatLevel;
 function refreshOrders(roomName) {
@@ -291,19 +302,6 @@ function getEmptySpace(structure) {
     return 0;
 }
 exports.getEmptySpace = getEmptySpace;
-function getConsumptionModeBoundaries(room) {
-    if (room.controller.level < 5) {
-        return { lower: 100000, upper: 150000 };
-    }
-    if (room.controller.level < 6) {
-        return { lower: 300000, upper: 350000 };
-    }
-    if (room.controller.level < 7) {
-        return { lower: 600000, upper: 650000 };
-    }
-    return { lower: 900000, upper: 950000 };
-}
-exports.getConsumptionModeBoundaries = getConsumptionModeBoundaries;
 function isNumber(x) {
     return typeof x === "number";
 }
@@ -406,4 +404,8 @@ function countSurroundingWalls(pos) {
     }
 }
 exports.countSurroundingWalls = countSurroundingWalls;
+function findWallsAndRamparts(room) {
+    return room.find(FIND_STRUCTURES, { filter: o => isWall(o) || isRampart(o) });
+}
+exports.findWallsAndRamparts = findWallsAndRamparts;
 //# sourceMappingURL=util.js.map

@@ -1,5 +1,6 @@
 import * as map from './map';
 import * as util from './util';
+import * as modes from './util.modes';
 import * as cache from './cache';
 import * as builderAssignment from './assignment.builder';
 import * as towerLogic from './structure.tower';
@@ -123,15 +124,17 @@ export function run(creep: Creep) {
                 buildStructure(assignment);
             }
         } else if (controller.my) {
-            // no assignment -- either upgrade controller or build up walls depending on role
+            // no assignment -- either upgrade controller or build up walls depending on mode
             // (clear assignment id just in case the assignment was destroyed or the creep left the room)
             creep.memory.assignmentId = null;
-            if (creep.memory.subRole === 'upgrader') {
-                upgradeController(controller);
-            } else {
+            if (modes.getWallBuildMode(creep.room)) {
                 const wall = findPreferredWall();
-                if (wall) buildUpWall(wall);
+                if (wall) {
+                    buildUpWall(wall);
+                    return;
+                }
             }
+            upgradeController(controller);
         }
 
         function upgradeController(target: StructureController) {
@@ -191,7 +194,8 @@ export function run(creep: Creep) {
                         !o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, { filter: p => util.isTower(p) }).length)
             });
             if (walls.length) {
-                for (let hits = 1000; hits <= 100000; hits *= 10) {
+                // at first, increase the wall hits geometrically
+                for (let hits = 1000; hits <= 128000; hits *= 2) {
                     const wall = creep.pos.findClosestByPath(walls, { filter: o => o.hits < hits });
                     if (wall) {
                         creep.memory.preferredWallId = wall.id;

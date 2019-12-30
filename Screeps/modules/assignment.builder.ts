@@ -51,10 +51,10 @@ export function assignBuilders() {
                 assign(target, 4);
             }
             else if (target.structureType != STRUCTURE_RAMPART && target.structureType != STRUCTURE_WALL && target.structureType != STRUCTURE_ROAD
-                && target.hits < target.hitsMax * 0.8) {
+                && target.hits < target.hitsMax * 0.6) {
                 assign(target, 5);
             }
-            else if (target.structureType == STRUCTURE_ROAD && target.hits < target.hitsMax * 0.8) {
+            else if (target.structureType == STRUCTURE_ROAD && target.hits < target.hitsMax * 0.6) {
                 assign(target, 8);
             }
         }

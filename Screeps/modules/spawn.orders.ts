@@ -22,8 +22,7 @@ export function getRoomOrder(roomName: string) {
     if (cachedOrder) return cachedOrder;
 
     var transporterPotencyNeeded = 0;
-    var wallBuilderPotencyNeeded = 0;
-    var upgraderPotencyNeeded = 0;
+    var builderPotencyNeeded = 0;
     var hubPotencyNeeded = 0;
     var claimerPotencyNeeded = 0;
     var scoutPotencyNeeded = 0;
@@ -77,11 +76,8 @@ export function getRoomOrder(roomName: string) {
         const transporterPotency = potency.getPotency(roomName, 'transporter');
         transporterPotencyNeeded = ideals.transporterPotency - transporterPotency;
 
-        const wallBuilderPotency = potency.getPotency(roomName, 'builder', 'wallBuilder');
-        wallBuilderPotencyNeeded = ideals.wallBuilderPotency - wallBuilderPotency;
-
-        const upgraderPotency = potency.getPotency(roomName, 'builder', 'upgrader');
-        upgraderPotencyNeeded = ideals.upgraderPotency - upgraderPotency;
+        const builderPotency = potency.getPotency(roomName, 'builder');
+        builderPotencyNeeded = ideals.builderPotency - builderPotency;
 
         const ravagerPotency = potency.getPotency(roomName, 'ravager');
         defenderPotencyNeeded = ideals.defenderPotency - ravagerPotency;
@@ -97,13 +93,9 @@ export function getRoomOrder(roomName: string) {
             deleteCreep(roomName, 'transporter');
             transporterPotencyNeeded = 0;
         }
-        if (wallBuilderPotencyNeeded < 0) {
-            deleteCreep(roomName, 'builder', 'wallBuilder');
-            wallBuilderPotencyNeeded = 0;
-        }
-        if (upgraderPotencyNeeded < 0) {
-            deleteCreep(roomName, 'builder', 'upgrader');
-            upgraderPotencyNeeded = 0;
+        if (builderPotencyNeeded < 0) {
+            deleteCreep(roomName, 'builder');
+            builderPotencyNeeded = 0;
         }
         if (defenderPotencyNeeded < 0) {
             deleteCreep(roomName, 'ravager');
@@ -114,8 +106,7 @@ export function getRoomOrder(roomName: string) {
     const order: RoomOrder = {
         roomName: roomName,
         transporterPotency: transporterPotencyNeeded,
-        wallBuilderPotency: wallBuilderPotencyNeeded,
-        upgraderPotency: upgraderPotencyNeeded,
+        builderPotency: builderPotencyNeeded,
         hubPotency: hubPotencyNeeded,
         claimerPotency: claimerPotencyNeeded,
         scoutPotency: scoutPotencyNeeded,
@@ -178,8 +169,7 @@ function deleteCreep(roomName: string, role: string, subRole?: string, assignmen
 }
 
 export function fulfillRoomOrder(order: RoomOrder) {
-    if (!order.upgraderPotency &&
-        !order.wallBuilderPotency &&
+    if (!order.builderPotency &&
         !order.transporterPotency &&
         !order.hubPotency &&
         !order.claimerPotency &&
@@ -226,15 +216,8 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
     // we should never try to spawn workers if we don't have eyes in the room. this will cause an error.
     const room = Game.rooms[order.roomName];
     if (room) {
-        if (order.upgraderPotency) {
-            assignOrderPartToSpawns(spawns, order.upgraderPotency, order.roomName, 'builder', {
-                subRole: 'upgrader'
-            });
-        }
-        if (order.wallBuilderPotency) {
-            assignOrderPartToSpawns(spawns, order.wallBuilderPotency, order.roomName, 'builder', {
-                subRole: 'wallBuilder'
-            });
+        if (order.builderPotency) {
+            assignOrderPartToSpawns(spawns, order.builderPotency, order.roomName, 'builder', {});
         }
         if (order.transporterPotency) {
             assignOrderPartToSpawns(spawns, order.transporterPotency, order.roomName, 'transporter', {});

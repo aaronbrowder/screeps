@@ -30,7 +30,11 @@ export function firstOrDefault<T>(items: T[], func?: (o: T) => boolean): T {
 }
 
 export function any<T>(items: T[], func: (o: T) => boolean): boolean {
-    return _.filter(items, func).length > 0;
+    return filter(items, func).length > 0;
+}
+
+export function all<T>(items: T[], func: (o: T) => boolean): boolean {
+    return filter(items, o => !func(o)).length === 0;
 }
 
 export function sortBy<T>(items: T[], func: (o: T) => number): T[] {
@@ -47,6 +51,10 @@ export function count<T>(items: T[], func: (o: T) => boolean): number {
 
 export function max<T>(items: T[], func: (o: T) => number): number {
     return Math.max.apply(null, items.map(func));
+}
+
+export function min<T>(items: T[], func: (o: T) => number): number {
+    return Math.min.apply(null, items.map(func));
 }
 
 export function selectMany<T1, T2>(items: Array<T1>, func: (o: T1) => Array<T2>): Array<T2> {
@@ -242,15 +250,19 @@ export function countCreeps(role: string, filter?) {
 
 export function getThreatLevel(room: Room) {
     const hostileCreeps = room.find(FIND_HOSTILE_CREEPS, {
-        filter: (o: Creep) => o.getActiveBodyparts(ATTACK) > 0 || o.getActiveBodyparts(RANGED_ATTACK) > 0
+        filter: (o: Creep) =>
+            o.getActiveBodyparts(ATTACK) > 0 ||
+            o.getActiveBodyparts(RANGED_ATTACK) > 0 ||
+            o.getActiveBodyparts(HEAL) > 0
     });
     if (!hostileCreeps.length) return 0;
     // normalize the threat level so that a threat level of 1 means 1 attack part
-    return (1 / 80) * sum(hostileCreeps, o =>
-        (80 * o.getActiveBodyparts(ATTACK)) +
-        (150 * o.getActiveBodyparts(RANGED_ATTACK)) +
-        (10 * o.getActiveBodyparts(TOUGH)) +
-        (250 * o.getActiveBodyparts(HEAL)));
+    // TODO take boosts into consideration
+    return sum(hostileCreeps, o =>
+        (o.getActiveBodyparts(ATTACK)) +
+        (o.getActiveBodyparts(RANGED_ATTACK)) +
+        (0.25 * o.getActiveBodyparts(TOUGH)) +
+        (2 * o.getActiveBodyparts(HEAL)));
 }
 
 export function refreshOrders(roomName: string) {
@@ -295,24 +307,6 @@ export function getEmptySpace(structure: Structure) {
         return structure.storeCapacity - _.sum(structure.store);
     }
     return 0;
-}
-
-interface ConsumptionModeBoundaries {
-    lower: number;
-    upper: number;
-}
-
-export function getConsumptionModeBoundaries(room: Room) {
-    if (room.controller.level < 5) {
-        return { lower: 100000, upper: 150000 };
-    }
-    if (room.controller.level < 6) {
-        return { lower: 300000, upper: 350000 };
-    }
-    if (room.controller.level < 7) {
-        return { lower: 600000, upper: 650000 };
-    }
-    return { lower: 900000, upper: 950000 };
 }
 
 export function isNumber(x: any): x is number {
@@ -408,4 +402,8 @@ export function countSurroundingWalls(pos: RoomPosition) {
     function isWallAt(x: number, y: number) {
         return Game.map.getRoomTerrain(pos.roomName).get(x, y) === TERRAIN_MASK_WALL;
     }
+}
+
+export function findWallsAndRamparts(room: Room) {
+    return room.find(FIND_STRUCTURES, { filter: o => isWall(o) || isRampart(o) });
 }

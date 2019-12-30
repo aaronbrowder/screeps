@@ -69,8 +69,7 @@ interface SourceOrder {
 
 interface RoomOrder {
     roomName: string;
-    wallBuilderPotency: number;
-    upgraderPotency: number;
+    builderPotency: number;
     transporterPotency: number;
     hubPotency: number;
     claimerPotency: number;
@@ -83,6 +82,7 @@ interface RoomMemory {
     order: RoomOrder;
     sourceOrders: { [id: string]: SourceOrder };
     consumptionMode: boolean;
+    wallBuildMode: boolean;
     isConquered: boolean;
 }
 

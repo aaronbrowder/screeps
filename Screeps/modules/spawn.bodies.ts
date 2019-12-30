@@ -218,7 +218,7 @@ function generateHarvesterBody(desiredPotency: number, spawnRoom: Room, assigned
             ? ideals.harvesterPotencyPerSource
             : ideals.harvesterPotencyPerMineral;
 
-        var smallHarvestersCount = _.filter(activeHarvesters, o => potencyUtil.getCreepPotency(o) < maxPotency).length;
+        var smallHarvestersCount = util.filter(activeHarvesters, o => potencyUtil.getCreepPotency(o) < maxPotency).length;
         if (maxPotency >= idealPotency || smallHarvestersCount > 0) {
             potency = Math.min(maxPotency, idealPotency);
         }
@@ -252,16 +252,15 @@ function generateBuilderBody(desiredPotency: number, spawnRoom: Room, assignedRo
     var maxPotency = getMaxPotency(d, spawnRoom, isRemote);
     // in claimed rooms, we always want to have two builders per subRole so they can work on different tasks
     const ideals = idealsManager.getIdeals(assignedRoomName);
-    const idealPotency = subRole === 'upgrader' ? ideals.upgraderPotency : ideals.wallBuilderPotency;
-    const maxPotencyPerBuilder = isRemote ? idealPotency : Math.ceil(idealPotency / 2);
+    const maxPotencyPerBuilder = isRemote ? ideals.builderPotency : Math.ceil(ideals.builderPotency / 2);
     maxPotency = Math.min(maxPotencyPerBuilder, maxPotency);
     var potency = Math.min(desiredPotency || 1, maxPotency);
-    // try to minimize the number of transporters to save CPU (see comment above in harvester function)
+    // try to minimize the number of builders to save CPU (see comment above in harvester function)
     if (potency < maxPotency) {
         const activeBuilders = potencyUtil.getActiveCreeps(assignedRoomName, 'builder', subRole);
         const smallBuildersCount = util.filter(activeBuilders, o => potencyUtil.getCreepPotency(o) < maxPotency).length;
-        if (maxPotency >= idealPotency || smallBuildersCount > 0) {
-            potency = Math.min(maxPotency, idealPotency);
+        if (maxPotency >= ideals.builderPotency || smallBuildersCount > 0) {
+            potency = Math.min(maxPotency, ideals.builderPotency);
         }
     }
     return generateBodyInternal(potency, spawnRoom, d, isRemote);

@@ -41,7 +41,9 @@ function getRoomsToProcess(directives: rooms.ControlDirective[]): string[] {
 
 function processOrders(roomName: string) {
 
-    var needsRefresh = Game.time % 133 === 0;
+    const room = Game.rooms[roomName];
+
+    var needsRefresh = Game.time % 133 === 0 || (room && util.getThreatLevel(room) > 0);
 
     const roomOrder = spawnOrders.getRoomOrder(roomName);
     var didFulfillOrder = spawnOrders.fulfillRoomOrder(roomOrder);
@@ -49,7 +51,6 @@ function processOrders(roomName: string) {
         needsRefresh = true;
     }
 
-    const room = Game.rooms[roomName];
     if (room) {
         const activeSources = room.find(FIND_SOURCES, { filter: (o: Source) => util.isSourceActive(o) }) as Array<Source | Mineral>;
         const activeMinerals = room.find(FIND_MINERALS, { filter: (o: Mineral) => util.isMineralActive(o) }) as Array<Source | Mineral>;
