@@ -17,7 +17,7 @@ function getControlDirectives() {
                 maxPotency: 10,
                 automateTargets: false,
                 autoDeclareVictory: false,
-                raiderBodyType: enums.SLAYER,
+                raiderRole: enums.SLAYER,
                 targetStructureIds: [
                     '5bbcac009099fc012e634aa7'
                 ]

@@ -84,7 +84,7 @@
     <TypeScriptCompile Include="modules\map.ts" />
     <TypeScriptCompile Include="modules\mobilization.ts" />
     <TypeScriptCompile Include="legacy\ravager-obsolete.ts" />
-    <TypeScriptCompile Include="modules\role.battle.ravager.ts" />
+    <TypeScriptCompile Include="modules\role.combatant.ts" />
     <TypeScriptCompile Include="legacy\role.mercenary.ts" />
     <TypeScriptCompile Include="modules\role.scout.ts" />
     <TypeScriptCompile Include="legacy\role.siege.crusher.ts" />
@@ -103,7 +103,6 @@
     <TypeScriptCompile Include="modules\cache.ts" />
     <TypeScriptCompile Include="modules\rooms.ts" />
     <TypeScriptCompile Include="modules\util.modes.ts" />
-    <TypeScriptCompile Include="modules\util.potency.ts" />
     <TypeScriptCompile Include="modules\util.ts" />
   </ItemGroup>
   <ItemGroup>

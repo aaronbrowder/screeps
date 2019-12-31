@@ -1,5 +1,6 @@
 import * as util from './util';
 import * as rooms from './rooms';
+import * as enums from './enums';
 
 export function assignTransporters() {
 
@@ -53,7 +54,7 @@ export function assignTransporters() {
         const transporters: Array<Creep> = [];
         for (let i in Game.creeps) {
             var creep = Game.creeps[i];
-            if (creep.memory.role === 'transporter' && creep.memory.assignedRoomName === target.room.name) {
+            if (creep.memory.role === enums.TRANSPORTER && creep.memory.assignedRoomName === target.room.name) {
                 transporters.push(creep);
             }
         }
@@ -116,7 +117,7 @@ function switchModes(roomName) {
     var dump = false;
     for (var name in Game.creeps) {
         var creep = Game.creeps[name];
-        if (creep.memory.role !== 'transporter' || creep.memory.assignedRoomName !== roomName) continue;
+        if (creep.memory.role !== enums.TRANSPORTER || creep.memory.assignedRoomName !== roomName) continue;
         // if creep is empty, switch to collect mode
         if (!creep.memory.isCollecting && _.sum(creep.store) === 0) {
             switchModes(true);
@@ -134,7 +135,7 @@ function switchModes(roomName) {
     }
     for (var name in Game.creeps) {
         var creep = Game.creeps[name];
-        if (dump && creep.memory.role === 'transporter' && creep.memory.assignedRoomName === roomName) {
+        if (dump && creep.memory.role === enums.TRANSPORTER && creep.memory.assignedRoomName === roomName) {
             creep.memory.assignments = null;
         }
     }

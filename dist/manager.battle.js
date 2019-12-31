@@ -43,7 +43,7 @@ function declareVictory(wave) {
     // All creeps spawned to fight in this room will wait around until they die.
     // We don't want to recycle them, in case enemy reinforcements arrive.
     // We do however want to cancel all ravagers in spawn queues.
-    queue.removeItemsFromAllQueues(o => o.assignedRoomName === wave.targetRoomName);
+    queue.removeItemsFromQueues(o => o.assignedRoomName === wave.targetRoomName);
 }
 exports.declareVictory = declareVictory;
 function assignCreepsToWaves() {
@@ -76,14 +76,14 @@ function getIsWaveReady(wave) {
     }
     if (Game.time >= wave.deadline) {
         // time's up. no point in spawning any more creeps in this wave.
-        queue.removeItemsFromAllQueues(o => o.raidWaveId === wave.id);
+        queue.removeItemsFromQueues(o => o.raidWaveId === wave.id);
         return true;
     }
     const meetupFlag = Game.flags[rooms.getRaidWaveMeetupFlagName(wave.targetRoomName)];
     if (!meetupFlag)
         return false;
     // if there are still creeps in spawn queues, the wave is not ready
-    if (queue.countItemsInAllQueues(o => o.raidWaveId === wave.id) > 0) {
+    if (queue.countItemsInQueues(o => o.raidWaveId === wave.id) > 0) {
         return false;
     }
     console.log('no more raiders in queues. checking if all the creeps in the wave are ready.');

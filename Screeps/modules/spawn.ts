@@ -1,4 +1,5 @@
 import * as util from './util';
+import * as enums from './enums';
 import * as rooms from './rooms';
 import * as sourceManager from './manager.sources';
 import * as battleManager from './manager.battle';
@@ -9,8 +10,9 @@ import * as spawnQueue from './spawn.queue';
 
 export function run() {
 
-    const roomsToProcess = getRoomsToProcess(rooms.getActiveControlDirectives());
+    cleanQueues();
 
+    const roomsToProcess = getRoomsToProcess(rooms.getActiveControlDirectives());
     for (let i in roomsToProcess) {
         processOrders(roomsToProcess[i]);
     }
@@ -21,7 +23,26 @@ export function run() {
     }
 }
 
-function getRoomsToProcess(directives: rooms.ControlDirective[]): string[] {
+function cleanQueues() {
+    // every once in a while, wipe the queues and re-calculate them
+    if (Game.time % 133 === 0) {
+        for (let i in Game.spawns) {
+            const spawn = Game.spawns[i];
+            util.modifySpawnMemory(spawn, o => o.queue = []);
+        }
+    }
+    // check to see if there are any unnecessary defenders in queues
+    for (let i in Game.spawns) {
+        const spawn = Game.spawns[i];
+        // check if the threat level was nonzero in the previous tick but is zero now
+        if (spawn.memory.threatLevel > 0 && util.getThreatLevel(spawn.room) === 0) {
+            spawnQueue.removeItemsFromQueues(o => o.subRole === enums.DEFENDER, [spawn]);
+        }
+        util.modifySpawnMemory(spawn, o => o.threatLevel = util.getThreatLevel(spawn.room));
+    }
+}
+
+function getRoomsToProcess(directives: ControlDirective[]): string[] {
     const rooms = directives.map(o => {
         const room = Game.rooms[o.roomName];
         return {
@@ -43,7 +64,7 @@ function processOrders(roomName: string) {
 
     const room = Game.rooms[roomName];
 
-    var needsRefresh = Game.time % 133 === 0 || (room && util.getThreatLevel(room) > 0);
+    var needsRefresh = Game.time % 111 === 0 || (room && util.getThreatLevel(room) > 0);
 
     const roomOrder = spawnOrders.getRoomOrder(roomName);
     var didFulfillOrder = spawnOrders.fulfillRoomOrder(roomOrder);
@@ -91,7 +112,7 @@ function spawnFromQueue(spawn: StructureSpawn) {
             raidWaveId: item.raidWaveId
         }
     } as any;
-    if (item.role === 'harvester' && !item.assignmentId) {
+    if (item.role === enums.HARVESTER && !item.assignmentId) {
         throw 'trying to spawn a harvester with no assignmentId';
     }
     const result = spawn.spawnCreep(body, creepName, options);
@@ -108,18 +129,31 @@ function getItemFromQueue(spawn: StructureSpawn): SpawnQueueItem {
     if (!queue) return null;
     const eligibleItems = util.filter(queue, o => o.energyCost <= spawn.room.energyCapacityAvailable);
     if (!eligibleItems.length) return null;
+    const canTransport = !!spawn.room.storage && spawn.room.find(FIND_MY_CREEPS, {
+        filter: o => o.memory.role === enums.TRANSPORTER && o.memory.assignedRoomName === spawn.room.name
+    }).length > 0;
     const sorted = util.sortBy(eligibleItems, o => {
-        const room = Game.rooms[o.assignedRoomName];
-        if (o.role === 'hub') return 0;
-        if (o.role === 'scout') return 1;
-        if (o.role === 'ravager') return 2;
-        if (o.role === 'transporter' && room && room.storage && room.storage.store[RESOURCE_ENERGY] > 2000) return 3;
-        if (o.role === 'harvester') return 4;
-        if (o.role === 'builder') return 5;
-        if (o.role === 'transporter') return 6;
-        return 100;
+        const assignedRoom = Game.rooms[o.assignedRoomName];
+        const energyStored = assignedRoom ? util.sum(util.findStores(assignedRoom), o => o.store[RESOURCE_ENERGY]) : 0;
+        var order = getSortOrder(o.role, energyStored);
+        // if we don't have the ability to transport energy to extensions, don't try to spawn something we can't afford
+        if (!canTransport && o.energyCost > spawn.room.energyAvailable) order += 200;
+        // prioritize creeps being spawned for the spawn room
+        if (o.assignedRoomName !== spawn.room.name) order += 100;
+        return order;
     });
     return sorted[0];
+
+    function getSortOrder(role: RoleConstant, energyStored: number) {
+        if (role === enums.HUB) return 0;
+        if (role === enums.SCOUT) return 1;
+        if (role === enums.COMBATANT) return 2;
+        if (role === enums.TRANSPORTER && energyStored > 1000) return 3;
+        if (role === enums.HARVESTER) return 4;
+        if (role === enums.BUILDER) return 5;
+        if (role === enums.TRANSPORTER) return 6;
+        return 100;
+    }
 }
 
 function getSpawnDirections(spawn: StructureSpawn, item: SpawnQueueItem) {
@@ -129,7 +163,7 @@ function getSpawnDirections(spawn: StructureSpawn, item: SpawnQueueItem) {
     const hubFlag = util.findHubFlag(spawn.room);
     if (!hubFlag || !hubFlag.pos.inRangeTo(spawn, 1)) return directions;
     const hubFlagDirection = spawn.pos.getDirectionTo(hubFlag);
-    if (item.role === 'hub') {
+    if (item.role === enums.HUB) {
         return [hubFlagDirection];
     }
     const removeIndex = directions.indexOf(hubFlagDirection);

@@ -97,7 +97,7 @@ export function run() {
     }
 
     function spawnClaimer() {
-        const role = 'claimer';
+        const role = enums.CLAIMER;
         const body = [CLAIM, CLAIM, CLAIM, MOVE, MOVE, MOVE];
         return spawnCreep(role, body);
     }

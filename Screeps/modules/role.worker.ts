@@ -1,4 +1,5 @@
 import * as map from './map';
+import * as enums from './enums';
 import * as util from './util';
 
 export function run(creep: Creep) {
@@ -32,7 +33,7 @@ export function run(creep: Creep) {
     //}
 
     // remote transporters can spontaneously unload energy into empty convenience containers they happen to pass by
-    if (creep.memory.role === 'transporter' && util.isCreepRemote(creep) && creep.store[RESOURCE_ENERGY] > 0 && !creep.memory.isCollecting) {
+    if (creep.memory.role === enums.TRANSPORTER && util.isCreepRemote(creep) && creep.store[RESOURCE_ENERGY] > 0 && !creep.memory.isCollecting) {
 
         const nearbyConvenienceContainers = creep.pos.findInRange<StructureContainer>(FIND_STRUCTURES, 1, {
             filter: o => util.isContainer(o) && o.storeCapacity - _.sum(o.store) >= creep.store[RESOURCE_ENERGY]

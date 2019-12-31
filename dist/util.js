@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const enums = require("./enums");
 function getBestValue(valueData) {
     var best = null;
     var bestValue = -10000;
@@ -132,7 +133,7 @@ exports.moveToMoveTarget = moveToMoveTarget;
 function findHubFlag(room) {
     if (!room)
         return null;
-    return room.find(FIND_FLAGS, { filter: (o) => o.name.startsWith('Hub') })[0];
+    return room.find(FIND_FLAGS, { filter: (o) => o.name.toLowerCase().startsWith(enums.HUB) })[0];
 }
 exports.findHubFlag = findHubFlag;
 function findSpawns(roomName, maxDistanceToSearch, distance) {
@@ -167,7 +168,7 @@ function findRoomsForSpawning(roomName, maxDistanceToSearch, distance) {
 exports.findRoomsForSpawning = findRoomsForSpawning;
 function isCreepWorker(creep) {
     var role = creep.memory.role;
-    return role === 'harvester' || role === 'transporter' || role === 'builder' || role === 'claimer';
+    return role === enums.HARVESTER || role === enums.TRANSPORTER || role === enums.BUILDER || role === enums.CLAIMER;
 }
 function isCreepRemote(creep) {
     return creep.memory.assignedRoomName !== creep.memory.homeRoomName;
@@ -243,6 +244,9 @@ function countCreeps(role, filter) {
 }
 exports.countCreeps = countCreeps;
 function getThreatLevel(room) {
+    if (room.controller && room.controller.my && room.controller.safeMode > 500) {
+        return 0;
+    }
     const hostileCreeps = room.find(FIND_HOSTILE_CREEPS, {
         filter: (o) => o.getActiveBodyparts(ATTACK) > 0 ||
             o.getActiveBodyparts(RANGED_ATTACK) > 0 ||
@@ -250,11 +254,17 @@ function getThreatLevel(room) {
     });
     if (!hostileCreeps.length)
         return 0;
+    const creepsWithAttackParts = room.find(FIND_HOSTILE_CREEPS, {
+        filter: (o) => o.getActiveBodyparts(ATTACK) > 0 ||
+            o.getActiveBodyparts(RANGED_ATTACK) > 0
+    });
+    if (!creepsWithAttackParts.length)
+        return 0;
     // normalize the threat level so that a threat level of 1 means 1 attack part
     // TODO take boosts into consideration
     return sum(hostileCreeps, o => (o.getActiveBodyparts(ATTACK)) +
-        (o.getActiveBodyparts(RANGED_ATTACK)) +
-        (0.25 * o.getActiveBodyparts(TOUGH)) +
+        (0.3 * o.getActiveBodyparts(RANGED_ATTACK)) +
+        (0.1 * o.getActiveBodyparts(TOUGH)) +
         (2 * o.getActiveBodyparts(HEAL)));
 }
 exports.getThreatLevel = getThreatLevel;
@@ -377,7 +387,7 @@ function countBodyParts(body, type) {
 }
 exports.countBodyParts = countBodyParts;
 function isWorkerRole(role) {
-    return role === 'builder' || role === 'harvester' || role === 'transporter' || role === 'hub';
+    return role === enums.BUILDER || role === enums.HARVESTER || role === enums.TRANSPORTER || role === enums.HUB;
 }
 exports.isWorkerRole = isWorkerRole;
 function countSurroundingWalls(pos) {
@@ -408,4 +418,8 @@ function findWallsAndRamparts(room) {
     return room.find(FIND_STRUCTURES, { filter: o => isWall(o) || isRampart(o) });
 }
 exports.findWallsAndRamparts = findWallsAndRamparts;
+function findStores(room) {
+    return room.find(FIND_STRUCTURES, { filter: o => isContainer(o) || isStorage(o) });
+}
+exports.findStores = findStores;
 //# sourceMappingURL=util.js.map

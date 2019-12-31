@@ -33,7 +33,7 @@ export function getIdeals(roomName: string) {
     return cache.get(key, 93, () => getIdealsInternal(roomName, directive, threatLevel));
 }
 
-function getIdealsInternal(roomName: string, directive: enums.DirectiveConstant, threatLevel: number): Ideals {
+function getIdealsInternal(roomName: string, directive: DirectiveConstant, threatLevel: number): Ideals {
 
     if (directive !== enums.DIRECTIVE_CLAIM &&
         directive !== enums.DIRECTIVE_HARVEST &&
@@ -43,6 +43,8 @@ function getIdealsInternal(roomName: string, directive: enums.DirectiveConstant,
 
     const room = Game.rooms[roomName];
     if (!room) return defaultIdeals();
+
+    const isThreatBig = threatLevel > Math.pow(room.controller.level, 2);
 
     const hubFlag = util.findHubFlag(room);
 
@@ -71,25 +73,25 @@ function getIdealsInternal(roomName: string, directive: enums.DirectiveConstant,
         if (room.controller.my) {
             const level = room.controller.level;
             var result = 4;
-            // before getting the first spawn up, we'll need a lot of help from other rooms
-            if (!room.find(FIND_MY_SPAWNS).length) {
-                result = 10;
-            }
             // if level is not high enough to build storage, consumption mode is not possible, so we 
             // need to make sure we have enough builders to upgrade and build walls.
             if (level === 2) {
-                result = 8;
+                result = 10;
             }
             if (level === 3) {
-                result = 12;
+                result = 16;
+            }
+            // before getting the first spawn up, we'll need a lot of help from other rooms
+            if (!room.find(FIND_MY_SPAWNS).length) {
+                result = 16;
             }
             // make sure we have enough builders to build our structures
-            if (level > 3 && nonRoadConstructionSites.length) {
-                result = 12;
+            if (level >= 3 && nonRoadConstructionSites.length) {
+                result = 16;
             }
-            // if in consumption mode, we go all out -- enough to make the energy in storage go back down
+            // if in consumption mode, we go all out: enough to make the energy in storage go back down
             if (modes.getConsumptionMode(room)) {
-                result = 24;
+                result = 32;
             }
             return result;
         }
@@ -118,7 +120,7 @@ function getIdealsInternal(roomName: string, directive: enums.DirectiveConstant,
         }
         if (directive === enums.DIRECTIVE_CLAIM) {
             result += 6;
-            if (threatLevel > 20) {
+            if (isThreatBig) {
                 result += 6;
             }
             if (!towers.length) {
@@ -165,12 +167,11 @@ function getIdealsInternal(roomName: string, directive: enums.DirectiveConstant,
     }
 
     function getIdealDefenderPotency() {
-        var result = 0;
-        // TODO allow defending reserved rooms using waves
+        var result = 0
         if (directive === enums.DIRECTIVE_CLAIM) {
-            // defender potency is measured by the number of ATTACK parts, but ravagers also have some
-            // RANGED_ATTACK and TOUGH parts. we should take this into account when examining the threat level.
-            result = Math.ceil(threatLevel / 2);
+            // here 1 simply indicates that we want to spawn defenders.
+            // we will keep spawning defenders until the threat is gone.
+            return isThreatBig ? 1 : 0;
         }
         return result;
     }

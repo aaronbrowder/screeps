@@ -1,9 +1,9 @@
 ﻿import * as util from './util';
 import * as rooms from './rooms';
+import * as enums from './enums';
 import * as map from './map';
 import * as spawnMetrics from './spawn.metrics';
 import * as bodies from './spawn.bodies';
-import { RaidDirective } from './rooms';
 
 const creepLifetime = 1500;
 const battleTime = 250;
@@ -16,7 +16,7 @@ export function createWave(targetRoomName: string) {
     const targetFlag = rooms.getFlag(targetRoomName);
     const raidDirective = rooms.getRaidDirective(targetRoomName);
     const distance = map.measurePathDistance(meetupFlag.pos, targetFlag.pos);
-    const travelTime = distance / bodies.getMoveSpeed(raidDirective.raiderBodyType);
+    const travelTime = distance / bodies.getMoveSpeed(enums.COMBATANT, raidDirective.raiderRole);
     const wave: RaidWave = {
         id: Game.time,
         targetRoomName: targetRoomName,
@@ -49,7 +49,7 @@ export function getWaveSize(roomName: string) {
 }
 
 function getExistingRaidPotency(roomName: string, directive: RaidDirective) {
-    const estimatedSpawnTime = directive.maxPotency * bodies.getUnitSpawnTime(directive.raiderBodyType);
+    const estimatedSpawnTime = directive.maxPotency * bodies.getUnitSpawnTime(enums.COMBATANT, directive.raiderRole);
     const buffer = estimatedSpawnTime + 150;
     const wavesForRoom = util.filter(Memory.raidWaves, o => o.targetRoomName === roomName);
     const creeps = util.selectMany(wavesForRoom, o => o.creeps).map(id => Game.getObjectById(id));
@@ -78,16 +78,16 @@ function getMaxPotencyGivenEnergyConstraints(spawn: StructureSpawn, directive: R
     const buffer = 3000;
     const totalEnergyAvailable = Math.max(0, room.storage.store[RESOURCE_ENERGY] - energyDevotedToQueues - buffer);
     const energyAvailableToSpawn = totalEnergyAvailable / spawnsInRoom.length;
-    const result = energyAvailableToSpawn / bodies.getUnitCost(directive.raiderBodyType);
+    const result = energyAvailableToSpawn / bodies.getUnitCost(enums.COMBATANT, directive.raiderRole);
     console.log('max potency given energy constraints: ' + result);
     return result;
 }
 
 function getMaxPotencyGivenTimeConstraints(distance: number, directive: RaidDirective) {
-    const travelTime = distance / bodies.getMoveSpeed(directive.raiderBodyType);
+    const travelTime = distance / bodies.getMoveSpeed(enums.COMBATANT, directive.raiderRole);
     console.log('travel time: ' + travelTime);
     const timeLeftForSpawning = Math.max(0, creepLifetime - travelTime - battleTime);
-    const result = timeLeftForSpawning / bodies.getUnitSpawnTime(directive.raiderBodyType);
+    const result = timeLeftForSpawning / bodies.getUnitSpawnTime(enums.COMBATANT, directive.raiderRole);
     console.log('max potency given time constraints: ' + result);
     return result;
 }

@@ -1,5 +1,6 @@
 import * as map from './map';
 import * as util from './util';
+import * as enums from './enums';
 import * as modes from './util.modes';
 import * as cache from './cache';
 import * as builderAssignment from './assignment.builder';
@@ -74,7 +75,7 @@ export function run(creep: Creep) {
         function getSourceValue(source: Source) {
             var value = getCollectTargetValue(source, o => o.energy);
             if (value === 0) return 0;
-            const harvesters = source.pos.findInRange(FIND_MY_CREEPS, 2, { filter: o => o.memory.role === 'harvester' });
+            const harvesters = source.pos.findInRange(FIND_MY_CREEPS, 2, { filter: o => o.memory.role === enums.HARVESTER });
             if (harvesters.length === 1) return value - 15;
             else if (harvesters.length > 1) return -1000;
             return value;
@@ -99,8 +100,8 @@ export function run(creep: Creep) {
         }
         // if there are no harvesters in this room or no transporters, the builder should deliver to the spawn
         var spawn = creep.pos.findClosestByPath(FIND_MY_SPAWNS);
-        var hasHarvesters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === 'harvester' }).length;
-        var hasTransporters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === 'transporter' }).length;
+        var hasHarvesters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === enums.HARVESTER }).length;
+        var hasTransporters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === enums.TRANSPORTER }).length;
         if (spawn && (!hasHarvesters || !hasTransporters)) {
             if (util.deliverToSpawn(creep, spawn)) return;
         }
@@ -176,7 +177,11 @@ export function run(creep: Creep) {
                 var wall = Game.getObjectById<StructureWall | StructureRampart>(creep.memory.preferredWallId);
                 if (wall) return wall;
             }
-            const areAllWallsInTowerRange = cache.get('0947f8ac-dfa5-4609-870d-63cc483a51d9-' + room.name, 899, () => {
+            // In consumption mode only, if not all the walls are in tower range, we want to only
+            // build up the walls not in tower range. If all walls ARE in tower range, or when NOT
+            // in consumption mode, we can build up whichever walls we want.
+            const consumptionMode = modes.getConsumptionMode(creep.room);
+            const areAllWallsInTowerRange = cache.get('0947f8ac-dfa5-4609-870d-63cc483a51d9-' + room.name, 299, () => {
                 let allWalls = room.find<StructureWall | StructureRampart>(FIND_STRUCTURES, {
                     filter: o => (util.isWall(o) || util.isRampart)
                 });
@@ -184,26 +189,22 @@ export function run(creep: Creep) {
                     filter: p => util.isTower(p)
                 }).length === 0);
             });
+            const canTargetWallsInTowerRange = areAllWallsInTowerRange || !consumptionMode;
             const walls = room.find<StructureWall | StructureRampart>(FIND_STRUCTURES, {
                 filter: o =>
                     (util.isWall(o) || util.isRampart) &&
                     o.hits < o.hitsMax &&
-                    // If not all the walls are in tower range, we want to only build up the walls not in tower range.
-                    // If all walls ARE in tower range, we can build up whichever walls we want.
-                    (areAllWallsInTowerRange ||
+                    (canTargetWallsInTowerRange ||
                         !o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, { filter: p => util.isTower(p) }).length)
             });
             if (walls.length) {
-                // at first, increase the wall hits geometrically
-                for (let hits = 1000; hits <= 128000; hits *= 2) {
-                    const wall = creep.pos.findClosestByPath(walls, { filter: o => o.hits < hits });
-                    if (wall) {
-                        creep.memory.preferredWallId = wall.id;
-                        return wall;
+                // At first, go up in increments of 1k. After hitting 10k, the increment becomes 10k,
+                // and at 100k the increment becomes 100k. After that the increment is always 100k.
+                var increment = 1000;
+                for (let hits = 1000; hits <= 100000; hits += increment) {
+                    if (hits === 10000 || hits === 100000) {
+                        increment = hits;
                     }
-                }
-                // after reaching 100k, go up in increments of 100k until we get to 300 million
-                for (let hits = 200000; hits <= 300000000; hits += 100000) {
                     const wall = creep.pos.findClosestByPath(walls, { filter: o => o.hits < hits });
                     if (wall) {
                         creep.memory.preferredWallId = wall.id;

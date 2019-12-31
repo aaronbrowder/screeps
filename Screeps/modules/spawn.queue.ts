@@ -6,8 +6,8 @@ import * as bodies from './spawn.bodies';
 import * as spawnMetrics from './spawn.metrics';
 import * as sources from './manager.sources';
 
-export function addItemToQueue(spawn: StructureSpawn, assignedRoomName: string, role: string,
-    subRole: string, assignmentId: string, bodyResult: bodies.BodyResult, raidWaveId: number) {
+export function addItemToQueue(spawn: StructureSpawn, assignedRoomName: string, role: RoleConstant,
+    subRole: SubRoleConstant, assignmentId: string, bodyResult: bodies.BodyResult, raidWaveId: number) {
 
     const item: SpawnQueueItem = {
         spawnId: spawn.id,
@@ -52,9 +52,17 @@ export function removeItemFromQueue(item: SpawnQueueItem) {
     return true;
 }
 
-export function removeItemsFromAllQueues(func: (o: SpawnQueueItem) => boolean) {
-    for (let i in Game.spawns) {
-        const spawn = Game.spawns[i];
+export function removeItemsFromQueues(func: (o: SpawnQueueItem) => boolean, spawns?: Array<StructureSpawn>) {
+    if (spawns) {
+        for (let i = 0; i < spawns.length; i++) {
+            removeItemsFromQueueInternal(spawns[i]);
+        }
+    } else {
+        for (let i in Game.spawns) {
+            removeItemsFromQueueInternal(Game.spawns[i]);
+        }
+    }
+    function removeItemsFromQueueInternal(spawn: StructureSpawn) {
         const queue = getQueue(spawn);
         while (true) {
             const result = queue.findIndex(func);
@@ -65,21 +73,27 @@ export function removeItemsFromAllQueues(func: (o: SpawnQueueItem) => boolean) {
     }
 }
 
-export function countItemsInAllQueues(func: (o: SpawnQueueItem) => boolean): number {
+export function countItemsInQueues(func: (o: SpawnQueueItem) => boolean, spawns?: Array<StructureSpawn>): number {
     var count = 0;
-    for (let i in Game.spawns) {
-        const spawn = Game.spawns[i];
-        const queue = getQueue(spawn);
-        count += util.count(queue, func);
+    if (spawns) {
+        for (let i = 0; i < spawns.length; i++) {
+            const queue = getQueue(spawns[i]);
+            count += util.count(queue, func);
+        }
+    } else {
+        for (let i in Game.spawns) {
+            const queue = getQueue(Game.spawns[i]);
+            count += util.count(queue, func);
+        }
     }
     return count;
 }
 
-function determineHomeRoom(role: string, assignedRoomName: string): string {
-    if (role === 'harvester' || role === 'builder') {
+function determineHomeRoom(role: RoleConstant, assignedRoomName: string): string {
+    if (role === enums.HARVESTER || role === enums.BUILDER) {
         return assignedRoomName;
     }
-    if (role === 'transporter' && rooms.getDirective(assignedRoomName) === enums.DIRECTIVE_CLAIM) {
+    if (role === enums.TRANSPORTER && rooms.getDirective(assignedRoomName) === enums.DIRECTIVE_CLAIM) {
         return assignedRoomName;
     }
     const maxDistance = getMaxDistance();
@@ -110,14 +124,14 @@ function determineHomeRoom(role: string, assignedRoomName: string): string {
     function getMaxDistance() {
         switch (role) {
             // transporters will not be efficient if they have to travel long distances
-            case 'transporter': return 2;
+            case enums.TRANSPORTER: return 2;
             default: return 4;
         }
     }
 
     function getPathDistance(spawn: StructureSpawn) {
         const room = Game.rooms[assignedRoomName];
-        if (room && role === 'transporter') {
+        if (room && role === enums.TRANSPORTER) {
             // use source metrics for transporters, because that takes into account links, etc.
             const source = room.find(FIND_SOURCES)[0];
             if (source) {

@@ -7,9 +7,10 @@ const roleTransporter = require("./role.worker.transporter");
 const roleHub = require("./role.worker.hub");
 const roleClaimer = require("./role.worker.claimer");
 const roleScout = require("./role.scout");
-const roleRavager = require("./role.battle.ravager");
+const roleCombatant = require("./role.combatant");
 const structureTerminal = require("./structure.terminal");
 const util = require("./util");
+const enums = require("./enums");
 function benchmark(place) {
     //const item = benchmarkArray[place];
     //item.number = item.number + 1;
@@ -20,13 +21,13 @@ var tempTime;
 const benchmarkArray = {};
 benchmarkArray['elderly'] = { time: 0, number: 0 };
 benchmarkArray['recycle'] = { time: 0, number: 0 };
-benchmarkArray['harvester'] = { time: 0, number: 0 };
-benchmarkArray['transporter'] = { time: 0, number: 0 };
-benchmarkArray['builder'] = { time: 0, number: 0 };
-benchmarkArray['hub'] = { time: 0, number: 0 };
-benchmarkArray['claimer'] = { time: 0, number: 0 };
-benchmarkArray['scout'] = { time: 0, number: 0 };
-benchmarkArray['ravager'] = { time: 0, number: 0 };
+benchmarkArray[enums.HARVESTER] = { time: 0, number: 0 };
+benchmarkArray[enums.TRANSPORTER] = { time: 0, number: 0 };
+benchmarkArray[enums.BUILDER] = { time: 0, number: 0 };
+benchmarkArray[enums.HUB] = { time: 0, number: 0 };
+benchmarkArray[enums.CLAIMER] = { time: 0, number: 0 };
+benchmarkArray[enums.SCOUT] = { time: 0, number: 0 };
+benchmarkArray[enums.COMBATANT] = { time: 0, number: 0 };
 function run() {
     const terminals = _.filter(Game.structures, o => util.isTerminal(o));
     for (let i = 0; i < terminals.length; i++) {
@@ -37,53 +38,57 @@ function run() {
         if (creep.spawning)
             continue;
         tempTime = Game.cpu.getUsed();
-        const elderlyThreshold = creep.memory.role === 'hub' ? 10 : 100;
+        const elderlyThreshold = creep.memory.role === enums.HUB ? 10 : 100;
         if (creep.ticksToLive < elderlyThreshold && !creep.memory.isElderly) {
             creep.memory.isElderly = true;
             util.refreshOrders(creep.memory.assignedRoomName);
         }
         benchmark('elderly');
+        // don't send necessary defenders to recycle!
+        if (creep.memory.markedForRecycle && creep.memory.subRole === enums.DEFENDER && util.getThreatLevel(creep.room) > 0) {
+            creep.memory.markedForRecycle = false;
+        }
         if (creep.memory.markedForRecycle) {
             if (util.goToRecycle(creep))
                 continue;
         }
         benchmark('recycle');
-        if (creep.memory.role === 'harvester') {
+        if (creep.memory.role === enums.HARVESTER) {
             if (roleWorker.run(creep))
                 continue;
             roleHarvester.run(creep);
         }
-        benchmark('harvester');
-        if (creep.memory.role === 'transporter') {
+        benchmark(enums.HARVESTER);
+        if (creep.memory.role === enums.TRANSPORTER) {
             if (roleWorker.run(creep))
                 continue;
             roleTransporter.run(creep);
         }
-        benchmark('transporter');
-        if (creep.memory.role === 'builder') {
+        benchmark(enums.TRANSPORTER);
+        if (creep.memory.role === enums.BUILDER) {
             if (roleWorker.run(creep))
                 continue;
             roleBuilder.run(creep);
         }
-        benchmark('builder');
-        if (creep.memory.role === 'hub') {
+        benchmark(enums.BUILDER);
+        if (creep.memory.role === enums.HUB) {
             roleHub.run(creep);
         }
-        benchmark('hub');
-        if (creep.memory.role === 'claimer') {
+        benchmark(enums.HUB);
+        if (creep.memory.role === enums.CLAIMER) {
             if (roleWorker.run(creep))
                 continue;
             roleClaimer.run(creep);
         }
-        benchmark('claimer');
-        if (creep.memory.role === 'scout') {
+        benchmark(enums.CLAIMER);
+        if (creep.memory.role === enums.SCOUT) {
             roleScout.run(creep);
         }
-        benchmark('scout');
-        if (creep.memory.role === 'ravager') {
-            roleRavager.run(creep);
+        benchmark(enums.SCOUT);
+        if (creep.memory.role === enums.COMBATANT) {
+            roleCombatant.run(creep);
         }
-        benchmark('ravager');
+        benchmark(enums.COMBATANT);
     }
     //for (let place in benchmarkArray) {
     //    const item = benchmarkArray[place];

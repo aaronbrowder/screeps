@@ -1,4 +1,75 @@
 ﻿
+type HARVESTER = 'harvester';
+type TRANSPORTER = 'transporter';
+type BUILDER = 'builder';
+type CLAIMER = 'claimer';
+type SCOUT = 'scout';
+type HUB = 'hub';
+type RAVAGER = 'ravager';
+type SLAYER = 'slayer';
+type DEFENDER = 'defender';
+type COMBATANT = 'combatant';
+
+type BodyTypeConstant =
+    HARVESTER |
+    TRANSPORTER |
+    BUILDER |
+    CLAIMER |
+    SCOUT |
+    HUB |
+    RAVAGER |
+    SLAYER |
+    DEFENDER;
+
+type RoleConstant =
+    HARVESTER |
+    TRANSPORTER |
+    BUILDER |
+    CLAIMER |
+    SCOUT |
+    HUB |
+    COMBATANT;
+
+type SubRoleConstant =
+    RAVAGER |
+    SLAYER |
+    DEFENDER;
+
+type DIRECTIVE_NONE = 0;
+type DIRECTIVE_CLAIM = 1;
+type DIRECTIVE_RESERVE = 2;
+type DIRECTIVE_HARVEST = 3;
+type DIRECTIVE_RAID = 4;
+type DIRECTIVE_RESERVE_AND_HARVEST = 5;
+
+type DirectiveConstant =
+    DIRECTIVE_NONE |
+    DIRECTIVE_CLAIM |
+    DIRECTIVE_RESERVE |
+    DIRECTIVE_HARVEST |
+    DIRECTIVE_RAID |
+    DIRECTIVE_RESERVE_AND_HARVEST;
+
+interface ControlDirective {
+    roomName: string;
+    flagName: string;
+    directive: DirectiveConstant;
+    raidDirective?: RaidDirective;
+    raidWaveMeetupFlagName?: string;
+}
+
+interface RaidDirective {
+    targetStructureIds: Array<Id<Structure>>;
+    automateTargets: boolean;
+    autoDeclareVictory: boolean;
+    raiderRole: SubRoleConstant;
+    // If maxPotency is set, we will only spawn a limited number of creeps. The creeps
+    // will be respawned when they die or are about to die of age.
+    // If maxPotency is not set, as many creeps as possible will be spawned until the
+    // directive is turned off or until victory is declared.
+    maxPotency?: number;
+}
+
 interface RepositoryInfo {
     repository: Structure;
     distance: number;
@@ -27,8 +98,8 @@ interface Memory {
 }
 
 interface CreepMemory {
-    role: string;
-    subRole: string;
+    role: RoleConstant;
+    subRole: SubRoleConstant;
     assignedRoomName: string;
     isCollecting: boolean;
     assignments: Array<TransporterAssignment>;
@@ -93,8 +164,8 @@ interface SpawnDistance {
 
 interface SpawnQueueItem {
     spawnId: string;
-    role: string;
-    subRole: string;
+    role: RoleConstant;
+    subRole: SubRoleConstant;
     assignmentId: string;
     assignedRoomName: string;
     homeRoomName: string;
@@ -108,4 +179,5 @@ interface SpawnQueueItem {
 interface SpawnMemory {
     queue: SpawnQueueItem[];
     distances: { [roomName: string]: SpawnDistance };
+    threatLevel: number;
 }

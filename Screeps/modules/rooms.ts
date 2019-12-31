@@ -1,26 +1,6 @@
 import * as util from './util';
 import * as enums from './enums';
 
-export interface ControlDirective {
-    roomName: string;
-    flagName: string;
-    directive: enums.DirectiveConstant;
-    raidDirective?: RaidDirective;
-    raidWaveMeetupFlagName?: string;
-}
-
-export interface RaidDirective {
-    targetStructureIds: Array<Id<Structure>>;
-    automateTargets: boolean;
-    autoDeclareVictory: boolean;
-    raiderBodyType: enums.BodyTypeConstant;
-    // If maxPotency is set, we will only spawn a limited number of creeps. The creeps
-    // will be respawned when they die or are about to die of age.
-    // If maxPotency is not set, as many creeps as possible will be spawned until the
-    // directive is turned off or until victory is declared.
-    maxPotency?: number;
-}
-
 export function getControlDirectives(): ControlDirective[] {
     return [
         { roomName: 'W17S6', flagName: 'Colony1', directive: enums.DIRECTIVE_CLAIM },
@@ -36,7 +16,7 @@ export function getControlDirectives(): ControlDirective[] {
                 maxPotency: 10,
                 automateTargets: false,
                 autoDeclareVictory: false,
-                raiderBodyType: enums.SLAYER,
+                raiderRole: enums.SLAYER,
                 targetStructureIds: [
                     '5bbcac009099fc012e634aa7' as Id<Structure>
                 ]

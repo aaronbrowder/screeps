@@ -1,5 +1,4 @@
 import * as util from './util';
-import * as potency from './util.potency';
 import * as rooms from './rooms';
 import * as enums from './enums';
 import * as idealsManager from './spawn.ideals';
@@ -9,11 +8,12 @@ import * as bodies from './spawn.bodies';
 import * as spawnMetrics from './spawn.metrics';
 
 interface OrderPartOptions {
-    subRole?: string;
+    subRole?: SubRoleConstant;
     assignmentId?: string;
     raidWaveId?: number;
     meetupFlagName?: string;
     onlyOneCreep?: boolean;
+    useMaxPotency?: boolean;
 }
 
 export function getRoomOrder(roomName: string) {
@@ -39,7 +39,7 @@ export function getRoomOrder(roomName: string) {
         if (rooms.getDoRaid(roomName)) {
             raidWaveSize = raid.getWaveSize(roomName);
         } else {
-            const scoutPotency = potency.getPotency(roomName, 'scout');
+            const scoutPotency = bodies.getPotency(roomName, enums.SCOUT);
             if (!scoutPotency) {
                 scoutPotencyNeeded = 1;
             }
@@ -50,7 +50,7 @@ export function getRoomOrder(roomName: string) {
 
         if (room.controller && !room.controller.my) {
             if (directive === enums.DIRECTIVE_CLAIM) {
-                if (potency.getPotency(roomName, 'claimer') === 0) {
+                if (bodies.getPotency(roomName, enums.CLAIMER) === 0) {
                     claimerPotencyNeeded = 1;
                 }
             } else if (directive === enums.DIRECTIVE_RESERVE || directive === enums.DIRECTIVE_RESERVE_AND_HARVEST) {
@@ -60,7 +60,7 @@ export function getRoomOrder(roomName: string) {
                     // the controller has been reserved for nearly the maximum amount of time.
                     // it's pointless to spawn a claimer right now.
                 } else {
-                    const claimerPotency = potency.getPotency(roomName, 'claimer');
+                    const claimerPotency = bodies.getPotency(roomName, enums.CLAIMER);
                     claimerPotencyNeeded = ideals.claimerPotencyForReservation - claimerPotency;
                     if (claimerPotencyNeeded < 0) claimerPotencyNeeded = 0;
                     if (claimerPotency > 0 && util.countSurroundingWalls(room.controller.pos) === 7) {
@@ -73,32 +73,32 @@ export function getRoomOrder(roomName: string) {
             }
         }
 
-        const transporterPotency = potency.getPotency(roomName, 'transporter');
+        const transporterPotency = bodies.getPotency(roomName, enums.TRANSPORTER);
         transporterPotencyNeeded = ideals.transporterPotency - transporterPotency;
 
-        const builderPotency = potency.getPotency(roomName, 'builder');
+        const builderPotency = bodies.getPotency(roomName, enums.BUILDER);
         builderPotencyNeeded = ideals.builderPotency - builderPotency;
 
-        const ravagerPotency = potency.getPotency(roomName, 'ravager');
-        defenderPotencyNeeded = ideals.defenderPotency - ravagerPotency;
+        // always keep spawning defenders until the threat is gone
+        defenderPotencyNeeded = ideals.defenderPotency;
 
         const hubFlag = util.findHubFlag(room);
-        if (hubFlag && room.storage && potency.getPotency(roomName, 'hub') === 0) {
+        if (hubFlag && room.storage && bodies.getPotency(roomName, enums.HUB) === 0) {
             hubPotencyNeeded = Math.floor(.65 * Math.sqrt(room.energyCapacityAvailable / 50));
         }
 
         // we can never create an order with negative potency.
         // but we can recycle some creep, or remove one from the queue.
         if (transporterPotencyNeeded < 0) {
-            deleteCreep(roomName, 'transporter');
+            deleteCreep(roomName, enums.TRANSPORTER);
             transporterPotencyNeeded = 0;
         }
         if (builderPotencyNeeded < 0) {
-            deleteCreep(roomName, 'builder');
+            deleteCreep(roomName, enums.BUILDER);
             builderPotencyNeeded = 0;
         }
         if (defenderPotencyNeeded < 0) {
-            deleteCreep(roomName, 'ravager');
+            deleteCreep(roomName, enums.COMBATANT, enums.DEFENDER);
             defenderPotencyNeeded = 0;
         }
     }
@@ -129,7 +129,7 @@ export function getSourceOrder(roomName: string, sourceOrMineralId: string) {
 
     const ideals = idealsManager.getIdeals(roomName);
 
-    const harvesterPotency = potency.getPotency(roomName, 'harvester', undefined, sourceOrMineralId);
+    const harvesterPotency = bodies.getPotency(roomName, enums.HARVESTER, undefined, sourceOrMineralId);
 
     const idealPotency = util.isSource(sourceOrMineral)
         ? ideals.harvesterPotencyPerSource
@@ -142,7 +142,7 @@ export function getSourceOrder(roomName: string, sourceOrMineralId: string) {
     };
 
     if (order.harvesterPotency < 0) {
-        deleteCreep(roomName, 'harvester', undefined, sourceOrMineralId);
+        deleteCreep(roomName, enums.HARVESTER, undefined, sourceOrMineralId);
         order.harvesterPotency = 0;
     }
 
@@ -151,14 +151,14 @@ export function getSourceOrder(roomName: string, sourceOrMineralId: string) {
     return order;
 }
 
-function deleteCreep(roomName: string, role: string, subRole?: string, assignmentId?: string) {
+function deleteCreep(roomName: string, role: RoleConstant, subRole?: SubRoleConstant, assignmentId?: string) {
     // We can only delete one creep here. We want to choose the smallest creep, whether that creep is active or in a
     // spawn queue. If there is a tie for smallest, we want to remove a creep from the queue before killing an active one.
-    const creepsInQueue = util.sortBy(potency.getCreepsInQueue(roomName, role, subRole, assignmentId), o => o.potency);
-    const activeCreeps = util.sortBy(potency.getActiveCreeps(roomName, role, subRole, assignmentId), o => potency.getCreepPotency(o));
+    const creepsInQueue = util.sortBy(bodies.getCreepsInQueue(roomName, role, subRole, assignmentId), o => o.potency);
+    const activeCreeps = util.sortBy(bodies.getActiveCreeps(roomName, role, subRole, assignmentId), o => bodies.measurePotency(o));
 
     const potencyOfSmallestCreepInQueue = creepsInQueue.length ? creepsInQueue[0].potency : -1;
-    const potencyOfSmallestActiveCreep = activeCreeps.length ? potency.getCreepPotency(activeCreeps[0]) : -1;
+    const potencyOfSmallestActiveCreep = activeCreeps.length ? bodies.measurePotency(activeCreeps[0]) : -1;
 
     if (creepsInQueue.length && potencyOfSmallestCreepInQueue <= potencyOfSmallestActiveCreep) {
         spawnQueue.removeItemFromQueue(creepsInQueue[0]);
@@ -196,17 +196,27 @@ export function fulfillSourceOrder(order: SourceOrder) {
 
 function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
     if (order.scoutPotency) {
-        assignOrderPartToSpawns(spawns, order.scoutPotency, order.roomName, 'scout', {});
+        assignOrderPartToSpawns(spawns, order.scoutPotency, order.roomName, enums.SCOUT, {});
     }
     if (order.defenderPotency) {
-        assignOrderPartToSpawns(spawns, order.defenderPotency, order.roomName, 'ravager', {});
+        // defenders can only be spawned in the room they're defending
+        spawns = util.filter(spawns, o => o.room.name === order.roomName);
+        // there can only be one defender in the queue at once
+        const defendersInQueue = spawnQueue.countItemsInQueues(o => o.subRole === enums.DEFENDER, spawns);
+        if (defendersInQueue === 0) {
+            assignOrderPartToSpawns(spawns, order.defenderPotency, order.roomName, enums.COMBATANT, {
+                subRole: enums.DEFENDER,
+                // always spawn the largest defender possible
+                useMaxPotency: true
+            });
+        }
     }
     if (order.raidWaveSize) {
         const waveId = raid.createWave(order.roomName);
         if (waveId) {
             const raidDirective = rooms.getRaidDirective(order.roomName);
-            const subRole = raidDirective.raiderBodyType === enums.SLAYER ? 'slayer' : null;
-            assignOrderPartToSpawns(spawns, order.raidWaveSize, order.roomName, 'ravager', {
+            const subRole = raidDirective.raiderRole === enums.SLAYER ? enums.SLAYER : enums.RAVAGER;
+            assignOrderPartToSpawns(spawns, order.raidWaveSize, order.roomName, enums.COMBATANT, {
                 raidWaveId: waveId,
                 subRole: subRole,
                 meetupFlagName: rooms.getRaidWaveMeetupFlagName(order.roomName)
@@ -217,13 +227,13 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
     const room = Game.rooms[order.roomName];
     if (room) {
         if (order.builderPotency) {
-            assignOrderPartToSpawns(spawns, order.builderPotency, order.roomName, 'builder', {});
+            assignOrderPartToSpawns(spawns, order.builderPotency, order.roomName, enums.BUILDER, {});
         }
         if (order.transporterPotency) {
-            assignOrderPartToSpawns(spawns, order.transporterPotency, order.roomName, 'transporter', {});
+            assignOrderPartToSpawns(spawns, order.transporterPotency, order.roomName, enums.TRANSPORTER, {});
         }
         if (order.claimerPotency) {
-            assignOrderPartToSpawns(spawns, order.claimerPotency, order.roomName, 'claimer', {
+            assignOrderPartToSpawns(spawns, order.claimerPotency, order.roomName, enums.CLAIMER, {
                 onlyOneCreep: util.countSurroundingWalls(room.controller.pos) === 7
             });
         }
@@ -231,10 +241,10 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
             // if we are spawning a hub, make sure to assign it to a spawn that is adjacent to the hub flag
             const hubFlag = util.findHubFlag(room);
             if (hubFlag) {
-                const hubSpawns = _.filter(spawns, (o: StructureSpawn) => o.pos.inRangeTo(hubFlag, 1));
+                const hubSpawns = util.filter(spawns, (o: StructureSpawn) => o.pos.inRangeTo(hubFlag, 1));
                 if (hubSpawns.length) {
-                    const bodyResult = bodies.generateBody(order.hubPotency, hubSpawns[0].room, order.roomName, 'hub');
-                    spawnQueue.addItemToQueue(hubSpawns[0], order.roomName, 'hub', null, null, bodyResult, null);
+                    const bodyResult = bodies.generateBody(order.hubPotency, hubSpawns[0].room, order.roomName, enums.HUB);
+                    spawnQueue.addItemToQueue(hubSpawns[0], order.roomName, enums.HUB, null, null, bodyResult, null);
                 }
             }
         }
@@ -242,20 +252,28 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
 }
 
 function assignSourceOrderToSpawns(spawns: StructureSpawn[], order: SourceOrder) {
-    assignOrderPartToSpawns(spawns, order.harvesterPotency, order.roomName, 'harvester', {
+    assignOrderPartToSpawns(spawns, order.harvesterPotency, order.roomName, enums.HARVESTER, {
         assignmentId: order.sourceOrMineralId
     });
 }
 
-function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number, roomName: string, role: string, opts: OrderPartOptions) {
+function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number, roomName: string, role: RoleConstant, opts: OrderPartOptions) {
+
+    if (opts.useMaxPotency) {
+        potency = 100000000;
+    }
 
     const spawn = util.getBestValue(spawns.map(o => {
         const bodyResult = bodies.generateBody(potency, o.room, roomName, role, opts.subRole, opts.assignmentId);
-        return getSpawnValue(o, roomName, potency, bodyResult, opts.meetupFlagName);
+        const numberOfCreepsNeeded = opts.useMaxPotency ? 1 : Math.ceil(potency / bodyResult.potency);
+        return getSpawnValue(o, roomName, numberOfCreepsNeeded, bodyResult, opts.meetupFlagName);
     }));
 
+    if (!spawn) return;
+
     const bodyResult = bodies.generateBody(potency, spawn.room, roomName, role, opts.subRole, opts.assignmentId);
-    const remainingPotency = potency - bodyResult.potency;
+
+    const remainingPotency = opts.useMaxPotency ? 0 : potency - bodyResult.potency;
 
     if (remainingPotency > 0 && opts.onlyOneCreep) {
         console.log('WARNING: Would need to spawn more than one ' + role + ' creep, but only one is allowed. No creeps will be spawned.');
@@ -269,34 +287,35 @@ function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number, room
     }
 }
 
-function getSpawnValue(spawn: StructureSpawn, roomName: string, desiredPotency: number,
+function getSpawnValue(spawn: StructureSpawn, roomName: string, numberOfCreepsNeeded: number,
     bodyResult: bodies.BodyResult, meetupFlagName: string): util.ValueData<StructureSpawn> {
-    // The distance the spawned creep will need to travel to get to its assignment should be our primary consideration.
-    // We want the distance to be as low as possible.
+
     var pathDistance;
     if (meetupFlagName) {
         pathDistance = spawnMetrics.getPathDistanceToFlag(spawn, Game.flags[meetupFlagName]);
     } else {
         pathDistance = spawnMetrics.getPathDistance(spawn, roomName);
     }
+    const timeLoad = spawnQueue.getTimeLoad(spawn);
+    const health = spawnMetrics.getHealth(spawn);
+
+    // The distance the spawned creep will need to travel to get to its assignment should be our primary consideration.
+    // We want the distance to be as low as possible.
+    const distanceValue = -pathDistance / bodies.getUnladenSpeedOnRoads(bodyResult.body);
     // Ideally we will only need one creep, but that depends on the spawn room's energy capacity being enough to cover
     // the body of a large creep. If the energy capacity is low, we may need to spawn two or more creeps in order to
     // fulfill the desired potency. A spawn that can fulfill the desired potency with a single creep is preferable
     // to a spawn that requires multiple creeps. This is because the more creeps we have, the greater the CPU load
     // and the greater the traffic congestion.
-    const numberOfCreepsNeeded = Math.ceil(desiredPotency / bodyResult.potency);
+    const creepsValue = -75 * (numberOfCreepsNeeded - 1);
     // The time load on the spawn is the amount of time it will take before it has finished spawning all its existing
     // obligations. We want to choose a spawn with a low time load so we can get our creep sooner.
-    const timeLoad = spawnQueue.getTimeLoad(spawn);
+    const timeLoadValue = -Math.min(timeLoad, 5000);
     // The health of the spawn is an estimate of its ability to acquire enough energy to spawn stuff. Ideally it
     // will be able to fulfill the items in its queue immediately without any downtime while waiting for enengy.
     // A value of 1 is ideal, and less than that is less than ideal.
-    const health = spawnMetrics.getHealth(spawn);
-
-    const distanceValue = -pathDistance / bodies.getUnladenSpeedOnRoads(bodyResult.body);
-    const creepsValue = -75 * (numberOfCreepsNeeded - 1);
-    const timeLoadValue = -Math.min(timeLoad, 5000);
     const healthValue = 200 * health;
+
     const value = distanceValue + creepsValue + timeLoadValue + healthValue;
     return { target: spawn, value: value };
 }

@@ -81,7 +81,7 @@ function run(creep) {
         }).map(o => {
             return { target: o, value: getLinkValue(o) };
         });
-        const targets = util.filter(droppedResources.concat(stores).concat(links), o => o.value > -10000);
+        const targets = util.filter(droppedResources.concat(tombstones).concat(stores).concat(links), o => o.value > -10000);
         return util.getBestValue(targets);
         function getDroppedResourcesValue(resource) {
             // adjust the amount so we ignore small piles but highly value large piles

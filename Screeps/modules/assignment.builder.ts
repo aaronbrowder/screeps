@@ -1,4 +1,5 @@
 import * as util from './util';
+import * as enums from './enums';
 
 export function assignBuilders() {
 
@@ -12,7 +13,7 @@ export function assignBuilders() {
     // 4. controller critically downgrading
     // 5. significantly damaged structure besides roads, walls, and ramparts
     // 6. container construction site
-    // 7. spawn construction site
+    // 7. spawn or storage construction site
     // 8. significantly damaged road
     // 9. extension construction site when number of extensions < 5
     // 10. road construction site over a swamp
@@ -24,7 +25,7 @@ export function assignBuilders() {
         var builders = [];
         for (let i in Game.creeps) {
             var creep = Game.creeps[i];
-            if (creep.memory.role === 'builder' && creep.memory.assignedRoomName === roomName) {
+            if (creep.memory.role === enums.BUILDER && creep.memory.assignedRoomName === roomName) {
                 builders.push(creep);
             }
         }
@@ -65,7 +66,7 @@ export function assignBuilders() {
             if (target.structureType == STRUCTURE_WALL || target.structureType == STRUCTURE_RAMPART) {
                 assign(target, 3);
             }
-            else if (target.structureType == STRUCTURE_SPAWN) {
+            else if (target.structureType == STRUCTURE_SPAWN || target.structureType === STRUCTURE_STORAGE) {
                 assign(target, 7);
             }
             else if (target.structureType == STRUCTURE_EXTENSION && extensions.length < 5) {
@@ -140,7 +141,7 @@ export function isDowngrading(controller) {
 function switchModes() {
     for (var name in Game.creeps) {
         var creep = Game.creeps[name];
-        if (creep.memory.role !== 'builder') continue;
+        if (creep.memory.role !== enums.BUILDER) continue;
         // if creep is empty, switch to collect mode
         if (!creep.memory.isCollecting && creep.store[RESOURCE_ENERGY] === 0) {
             switchModes(true);

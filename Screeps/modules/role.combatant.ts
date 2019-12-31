@@ -1,6 +1,7 @@
 import * as map from './map';
 import * as rooms from './rooms';
 import * as util from './util';
+import * as enums from './enums';
 import * as cache from './cache';
 import * as battleManager from './manager.battle';
 
@@ -14,6 +15,7 @@ export function run(creep: Creep) {
 
     if (checkForCombat()) return;
     if (checkForWaveMeetup(wave)) return;
+    if (checkForObsolescence()) return;
 
     if (creep.room.name !== creep.memory.assignedRoomName) {
         map.navigateToRoom(creep, creep.memory.assignedRoomName);
@@ -89,6 +91,14 @@ export function run(creep: Creep) {
                 util.setMoveTargetFlag(creep, meetupFlag);
                 return true;
             }
+        }
+        return false;
+    }
+
+    function checkForObsolescence() {
+        if (creep.memory.subRole === enums.DEFENDER && util.getThreatLevel(creep.room) === 0) {
+            util.recycle(creep);
+            return true;
         }
         return false;
     }
