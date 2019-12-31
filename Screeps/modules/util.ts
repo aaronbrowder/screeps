@@ -92,20 +92,15 @@ export function setMoveTargetFlag(creep: Creep, target: Flag, desiredDistance?: 
 
 function getMoveOptions(creep: Creep) {
     var reusePath = 5;
-    var waveMates: Array<Creep> = [];
     if (isCreepWorker(creep)) {
         reusePath = isCreepRemote(creep) ? 30 : 15;
     }
     if (creep.memory.moveTargetFlagId && !creep.memory.moveTargetId) {
         reusePath = 25;
     }
-    if (creep.memory.raidWaveId) {
-        waveMates = creep.room.find(FIND_MY_CREEPS, { filter: o => o.memory.raidWaveId === creep.memory.raidWaveId });
-    }
     return {
         visualizePathStyle: { stroke: '#fff' },
-        reusePath: reusePath,
-        //ignore: waveMates // TODO this doesn't work with PathFinder
+        reusePath: reusePath
     };
 }
 

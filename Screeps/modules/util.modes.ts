@@ -43,6 +43,10 @@ function getConsumptionModeBoundaries(room: Room): Bounds {
     return { lower: 900000, upper: 950000 };
 }
 
+export function getWallHitsTarget(room: Room) {
+    return getWallBuildModeBoundaries(room).upper;
+}
+
 export function getConsumptionMode(room: Room) {
     return room.storage && util.getRoomMemory(room.name).consumptionMode;
 }

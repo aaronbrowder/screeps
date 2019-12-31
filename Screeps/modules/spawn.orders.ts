@@ -266,7 +266,7 @@ function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number, room
     const spawn = util.getBestValue(spawns.map(o => {
         const bodyResult = bodies.generateBody(potency, o.room, roomName, role, opts.subRole, opts.assignmentId);
         const numberOfCreepsNeeded = opts.useMaxPotency ? 1 : Math.ceil(potency / bodyResult.potency);
-        return getSpawnValue(o, roomName, numberOfCreepsNeeded, bodyResult, opts.meetupFlagName);
+        return getSpawnValue(o, roomName, numberOfCreepsNeeded, role, bodyResult, opts.meetupFlagName);
     }));
 
     if (!spawn) return;
@@ -287,7 +287,7 @@ function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number, room
     }
 }
 
-function getSpawnValue(spawn: StructureSpawn, roomName: string, numberOfCreepsNeeded: number,
+function getSpawnValue(spawn: StructureSpawn, roomName: string, numberOfCreepsNeeded: number, role: RoleConstant,
     bodyResult: bodies.BodyResult, meetupFlagName: string): util.ValueData<StructureSpawn> {
 
     var pathDistance;
@@ -307,7 +307,11 @@ function getSpawnValue(spawn: StructureSpawn, roomName: string, numberOfCreepsNe
     // fulfill the desired potency. A spawn that can fulfill the desired potency with a single creep is preferable
     // to a spawn that requires multiple creeps. This is because the more creeps we have, the greater the CPU load
     // and the greater the traffic congestion.
-    const creepsValue = -75 * (numberOfCreepsNeeded - 1);
+    var creepsValue = -75 * (numberOfCreepsNeeded - 1);
+    // This is not true of transporters, since we typically want multiple transporters rather than a single big one.
+    if (role === enums.TRANSPORTER) {
+        creepsValue = 0;
+    }
     // The time load on the spawn is the amount of time it will take before it has finished spawning all its existing
     // obligations. We want to choose a spawn with a low time load so we can get our creep sooner.
     const timeLoadValue = -Math.min(timeLoad, 5000);
@@ -317,5 +321,8 @@ function getSpawnValue(spawn: StructureSpawn, roomName: string, numberOfCreepsNe
     const healthValue = 200 * health;
 
     const value = distanceValue + creepsValue + timeLoadValue + healthValue;
+    if (roomName === 'W18S5') {
+        console.log('spawning for room ' + roomName + '. spawn ' + spawn.name + ' has value ' + value + '. (potency: ' + bodyResult.potency + ', distanceValue: ' + distanceValue + ', numberOfCreepsNeeded: ' + numberOfCreepsNeeded + ', timeLoad: ' + timeLoad + ')');
+    }
     return { target: spawn, value: value };
 }

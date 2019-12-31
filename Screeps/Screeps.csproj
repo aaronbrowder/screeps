@@ -80,16 +80,10 @@
     <TypeScriptCompile Include="modules\spawn.ideals.ts" />
     <TypeScriptCompile Include="modules\spawn.queue.ts" />
     <TypeScriptCompile Include="modules\spawn.orders.ts" />
-    <TypeScriptCompile Include="legacy\manager.spawn.siege.ts" />
     <TypeScriptCompile Include="modules\map.ts" />
     <TypeScriptCompile Include="modules\mobilization.ts" />
-    <TypeScriptCompile Include="legacy\ravager-obsolete.ts" />
     <TypeScriptCompile Include="modules\role.combatant.ts" />
-    <TypeScriptCompile Include="legacy\role.mercenary.ts" />
     <TypeScriptCompile Include="modules\role.scout.ts" />
-    <TypeScriptCompile Include="legacy\role.siege.crusher.ts" />
-    <TypeScriptCompile Include="legacy\role.siege.hunter.ts" />
-    <TypeScriptCompile Include="legacy\role.siege.medic.ts" />
     <TypeScriptCompile Include="modules\role.worker.builder.ts" />
     <TypeScriptCompile Include="modules\role.worker.claimer.ts" />
     <TypeScriptCompile Include="modules\role.worker.harvester.ts" />

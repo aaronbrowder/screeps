@@ -190,27 +190,17 @@ export function run(creep: Creep) {
                 }).length === 0);
             });
             const canTargetWallsInTowerRange = areAllWallsInTowerRange || !consumptionMode;
-            const walls = room.find<StructureWall | StructureRampart>(FIND_STRUCTURES, {
+            const targetHits = modes.getWallHitsTarget(creep.room);
+            const preferredWall = creep.pos.findClosestByPath<StructureWall | StructureRampart>(FIND_STRUCTURES, {
                 filter: o =>
                     (util.isWall(o) || util.isRampart) &&
-                    o.hits < o.hitsMax &&
+                    o.hits < targetHits &&
                     (canTargetWallsInTowerRange ||
                         !o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, { filter: p => util.isTower(p) }).length)
             });
-            if (walls.length) {
-                // At first, go up in increments of 1k. After hitting 10k, the increment becomes 10k,
-                // and at 100k the increment becomes 100k. After that the increment is always 100k.
-                var increment = 1000;
-                for (let hits = 1000; hits <= 100000; hits += increment) {
-                    if (hits === 10000 || hits === 100000) {
-                        increment = hits;
-                    }
-                    const wall = creep.pos.findClosestByPath(walls, { filter: o => o.hits < hits });
-                    if (wall) {
-                        creep.memory.preferredWallId = wall.id;
-                        return wall;
-                    }
-                }
+            if (preferredWall) {
+                creep.memory.preferredWallId = preferredWall.id;
+                return preferredWall;
             }
             return null;
         }

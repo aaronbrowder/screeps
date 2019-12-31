@@ -88,19 +88,15 @@ function setMoveTargetFlag(creep, target, desiredDistance) {
 exports.setMoveTargetFlag = setMoveTargetFlag;
 function getMoveOptions(creep) {
     var reusePath = 5;
-    var waveMates = [];
     if (isCreepWorker(creep)) {
         reusePath = isCreepRemote(creep) ? 30 : 15;
     }
     if (creep.memory.moveTargetFlagId && !creep.memory.moveTargetId) {
         reusePath = 25;
     }
-    if (creep.memory.raidWaveId) {
-        waveMates = creep.room.find(FIND_MY_CREEPS, { filter: o => o.memory.raidWaveId === creep.memory.raidWaveId });
-    }
     return {
         visualizePathStyle: { stroke: '#fff' },
-        reusePath: reusePath,
+        reusePath: reusePath
     };
 }
 function isAtMoveTarget(creep) {

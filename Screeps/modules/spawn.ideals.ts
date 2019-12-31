@@ -79,19 +79,19 @@ function getIdealsInternal(roomName: string, directive: DirectiveConstant, threa
                 result = 10;
             }
             if (level === 3) {
-                result = 16;
+                result = 12;
             }
             // before getting the first spawn up, we'll need a lot of help from other rooms
             if (!room.find(FIND_MY_SPAWNS).length) {
-                result = 16;
+                result = 12;
             }
             // make sure we have enough builders to build our structures
             if (level >= 3 && nonRoadConstructionSites.length) {
-                result = 16;
+                result = 12;
             }
             // if in consumption mode, we go all out: enough to make the energy in storage go back down
             if (modes.getConsumptionMode(room)) {
-                result = 32;
+                result = 30;
             }
             return result;
         }
@@ -132,20 +132,14 @@ function getIdealsInternal(roomName: string, directive: DirectiveConstant, threa
             if (links.length < 3) {
                 result += 3;
             }
+            if (!storageUnits.length || hubFlag) {
+                result -= 3;
+            }
             if (!storageUnits.length && containers.length < 2) {
                 result = 0;
             }
-            if (!storageUnits.length) {
-                result -= 3;
-            }
-            if (storageUnits.length && hubFlag) {
-                result -= 4;
-            }
-            if (!containers.length && !storageUnits.length) {
-                result = 0;
-            }
         }
-        return result;
+        return Math.max(0, result);
     }
 
     function getIdealHarvesterPotencyPerSource() {
