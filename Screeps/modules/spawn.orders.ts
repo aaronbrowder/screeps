@@ -321,8 +321,5 @@ function getSpawnValue(spawn: StructureSpawn, roomName: string, numberOfCreepsNe
     const healthValue = 200 * health;
 
     const value = distanceValue + creepsValue + timeLoadValue + healthValue;
-    if (roomName === 'W18S5') {
-        console.log('spawning for room ' + roomName + '. spawn ' + spawn.name + ' has value ' + value + '. (potency: ' + bodyResult.potency + ', distanceValue: ' + distanceValue + ', numberOfCreepsNeeded: ' + numberOfCreepsNeeded + ', timeLoad: ' + timeLoad + ')');
-    }
     return { target: spawn, value: value };
 }

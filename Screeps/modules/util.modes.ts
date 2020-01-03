@@ -19,10 +19,10 @@ function getWallBuildModeBoundaries(room: Room): Bounds {
         return { lower: 1800000, upper: 2200000 };
     }
     if (room.controller.level <= 6) {
-        return { lower: 4500000, upper: 5500000 };
+        return { lower: 4000000, upper: 5000000 };
     }
     if (room.controller.level <= 7) {
-        return { lower: 9500000, upper: 10500000 };
+        return { lower: 7500000, upper: 8500000 };
     }
     return { lower: 100000000, upper: 110000000 };
 }
@@ -32,19 +32,20 @@ function getConsumptionModeBoundaries(room: Room): Bounds {
         return { lower: 100000, upper: 150000 };
     }
     if (room.controller.level <= 5) {
-        return { lower: 250000, upper: 300000 };
+        return { lower: 240000, upper: 320000 };
     }
     if (room.controller.level <= 6) {
-        return { lower: 500000, upper: 550000 };
+        return { lower: 470000, upper: 580000 };
     }
     if (room.controller.level <= 7) {
-        return { lower: 700000, upper: 750000 };
+        return { lower: 660000, upper: 790000 };
     }
-    return { lower: 900000, upper: 950000 };
+    return { lower: 850000, upper: 980000 };
 }
 
 export function getWallHitsTarget(room: Room) {
-    return getWallBuildModeBoundaries(room).upper;
+    // we should shoot for 1% higher than the upper boundary, as a buffer for decay
+    return getWallBuildModeBoundaries(room).upper * 1.01;
 }
 
 export function getConsumptionMode(room: Room) {

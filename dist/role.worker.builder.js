@@ -179,7 +179,7 @@ function run(creep) {
             const canTargetWallsInTowerRange = areAllWallsInTowerRange || !consumptionMode;
             const targetHits = modes.getWallHitsTarget(creep.room);
             const preferredWall = creep.pos.findClosestByPath(FIND_STRUCTURES, {
-                filter: o => (util.isWall(o) || util.isRampart) &&
+                filter: o => (util.isWall(o) || util.isRampart(o)) &&
                     o.hits < targetHits &&
                     (canTargetWallsInTowerRange ||
                         !o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, { filter: p => util.isTower(p) }).length)

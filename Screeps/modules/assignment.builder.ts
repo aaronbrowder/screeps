@@ -121,6 +121,11 @@ function isCriticallyDowngrading(controller) {
     if (controller.level > 4) {
         return controller.ticksToDowngrade < 20000;
     }
+    if (controller.level === 8) {
+        // we normally won't upgrade the controller at all at level 8, but we should try to keep the
+        // downgrade timer as high as possible
+        return controller.ticksToDowngrade < 190000;
+    }
 }
 
 export function isDowngrading(controller) {

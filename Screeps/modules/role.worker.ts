@@ -32,20 +32,21 @@ export function run(creep: Creep) {
     //    }
     //}
 
+    // This is not useful to me currently, and it's costing CPU, so I'm removing it
     // remote transporters can spontaneously unload energy into empty convenience containers they happen to pass by
-    if (creep.memory.role === enums.TRANSPORTER && util.isCreepRemote(creep) && creep.store[RESOURCE_ENERGY] > 0 && !creep.memory.isCollecting) {
+    //if (creep.memory.role === enums.TRANSPORTER && util.isCreepRemote(creep) && creep.store[RESOURCE_ENERGY] > 0 && !creep.memory.isCollecting) {
 
-        const nearbyConvenienceContainers = creep.pos.findInRange<StructureContainer>(FIND_STRUCTURES, 1, {
-            filter: o => util.isContainer(o) && o.storeCapacity - _.sum(o.store) >= creep.store[RESOURCE_ENERGY]
-                && !o.pos.findInRange(FIND_SOURCES, 2).length && !o.pos.findInRange(FIND_MINERALS, 2).length
-        });
-        if (nearbyConvenienceContainers.length) {
-            if (creep.transfer(nearbyConvenienceContainers[0], RESOURCE_ENERGY) === OK) {
-                util.setMoveTarget(creep, null);
-                creep.memory.assignmentId = null;
-            }
-        }
-    }
+    //    const nearbyConvenienceContainers = creep.pos.findInRange<StructureContainer>(FIND_STRUCTURES, 1, {
+    //        filter: o => util.isContainer(o) && o.storeCapacity - _.sum(o.store) >= creep.store[RESOURCE_ENERGY]
+    //            && !o.pos.findInRange(FIND_SOURCES, 2).length && !o.pos.findInRange(FIND_MINERALS, 2).length
+    //    });
+    //    if (nearbyConvenienceContainers.length) {
+    //        if (creep.transfer(nearbyConvenienceContainers[0], RESOURCE_ENERGY) === OK) {
+    //            util.setMoveTarget(creep, null);
+    //            creep.memory.assignmentId = null;
+    //        }
+    //    }
+    //}
 
     // refresh the move target every once in a while in case it's a dead end
     if (Game.time % 157 === 0) {

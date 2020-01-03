@@ -50,6 +50,12 @@ type DirectiveConstant =
     DIRECTIVE_RAID |
     DIRECTIVE_RESERVE_AND_HARVEST;
 
+type LINK_SOURCE = 1;
+type LINK_DESTINATION = 2;
+type LINK_HUB = 3;
+
+type LinkType = LINK_SOURCE | LINK_DESTINATION | LINK_HUB;
+
 interface ControlDirective {
     roomName: string;
     flagName: string;
@@ -95,6 +101,7 @@ interface Memory {
     sourceMetrics: Array<SourceMetrics>;
     remoteMiningMetrics: any;
     raidWaves: Array<RaidWave>;
+    links: { [linkId: string]: LinkType };
 }
 
 interface CreepMemory {

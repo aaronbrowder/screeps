@@ -360,10 +360,6 @@ function isStructure(o) {
     return o && o['hitsMax'] || o.structureType === STRUCTURE_CONTROLLER;
 }
 exports.isStructure = isStructure;
-function findLinks(room) {
-    return room.find(FIND_MY_STRUCTURES, { filter: (o) => o.structureType === STRUCTURE_LINK });
-}
-exports.findLinks = findLinks;
 function isSource(sourceOrMineral) {
     return sourceOrMineral && !!sourceOrMineral['energyCapacity'];
 }
@@ -414,8 +410,16 @@ function findWallsAndRamparts(room) {
     return room.find(FIND_STRUCTURES, { filter: o => isWall(o) || isRampart(o) });
 }
 exports.findWallsAndRamparts = findWallsAndRamparts;
+function findContainers(room) {
+    return room.find(FIND_STRUCTURES, { filter: o => isContainer(o) });
+}
+exports.findContainers = findContainers;
 function findStores(room) {
     return room.find(FIND_STRUCTURES, { filter: o => isContainer(o) || isStorage(o) });
 }
 exports.findStores = findStores;
+function findLinks(room, linkType) {
+    return room.find(FIND_STRUCTURES, { filter: o => isLink(o) && (!linkType || linkType === Memory.links[o.id]) });
+}
+exports.findLinks = findLinks;
 //# sourceMappingURL=util.js.map

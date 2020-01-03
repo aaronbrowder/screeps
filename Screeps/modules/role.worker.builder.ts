@@ -193,7 +193,7 @@ export function run(creep: Creep) {
             const targetHits = modes.getWallHitsTarget(creep.room);
             const preferredWall = creep.pos.findClosestByPath<StructureWall | StructureRampart>(FIND_STRUCTURES, {
                 filter: o =>
-                    (util.isWall(o) || util.isRampart) &&
+                    (util.isWall(o) || util.isRampart(o)) &&
                     o.hits < targetHits &&
                     (canTargetWallsInTowerRange ||
                         !o.pos.findInRange(FIND_MY_STRUCTURES, towerLogic.WALL_RANGE, { filter: p => util.isTower(p) }).length)

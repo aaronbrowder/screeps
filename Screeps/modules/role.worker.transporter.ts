@@ -1,6 +1,6 @@
 import * as map from './map';
 import * as util from './util';
-import * as linkLogic from './structure.link';
+import * as enums from './enums';
 
 export function run(creep: Creep) {
 
@@ -90,9 +90,8 @@ export function run(creep: Creep) {
             return { target: o, value: getStorageValue(o) };
         });
 
-        const links: Array<CollectTarget> = assignedRoom.find<StructureLink>(FIND_MY_STRUCTURES, {
-            filter: o => util.isLink(o) && o.energy > 0 && linkLogic.isDestination(o) && !linkLogic.isNearController(o)
-        }).map(o => {
+        const destinationLinks = util.findLinks(assignedRoom, enums.LINK_DESTINATION);
+        const links: Array<CollectTarget> = util.filter(destinationLinks, o => o.energy > 0).map(o => {
             return { target: o, value: getLinkValue(o) };
         });
 
@@ -181,6 +180,10 @@ export function run(creep: Creep) {
             console.log('WARNING: no home room for creep ' + creep.name + ' (homeRoomName: ' + creep.memory.homeRoomName + ')');
             return;
         }
+        if (creep.room.name !== creep.memory.assignedRoomName) {
+            map.navigateToRoom(creep, creep.memory.assignedRoomName);
+            return;
+        }
         // if creep is carrying any minerals, deliver them to storage
         if (creep.store[RESOURCE_ENERGY] !== totalCarry) {
             if (homeRoom.storage) {
@@ -195,53 +198,48 @@ export function run(creep: Creep) {
             }
         }
         // no minerals. deliver energy to assignment
-        var deliveryAssignments = _.filter(assignments, o => !isAssignmentMiningContainer(Game.getObjectById(o.id)));
+        var deliveryAssignments = util.filter(assignments, o => !isAssignmentMiningContainer(Game.getObjectById(o.id)));
         var assignment = (deliveryAssignments.length ? Game.getObjectById<Structure>(deliveryAssignments[0].id) : null);
-        // if there's no assignment, deliver to storage
+        // if there's no assignment, deliver to storage (or a link that goes to storage)
         if (!assignment) {
-            assignment = homeRoom.storage || findConvenienceContainerForDelivery(homeRoom);
+            assignment = findBestRepository();
         }
         if (assignment) {
-            if (creep.room !== assignment.room) {
-                map.navigateToRoom(creep, assignment.room.name);
-                return;
-            }
-            // I'm disabling this because it's not working in my current situation. I have a source link
-            // by storage and a destination link by the controller and a tower. Transporters are trying to
-            // send energy to the tower by sending it through the link, which does nothing because both
-            // links are already full, so the transporters just sit there next to the link forever.
-            // look at links. we may be able to deliver more efficiently by sending energy through a link.
-            //var links = assignment.room.find(FIND_MY_STRUCTURES, {
-            //    filter: o => o.structureType == STRUCTURE_LINK
-            //});
-            //var closestSourceLink = creep.pos.findClosestByPath(links, { filter: o => linkLogic.isSource(o) });
-            //var closestDestinationLink = creep.pos.findClosestByPath(links, { filter: o => linkLogic.isDestination(o) });
-            //if (closestSourceLink && closestDestinationLink) {
-            //    var distanceA = creep.pos.findPathTo(closestSourceLink.pos).length;
-            //    var distanceB = assignment.pos.findPathTo(closestDestinationLink.pos).length;
-            //    var distanceC = creep.pos.findPathTo(assignment.pos).length;
-            //    if (distanceA + distanceB < distanceC) {
-            //        assignment = closestSourceLink;
-            //    }
-            //}
             // try to transfer to assignment
             const transferResult = creep.transfer(assignment, RESOURCE_ENERGY);
-            if (transferResult == ERR_NOT_IN_RANGE) {
+            if (transferResult === ERR_NOT_IN_RANGE) {
                 util.setMoveTarget(creep, assignment, 1);
             }
             return;
         }
     }
 
-    function findConvenienceContainerForDelivery(room: Room) {
-        var convenienceContainers = room.find(FIND_STRUCTURES, {
-            filter: o =>
-                util.isContainer(o)
-                && !o.pos.findInRange(FIND_SOURCES, 2).length
-                && !o.pos.findInRange(FIND_MINERALS, 2).length
-                && _.sum(o.store) <= o.storeCapacity - creep.store[RESOURCE_ENERGY]
-        });
-        return convenienceContainers[0];
+    function findBestRepository(): StructureStorage | StructureLink | StructureContainer {
+        const room = creep.room;
+        // if we would deliver to storage, see if we can send through a source link instead
+        if (room.storage) {
+            const distanceToStorage = creep.pos.findPathTo(room.storage).length;
+            const links = util.filter(util.findLinks(room, enums.LINK_SOURCE), o => o.energy < o.energyCapacity);
+            var bestLink = null;
+            for (let i = 0; i < links.length; i++) {
+                const distance = creep.pos.findPathTo(links[i]).length;
+                if (distance < distanceToStorage) {
+                    bestLink = links[i];
+                }
+            }
+            return bestLink || room.storage;
+        }
+        // no storage in the room, so deliver to a convenience container if there is one
+        const containers = util.findContainers(room);
+        const convenienceContainers = util.filter(containers, o =>
+            !o.pos.findInRange(FIND_SOURCES, 2).length &&
+            !o.pos.findInRange(FIND_MINERALS, 2).length &&
+            o.store.getFreeCapacity() >= creep.store.getUsedCapacity()
+        );
+        if (convenienceContainers.length) {
+            return convenienceContainers[0];
+        }
+        return null;
     }
 
     function isAssignmentMiningContainer(assignment: Structure): assignment is StructureContainer {

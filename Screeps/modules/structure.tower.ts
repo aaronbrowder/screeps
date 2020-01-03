@@ -42,15 +42,14 @@ function repair(tower: StructureTower) {
 }
 
 function buildUpWalls(tower: StructureTower) {
-    const targetId = cache.get('4ab6a1ff-ef0a-4302-8533-a2ad19d6435b-' + tower.id, 21, () => {
-        // towers only build up walls if we are in consumption mode and wall build mode
-        if (!modes.getConsumptionMode(tower.room) || !modes.getWallBuildMode(tower.room)) {
+    const targetId = cache.get('4ab6a1ff-ef0a-4302-8533-a2ad19d6435b-' + tower.id, 15, () => {
+        if (!modes.getConsumptionMode(tower.room)) {
             return null;
         }
         const allWalls = tower.room.find(FIND_STRUCTURES, { filter: o => util.isWall(o) || util.isRampart(o) });
-        const maxWallHits = util.max(allWalls, o => o.hits);
+        const targetHits = modes.getWallHitsTarget(tower.room);
         const availableWalls = util.filter(allWalls, o => {
-            return o.hits < o.hitsMax && o.hits < maxWallHits && tower.pos.inRangeTo(o, WALL_RANGE);
+            return o.hits < targetHits && tower.pos.inRangeTo(o, WALL_RANGE);
         });
         if (availableWalls.length) {
             const sortedWalls = util.sortBy(availableWalls, o => o.hits);

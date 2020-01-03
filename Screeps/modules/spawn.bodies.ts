@@ -44,7 +44,6 @@ function getBuilderDefinition(): BodyDefinition {
         work: 1,
         carry: 0.75,
         move: 0.5,
-        remoteMove: 0.83,
         attack: 0,
         rangedAttack: 0,
         tough: 0,
@@ -203,6 +202,8 @@ export function generateBody(desiredPotency: number,
             return generateTransporterBody(desiredPotency, spawnRoom, assignedRoomName);
         case (enums.BUILDER):
             return generateBuilderBody(desiredPotency, spawnRoom, assignedRoomName);
+        case (enums.HUB):
+            return generateBodyInternal(desiredPotency, spawnRoom, d, isRemote);
         default:
             return generateBodyInternal(desiredPotency, spawnRoom, d, isRemote);
     }
@@ -241,7 +242,7 @@ function generateTransporterBody(desiredPotency: number, spawnRoom: Room, assign
     var maxPotency = getMaxPotency(d, spawnRoom, isRemote);
     // we want to limit the size of transporters so that we always have multiple transporters even at high
     // controller levels (so we can accomplish multiple assignemnts simultaneously)
-    maxPotency = Math.min(isRemote ? 24 : 9, maxPotency);
+    maxPotency = Math.min(isRemote ? 24 : 7, maxPotency);
     var potency = Math.min(desiredPotency || 1, maxPotency);
     // try to minimize the number of transporters to save CPU (see comment above in harvester function)
     if (potency < maxPotency) {
@@ -259,7 +260,7 @@ function generateBuilderBody(desiredPotency: number, spawnRoom: Room, assignedRo
     const d = getDefinition(enums.BUILDER);
     const isRemote = assignedRoomName !== spawnRoom.name;
     var maxPotency = getMaxPotency(d, spawnRoom, isRemote);
-    // in claimed rooms, we always want to have two builders per subRole so they can work on different tasks
+    // in claimed rooms, we always want to have at least two builders so they can work on different tasks
     const ideals = idealsManager.getIdeals(assignedRoomName);
     const maxPotencyPerBuilder = isRemote ? ideals.builderPotency : Math.ceil(ideals.builderPotency / 2);
     maxPotency = Math.min(maxPotencyPerBuilder, maxPotency);

@@ -175,5 +175,5 @@ function getSpawnDirections(spawn: StructureSpawn, item: SpawnQueueItem) {
 
 function generateBody(spawn: StructureSpawn, item: SpawnQueueItem) {
     const result = bodies.generateBody(item.potency, spawn.room, item.assignedRoomName, item.role, item.subRole, item.assignmentId);
-    return result ? result.body : null;
+    return result && result.potency > 0 ? result.body : null;
 }

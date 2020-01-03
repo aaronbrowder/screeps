@@ -8,6 +8,8 @@ function getControlDirectives() {
         { roomName: 'W17S7', flagName: 'Colony2', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
         { roomName: 'W18S5', flagName: 'Colony3', directive: enums.DIRECTIVE_CLAIM },
         { roomName: 'W18S6', flagName: 'Colony4', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
+        { roomName: 'W18S3', flagName: 'Colony5', directive: enums.DIRECTIVE_CLAIM },
+        { roomName: 'W18S4', flagName: 'Colony6', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
         {
             roomName: 'W16S6',
             flagName: 'Lair1',

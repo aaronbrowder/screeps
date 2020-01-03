@@ -366,10 +366,6 @@ export function isStructure(o: Structure | ConstructionSite): o is Structure {
     return o && o['hitsMax'] || o.structureType === STRUCTURE_CONTROLLER;
 }
 
-export function findLinks(room: Room) {
-    return room.find<StructureLink>(FIND_MY_STRUCTURES, { filter: (o: Structure) => o.structureType === STRUCTURE_LINK });
-}
-
 export function isSource(sourceOrMineral: Source | Mineral): sourceOrMineral is Source {
     return sourceOrMineral && !!sourceOrMineral['energyCapacity'];
 }
@@ -413,6 +409,14 @@ export function findWallsAndRamparts(room: Room) {
     return room.find(FIND_STRUCTURES, { filter: o => isWall(o) || isRampart(o) }) as Array<StructureWall | StructureRampart>;
 }
 
+export function findContainers(room: Room) {
+    return room.find(FIND_STRUCTURES, { filter: o => isContainer(o) }) as Array<StructureContainer>;
+}
+
 export function findStores(room: Room) {
     return room.find(FIND_STRUCTURES, { filter: o => isContainer(o) || isStorage(o) }) as Array<StructureContainer | StructureStorage>;
+}
+
+export function findLinks(room: Room, linkType?: LinkType) {
+    return room.find(FIND_STRUCTURES, { filter: o => isLink(o) && (!linkType || linkType === Memory.links[o.id]) }) as Array<StructureLink>;
 }
