@@ -127,22 +127,35 @@ function spawnFromQueue(spawn: StructureSpawn) {
 function getItemFromQueue(spawn: StructureSpawn): SpawnQueueItem {
     const queue = util.getSpawnMemory(spawn).queue;
     if (!queue) return null;
-    const eligibleItems = util.filter(queue, o => o.energyCost <= spawn.room.energyCapacityAvailable);
-    if (!eligibleItems.length) return null;
+    // make sure we have the ability to add energy to extensions
     const canTransport = !!spawn.room.storage && spawn.room.find(FIND_MY_CREEPS, {
         filter: o => o.memory.role === enums.TRANSPORTER && o.memory.assignedRoomName === spawn.room.name
     }).length > 0;
+    // filter and sort items
+    const eligibleItems = util.filter(queue, o => isItemEligible(o));
+    if (!eligibleItems.length) return null;
     const sorted = util.sortBy(eligibleItems, o => {
         const assignedRoom = Game.rooms[o.assignedRoomName];
         const energyStored = assignedRoom ? util.sum(util.findStores(assignedRoom), o => o.store[RESOURCE_ENERGY]) : 0;
         var order = getSortOrder(o.role, energyStored);
-        // if we don't have the ability to transport energy to extensions, don't try to spawn something we can't afford
-        if (!canTransport && o.energyCost > spawn.room.energyAvailable) order += 200;
         // prioritize creeps being spawned for the spawn room
         if (o.assignedRoomName !== spawn.room.name) order += 100;
         return order;
     });
     return sorted[0];
+
+    function isItemEligible(item: SpawnQueueItem) {
+        // don't spawn a defender if there are already 3 or more defenders in the room
+        if (item.subRole === enums.DEFENDER) {
+            const existingDefenders = spawn.room.find(FIND_MY_CREEPS, { filter: o => o.memory.subRole === enums.DEFENDER });
+            if (existingDefenders.length >= 3) return false;
+        }
+        // if we don't have the ability to transport energy to extensions, don't try to spawn something we can't afford
+        if (!canTransport) {
+            return item.energyCost <= spawn.room.energyAvailable;
+        }
+        return item.energyCost <= spawn.room.energyCapacityAvailable;
+    }
 
     function getSortOrder(role: RoleConstant, energyStored: number) {
         if (role === enums.HUB) return 0;

@@ -288,7 +288,7 @@ function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number, room
 }
 
 function getSpawnValue(spawn: StructureSpawn, roomName: string, numberOfCreepsNeeded: number, role: RoleConstant,
-    bodyResult: bodies.BodyResult, meetupFlagName: string): util.ValueData<StructureSpawn> {
+    bodyResult: bodies.BodyResult, meetupFlagName: string): ValueData<StructureSpawn> {
 
     var pathDistance;
     if (meetupFlagName) {

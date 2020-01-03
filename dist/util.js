@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const enums = require("./enums");
 function getBestValue(valueData) {
     var best = null;
-    var bestValue = -10000;
+    var bestValue = -100000000;
     for (let i in valueData) {
         const item = valueData[i];
         if (item.value > bestValue) {
@@ -410,6 +410,10 @@ function findWallsAndRamparts(room) {
     return room.find(FIND_STRUCTURES, { filter: o => isWall(o) || isRampart(o) });
 }
 exports.findWallsAndRamparts = findWallsAndRamparts;
+function findRamparts(room) {
+    return room.find(FIND_STRUCTURES, { filter: o => isRampart(o) });
+}
+exports.findRamparts = findRamparts;
 function findContainers(room) {
     return room.find(FIND_STRUCTURES, { filter: o => isContainer(o) });
 }

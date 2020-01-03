@@ -9,7 +9,8 @@ export function assignTransporters() {
     // 2. extensions
     // 3. towers with < 85% (100% during wartime)
     // 4. mineral containers with > 33%
-    // 5. convenience containers with < 85%
+    // 5. energy containers with > 33%
+    // 6. convenience containers with < 85%
 
     for (let roomName in Game.rooms) {
 
@@ -43,9 +44,13 @@ export function assignTransporters() {
                 && target.pos.findInRange(FIND_MINERALS, 2).length) {
                 assign(target, 4, target.store.getUsedCapacity());
             }
+            if (util.isContainer(target) && target.store.getUsedCapacity() > target.storeCapacity * 0.33
+                && target.pos.findInRange(FIND_SOURCES, 2).length) {
+                assign(target, 5, target.store.getUsedCapacity());
+            }
             if (util.isContainer(target) && target.store.getUsedCapacity() < target.storeCapacity * 0.85
                 && !target.pos.findInRange(FIND_SOURCES, 2).length && !target.pos.findInRange(FIND_MINERALS, 2).length) {
-                assign(target, 5, target.store.getFreeCapacity());
+                assign(target, 6, target.store.getFreeCapacity());
             }
         }
     }

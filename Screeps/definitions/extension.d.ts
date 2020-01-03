@@ -56,6 +56,11 @@ type LINK_HUB = 3;
 
 type LinkType = LINK_SOURCE | LINK_DESTINATION | LINK_HUB;
 
+interface ValueData<T> {
+    target: T;
+    value: number;
+}
+
 interface ControlDirective {
     roomName: string;
     flagName: string;
@@ -126,6 +131,7 @@ interface CreepMemory {
     charge: boolean;
     wait: boolean;
     raidWaveId: number;
+    myRampartId: Id<StructureRampart>;
 }
 
 interface TransporterAssignment {

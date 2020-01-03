@@ -320,13 +320,13 @@ function generateBodyInternal(desiredPotency: number, spawnRoom: Room, d: BodyDe
         body = body.concat([ATTACK]);
         attackParts--;
     }
-    while (moveParts > 0) {
-        body = body.concat([MOVE]);
-        moveParts--;
-    }
     while (rangedAttackParts > 0) {
         body = body.concat([RANGED_ATTACK]);
         rangedAttackParts--;
+    }
+    while (moveParts > 0) {
+        body = body.concat([MOVE]);
+        moveParts--;
     }
     while (healParts > 0) {
         body = body.concat([HEAL]);

@@ -119,27 +119,24 @@ function getIdealsInternal(roomName: string, directive: DirectiveConstant, threa
             result = Math.ceil(result / 2);
         }
         if (directive === enums.DIRECTIVE_CLAIM) {
-            result += 6;
+            result += 3;
             if (isThreatBig) {
                 result += 6;
             }
-            if (!towers.length) {
-                result -= 2;
+            if (towers.length) {
+                result += 2;
             }
-            if (!extractors.length) {
-                result += 1;
+            if (extractors.length) {
+                result += 4;
             }
-            if (links.length < 3) {
+            if (links.length < 2) {
                 result += 3;
-            }
-            if (!storageUnits.length || hubFlag) {
-                result -= 3;
             }
             if (!storageUnits.length && containers.length < 2) {
                 result = 0;
             }
         }
-        return Math.max(0, result);
+        return result;
     }
 
     function getIdealHarvesterPotencyPerSource() {

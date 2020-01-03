@@ -25,7 +25,8 @@ export function run(creep: Creep) {
     if (wave && wave.targetStructureId && Game.getObjectById(wave.targetStructureId)) {
         attackTarget(Game.getObjectById(wave.targetStructureId));
     } else {
-        if (rapeAndPillage()) return;
+        if (fortifyRamparts()) return;
+        if (findAndKillHostileCreeps()) return;
     }
 
     util.moveToMoveTarget(creep);
@@ -67,7 +68,51 @@ export function run(creep: Creep) {
         }
     }
 
-    function rapeAndPillage() {
+    function fortifyRamparts() {
+        if (creep.memory.subRole !== enums.DEFENDER) return false;
+        if (!creep.room.controller || !creep.room.controller.my) return false;
+
+        const myRampart = Game.getObjectById(creep.memory.myRampartId);
+        if (myRampart) {
+            if (creep.pos.getRangeTo(myRampart) === 0) {
+                const nearbyHostileCreeps = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
+                if (nearbyHostileCreeps.length) {
+                    creep.attack(nearbyHostileCreeps[0]);
+                    return true;
+                }
+            }
+            // if we have a target rampart already picked out, and we are not there yet, move to it.
+            // recalculate the target rampart every few ticks just in case the enemies are on the move.
+            if (creep.pos.getRangeTo(myRampart) > 0 && Game.time % 5 !== 0) {
+                util.setMoveTarget(creep, myRampart, 0);
+                return true;
+            }
+        }
+
+        const allMyCreeps = creep.room.find(FIND_MY_CREEPS);
+        const otherDefenders = util.filter(allMyCreeps, o => o.id !== creep.id && o.memory.subRole === enums.DEFENDER);
+        const claimedRampartIds = util.filter(otherDefenders.map(o => o.memory.myRampartId), o => !!o);
+
+        const freeRamparts = util.filter(util.findRamparts(creep.room), o =>
+            o.pos.findInRange(FIND_MY_CREEPS, 0).length === 0 &&
+            !util.any(claimedRampartIds, id => id === o.id));
+
+        // find free ramparts that are within 1 space of a hostile creep
+        var targets: Array<StructureRampart> = [];
+        for (let i = 0; i < hostileCreeps.length; i++) {
+            const nearbyFreeRamparts = util.filter(freeRamparts, o => o.pos.inRangeTo(hostileCreeps[i], 1));
+            targets = targets.concat(nearbyFreeRamparts);
+        }
+        if (targets.length) {
+            const target = creep.pos.findClosestByPath(targets);
+            creep.memory.myRampartId = target.id;
+            util.setMoveTarget(creep, target, 0);
+            return true;
+        }
+        return false;
+    }
+
+    function findAndKillHostileCreeps() {
         const directive = rooms.getRaidDirective(creep.memory.assignedRoomName);
         if (hostileCreeps.length && (!directive || directive.automateTargets)) {
             var targetCreep = creep.pos.findClosestByPath(FIND_HOSTILE_CREEPS);

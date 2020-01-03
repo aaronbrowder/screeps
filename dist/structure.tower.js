@@ -68,25 +68,25 @@ function attackOrHeal(tower) {
     const importantAllies = util.filter(allies, o => isCreepImportant(o));
     const unimportantAllies = util.filter(allies, o => !isCreepImportant(o));
     if (enemies.length || allies.length) {
-        if (attackInRange(enemies, 5))
-            return true;
         if (healInRange(importantAllies, 5))
             return true;
-        if (attackInRange(enemies, 10))
+        if (attackInRange(enemies, 5))
             return true;
         if (healInRange(importantAllies, 10))
             return true;
-        if (healInRange(unimportantAllies, 5))
+        if (attackInRange(enemies, 10))
             return true;
-        if (attackInRange(enemies, 19))
+        if (healInRange(unimportantAllies, 5))
             return true;
         if (healInRange(importantAllies, 19))
             return true;
+        if (attackInRange(enemies, 19))
+            return true;
         if (healInRange(unimportantAllies, 10))
             return true;
-        if (attackInRange(enemies, 100))
-            return true;
         if (healInRange(importantAllies, 100))
+            return true;
+        if (attackInRange(enemies, 100))
             return true;
         if (healInRange(unimportantAllies, 19))
             return true;

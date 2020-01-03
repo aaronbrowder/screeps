@@ -1,13 +1,8 @@
 import * as enums from './enums';
 
-export interface ValueData<T> {
-    target: T;
-    value: number;
-}
-
 export function getBestValue<T>(valueData: Array<ValueData<T>>): T {
     var best = null;
-    var bestValue = -10000;
+    var bestValue = -100000000;
     for (let i in valueData) {
         const item = valueData[i];
         if (item.value > bestValue) {
@@ -120,7 +115,6 @@ export function moveToMoveTarget(creep: Creep) {
         setMoveTarget(creep, null);
         return false;
     }
-
     const target = creep.memory.moveTargetId
         ? Game.getObjectById<RoomObject>(creep.memory.moveTargetId)
         : Game.flags[creep.memory.moveTargetFlagId];
@@ -407,6 +401,10 @@ export function countSurroundingWalls(pos: RoomPosition) {
 
 export function findWallsAndRamparts(room: Room) {
     return room.find(FIND_STRUCTURES, { filter: o => isWall(o) || isRampart(o) }) as Array<StructureWall | StructureRampart>;
+}
+
+export function findRamparts(room: Room) {
+    return room.find(FIND_STRUCTURES, { filter: o => isRampart(o) }) as Array<StructureRampart>;
 }
 
 export function findContainers(room: Room) {

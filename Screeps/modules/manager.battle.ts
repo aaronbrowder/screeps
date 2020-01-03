@@ -171,7 +171,7 @@ function findTarget(leader: Creep, myCreeps: Creep[]): Structure {
     var valueData = targets.map(o => getTargetValue(o, costMatrix));
     return util.getBestValue(valueData);
 
-    function getTargetValue(target: Structure, costMatrix: CostMatrix): util.ValueData<Structure> {
+    function getTargetValue(target: Structure, costMatrix: CostMatrix): ValueData<Structure> {
         var path = findWalkablePath(leader.pos, target);
         if (!path || !path.length) {
             path = findBreakablePath(leader.pos, target, costMatrix);

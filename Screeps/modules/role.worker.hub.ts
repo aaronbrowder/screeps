@@ -12,7 +12,6 @@ export function run(creep: Creep) {
 
     const totalCarry = creep.store.getUsedCapacity();
 
-    const nonEmptyHubLinks = util.filter(structures, o => util.isLink(o) && o.energy > 0);
     const destinationLinks = util.findLinks(creep.room, enums.LINK_DESTINATION);
     const amountDesiredByDestinationLinks = util.sum(destinationLinks, o => o.energyCapacity - o.energy);
 
@@ -23,8 +22,9 @@ export function run(creep: Creep) {
             creep.pickup(droppedResources[0]);
             return;
         }
-        if (amountDesiredByDestinationLinks === 0 && nonEmptyHubLinks.length > 0) {
-            creep.withdraw(nonEmptyHubLinks[0], RESOURCE_ENERGY);
+        const hubLink = util.firstOrDefault(structures, o => util.isLink(o) && o.energy > 0) as StructureLink;
+        if (hubLink && amountDesiredByDestinationLinks < hubLink.energy) {
+            creep.withdraw(hubLink, RESOURCE_ENERGY);
             return;
         }
         var consumptionMode = util.getRoomMemory(creep.memory.assignedRoomName).consumptionMode;
@@ -42,10 +42,10 @@ export function run(creep: Creep) {
     nonFullTowers = util.sortBy(nonFullTowers, o => o.energy);
 
     const nonFullSpawns = util.filter(structures, o => util.isSpawn(o) && o.energy < o.energyCapacity);
-    const nonFullHubLinks = util.filter(structures, o => util.isLink(o) && o.energy < o.energyCapacity);
+    const readyHubLink = util.firstOrDefault(structures, o => util.isLink(o) && o.cooldown === 0 && o.energy < o.energyCapacity) as StructureLink;
 
-    // 2. if tower or spawn needs energy, deliver
-    if (creep.store[RESOURCE_ENERGY] > 0 && (nonFullTowers.length || nonFullSpawns.length || nonFullHubLinks.length)) {
+    // 2. if tower, spawn, or link needs energy, deliver
+    if (creep.store[RESOURCE_ENERGY] > 0) {
         if (nonFullSpawns.length) {
             creep.transfer(nonFullSpawns[0], RESOURCE_ENERGY);
             return;
@@ -54,8 +54,9 @@ export function run(creep: Creep) {
             creep.transfer(nonFullTowers[0], RESOURCE_ENERGY);
             return;
         }
-        if (nonFullHubLinks.length && amountDesiredByDestinationLinks > 0) {
-            creep.transfer(nonFullHubLinks[0], RESOURCE_ENERGY, amountDesiredByDestinationLinks);
+        if (readyHubLink && amountDesiredByDestinationLinks > readyHubLink.energy) {
+            const transferAmount = Math.min(amountDesiredByDestinationLinks, creep.store[RESOURCE_ENERGY]);
+            creep.transfer(readyHubLink, RESOURCE_ENERGY, transferAmount);
             return;
         }
     }
