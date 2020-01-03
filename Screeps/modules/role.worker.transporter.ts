@@ -99,6 +99,8 @@ export function run(creep: Creep) {
         return util.getBestValue(targets);
 
         function getDroppedResourcesValue(resource: Resource) {
+            // ignore dropped resources when there is a threat
+            if (threatLevel) return -1000000;
             // adjust the amount so we ignore small piles but highly value large piles
             var adjustedAmount = Math.pow(resource.amount, 2) / 100;
             // we value non-energy resources twice as much as energy
@@ -110,6 +112,8 @@ export function run(creep: Creep) {
         }
 
         function getTombstoneValue(tombstone: Tombstone) {
+            // ignore tombstones when there is a threat
+            if (threatLevel) return -1000000;
             const nonEnergyWeightFactor = 2;
             return getStoreCollectTargetValue(tombstone, tombstone.store, nonEnergyWeightFactor);
         }
@@ -132,9 +136,11 @@ export function run(creep: Creep) {
             var value = getStoreCollectTargetValue(storage, storage.store, nonEnergyWeightFactor);
             if (storage.pos.findInRange(FIND_SOURCES, 2).length || storage.pos.findInRange(FIND_MINERALS, 2).length) {
                 // store is a mining container
+                if (threatLevel) return -1000000;
                 value += 8;
             } else if (roomHasStorage && storage.structureType === STRUCTURE_CONTAINER) {
                 // store is a convenience container
+                if (threatLevel) return -1000000;
                 value -= 40;
             }
             else {

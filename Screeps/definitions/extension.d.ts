@@ -107,6 +107,7 @@ interface Memory {
     remoteMiningMetrics: any;
     raidWaves: Array<RaidWave>;
     links: { [linkId: string]: LinkType };
+    remoteTowers: Array<Id<StructureTower>>;
 }
 
 interface CreepMemory {

@@ -150,18 +150,26 @@ function getItemFromQueue(spawn: StructureSpawn): SpawnQueueItem {
             const existingDefenders = spawn.room.find(FIND_MY_CREEPS, { filter: o => o.memory.subRole === enums.DEFENDER });
             if (existingDefenders.length >= 3) return false;
         }
+        // don't spawn certain types of creeps if there are hostile creeps in the room
+        const isVulnerableRole = util.any([enums.HARVESTER, enums.BUILDER, enums.CLAIMER, enums.SCOUT], o => o === item.role);
+        const isRemoteTransporter = item.role === enums.TRANSPORTER && item.assignedRoomName !== spawn.room.name;
+        if (isVulnerableRole || isRemoteTransporter) {
+            const hostileCreeps = spawn.room.find(FIND_HOSTILE_CREEPS);
+            if (hostileCreeps.length) return false;
+        }
         // if we don't have the ability to transport energy to extensions, don't try to spawn something we can't afford
         if (!canTransport) {
             return item.energyCost <= spawn.room.energyAvailable;
         }
+        // otherwise, an item is considered eligible if we have enough energy capacity in the room to eventually spawn it
         return item.energyCost <= spawn.room.energyCapacityAvailable;
     }
 
     function getSortOrder(role: RoleConstant, energyStored: number) {
         if (role === enums.HUB) return 0;
         if (role === enums.SCOUT) return 1;
-        if (role === enums.COMBATANT) return 2;
-        if (role === enums.TRANSPORTER && energyStored > 1000) return 3;
+        if (role === enums.TRANSPORTER && energyStored > 1000) return 2;
+        if (role === enums.COMBATANT) return 3;
         if (role === enums.HARVESTER) return 4;
         if (role === enums.BUILDER) return 5;
         if (role === enums.TRANSPORTER) return 6;

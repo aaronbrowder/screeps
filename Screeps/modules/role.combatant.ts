@@ -77,7 +77,8 @@ export function run(creep: Creep) {
             if (creep.pos.getRangeTo(myRampart) === 0) {
                 const nearbyHostileCreeps = creep.pos.findInRange(FIND_HOSTILE_CREEPS, 1);
                 if (nearbyHostileCreeps.length) {
-                    creep.attack(nearbyHostileCreeps[0]);
+                    const weakest = util.minimize(nearbyHostileCreeps, o => o.hits);
+                    creep.attack(weakest);
                     return true;
                 }
             }
@@ -95,6 +96,7 @@ export function run(creep: Creep) {
 
         const freeRamparts = util.filter(util.findRamparts(creep.room), o =>
             o.pos.findInRange(FIND_MY_CREEPS, 0).length === 0 &&
+            o.pos.findInRange(FIND_MY_STRUCTURES, 0, { filter: o => !util.isRampart(o) }).length === 0 &&
             !util.any(claimedRampartIds, id => id === o.id));
 
         // find free ramparts that are within 1 space of a hostile creep
@@ -107,9 +109,8 @@ export function run(creep: Creep) {
             const target = creep.pos.findClosestByPath(targets);
             creep.memory.myRampartId = target.id;
             util.setMoveTarget(creep, target, 0);
-            return true;
         }
-        return false;
+        return true;
     }
 
     function findAndKillHostileCreeps() {

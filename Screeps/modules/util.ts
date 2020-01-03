@@ -53,6 +53,20 @@ export function min<T>(items: T[], func: (o: T) => number): number {
     return Math.min.apply(null, items.map(func));
 }
 
+export function minimize<T>(items: Array<T>, func: (o: T) => number): T {
+    var min = 100000000;
+    var best: T = null;
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const result = func(item);
+        if (result < min) {
+            min = result;
+            best = item;
+        }
+    }
+    return best;
+}
+
 export function selectMany<T1, T2>(items: Array<T1>, func: (o: T1) => Array<T2>): Array<T2> {
     const result: Array<T2> = [];
     for (let i = 0; i < items.length; i++) {
@@ -239,6 +253,9 @@ export function countCreeps(role: RoleConstant, filter?) {
 }
 
 export function getThreatLevel(room: Room) {
+    if (!room) {
+        return 0;
+    }
     if (room.controller && room.controller.my && room.controller.safeMode > 500) {
         return 0;
     }
@@ -364,14 +381,18 @@ export function isSource(sourceOrMineral: Source | Mineral): sourceOrMineral is 
     return sourceOrMineral && !!sourceOrMineral['energyCapacity'];
 }
 
-export function isSourceActive(source: Source) {
+export function isSourceActive(source: Source): boolean {
     return filter(source.pos.findInRange<Structure>(FIND_STRUCTURES, 2), o => isContainer(o) || isLink(o)).length > 0;
 }
 
-export function isMineralActive(mineral: Mineral) {
+export function isMineralActive(mineral: Mineral): boolean {
     return mineral.mineralAmount > 0
-        && filter(mineral.pos.findInRange(FIND_STRUCTURES, 2), o => isContainer(o)).length
-        && filter(mineral.pos.lookFor(LOOK_STRUCTURES), o => isExtractor(o)).length;
+        && filter(mineral.pos.findInRange(FIND_STRUCTURES, 2), o => isContainer(o)).length > 0
+        && filter(mineral.pos.lookFor(LOOK_STRUCTURES), o => isExtractor(o)).length > 0;
+}
+
+export function isTowerRemote(tower: StructureTower): boolean {
+    return any(Memory.remoteTowers, o => o === tower.id);
 }
 
 export function countBodyParts(body: string[], type: string): number {

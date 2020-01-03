@@ -200,11 +200,11 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
     }
     if (order.defenderPotency) {
         // defenders can only be spawned in the room they're defending
-        spawns = util.filter(spawns, o => o.room.name === order.roomName);
+        const defenderSpawns = util.filter(spawns, o => o.room.name === order.roomName);
         // there can only be one defender in the queue at once
-        const defendersInQueue = spawnQueue.countItemsInQueues(o => o.subRole === enums.DEFENDER, spawns);
+        const defendersInQueue = spawnQueue.countItemsInQueues(o => o.subRole === enums.DEFENDER, defenderSpawns);
         if (defendersInQueue === 0) {
-            assignOrderPartToSpawns(spawns, order.defenderPotency, order.roomName, enums.COMBATANT, {
+            assignOrderPartToSpawns(defenderSpawns, order.defenderPotency, order.roomName, enums.COMBATANT, {
                 subRole: enums.DEFENDER,
                 // always spawn the largest defender possible
                 useMaxPotency: true
@@ -226,6 +226,10 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
     // we should never try to spawn workers if we don't have eyes in the room. this will cause an error.
     const room = Game.rooms[order.roomName];
     if (room) {
+        // if the assigned room has a threat level, we can't spawn workers in other rooms and send them there
+        if (util.getThreatLevel(room)) {
+            spawns = util.filter(spawns, o => o.room.name === order.roomName);
+        }
         if (order.builderPotency) {
             assignOrderPartToSpawns(spawns, order.builderPotency, order.roomName, enums.BUILDER, {});
         }
@@ -252,6 +256,10 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
 }
 
 function assignSourceOrderToSpawns(spawns: StructureSpawn[], order: SourceOrder) {
+    // if the assigned room has a threat level, we can't spawn workers in other rooms and send them there
+    if (util.getThreatLevel(Game.rooms[order.roomName])) {
+        spawns = util.filter(spawns, o => o.room.name === order.roomName);
+    }
     assignOrderPartToSpawns(spawns, order.harvesterPotency, order.roomName, enums.HARVESTER, {
         assignmentId: order.sourceOrMineralId
     });

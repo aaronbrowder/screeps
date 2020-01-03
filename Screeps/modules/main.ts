@@ -16,6 +16,9 @@ export const loop = () => {
     if (!Memory.raidWaves) {
         Memory.raidWaves = [];
     }
+    if (!Memory.remoteTowers) {
+        Memory.remoteTowers = [];
+    }
 
     for (let roomName in Game.rooms) {
         const room = Game.rooms[roomName];

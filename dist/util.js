@@ -54,6 +54,20 @@ function min(items, func) {
     return Math.min.apply(null, items.map(func));
 }
 exports.min = min;
+function minimize(items, func) {
+    var min = 100000000;
+    var best = null;
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const result = func(item);
+        if (result < min) {
+            min = result;
+            best = item;
+        }
+    }
+    return best;
+}
+exports.minimize = minimize;
 function selectMany(items, func) {
     const result = [];
     for (let i = 0; i < items.length; i++) {
@@ -240,6 +254,9 @@ function countCreeps(role, filter) {
 }
 exports.countCreeps = countCreeps;
 function getThreatLevel(room) {
+    if (!room) {
+        return 0;
+    }
     if (room.controller && room.controller.my && room.controller.safeMode > 500) {
         return 0;
     }
@@ -370,10 +387,14 @@ function isSourceActive(source) {
 exports.isSourceActive = isSourceActive;
 function isMineralActive(mineral) {
     return mineral.mineralAmount > 0
-        && filter(mineral.pos.findInRange(FIND_STRUCTURES, 2), o => isContainer(o)).length
-        && filter(mineral.pos.lookFor(LOOK_STRUCTURES), o => isExtractor(o)).length;
+        && filter(mineral.pos.findInRange(FIND_STRUCTURES, 2), o => isContainer(o)).length > 0
+        && filter(mineral.pos.lookFor(LOOK_STRUCTURES), o => isExtractor(o)).length > 0;
 }
 exports.isMineralActive = isMineralActive;
+function isTowerRemote(tower) {
+    return any(Memory.remoteTowers, o => o === tower.id);
+}
+exports.isTowerRemote = isTowerRemote;
 function countBodyParts(body, type) {
     return filter(body, o => o.toLowerCase() === type.toLowerCase()).length;
 }

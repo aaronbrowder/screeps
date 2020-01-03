@@ -21,6 +21,7 @@ function assignTransporters() {
         if (!room || !room.controller || !room.controller.my)
             continue;
         const structures = room.find(FIND_STRUCTURES);
+        const isWartime = room.find(FIND_HOSTILE_CREEPS).length;
         for (let i = 0; i < structures.length; i++) {
             const target = structures[i];
             if (util.isSpawn(target) && target.energy < target.energyCapacity) {
@@ -30,20 +31,24 @@ function assignTransporters() {
                 assign(target, 2, target.energyCapacity - target.energy);
             }
             if (util.isTower(target)
-                && target.energy < target.energyCapacity * (target.room.find(FIND_HOSTILE_CREEPS).length ? 1 : 0.85)) {
+                // transporters shouldn't deliver to remote towers during wartime
+                && (!isWartime || !util.isTowerRemote(target))
+                && target.energy < target.energyCapacity * (isWartime ? 1 : 0.85)) {
                 assign(target, 3, target.energyCapacity - target.energy);
             }
-            if (util.isContainer(target) && target.store.getUsedCapacity() > target.storeCapacity * 0.33
-                && target.pos.findInRange(FIND_MINERALS, 2).length) {
-                assign(target, 4, target.store.getUsedCapacity());
-            }
-            if (util.isContainer(target) && target.store.getUsedCapacity() > target.storeCapacity * 0.33
-                && target.pos.findInRange(FIND_SOURCES, 2).length) {
-                assign(target, 5, target.store.getUsedCapacity());
-            }
-            if (util.isContainer(target) && target.store.getUsedCapacity() < target.storeCapacity * 0.85
-                && !target.pos.findInRange(FIND_SOURCES, 2).length && !target.pos.findInRange(FIND_MINERALS, 2).length) {
-                assign(target, 6, target.store.getFreeCapacity());
+            if (!isWartime && util.isContainer(target)) {
+                if (target.store.getUsedCapacity() > target.storeCapacity * 0.33
+                    && target.pos.findInRange(FIND_MINERALS, 2).length) {
+                    assign(target, 4, target.store.getUsedCapacity());
+                }
+                if (target.store.getUsedCapacity() > target.storeCapacity * 0.33
+                    && target.pos.findInRange(FIND_SOURCES, 2).length) {
+                    assign(target, 5, target.store.getUsedCapacity());
+                }
+                if (target.store.getUsedCapacity() < target.storeCapacity * 0.85
+                    && !target.pos.findInRange(FIND_SOURCES, 2).length && !target.pos.findInRange(FIND_MINERALS, 2).length) {
+                    assign(target, 6, target.store.getFreeCapacity());
+                }
             }
         }
     }

@@ -52,7 +52,7 @@ function getIdealsInternal(roomName: string, directive: DirectiveConstant, threa
     const towers = room.find<StructureTower>(FIND_MY_STRUCTURES, { filter: o => util.isTower(o) });
     const extensions = room.find<StructureExtension>(FIND_MY_STRUCTURES, { filter: o => util.isExtension(o) && o.isActive });
     const links = room.find<StructureLink>(FIND_MY_STRUCTURES, { filter: o => util.isLink(o) });
-    const extractors = room.find<StructureExtractor>(FIND_MY_STRUCTURES, { filter: o => o.structureType === STRUCTURE_EXTRACTOR });
+    const activeMinerals = util.filter(room.find(FIND_MINERALS), util.isMineralActive);
     const roadConstructionSites = room.find(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType === STRUCTURE_ROAD });
     const nonRoadConstructionSites = room.find(FIND_MY_CONSTRUCTION_SITES, { filter: o => o.structureType !== STRUCTURE_ROAD });
     const nonWallStructures = room.find(FIND_STRUCTURES, { filter: o => !util.isWall(o) });
@@ -126,7 +126,7 @@ function getIdealsInternal(roomName: string, directive: DirectiveConstant, threa
             if (towers.length) {
                 result += 2;
             }
-            if (extractors.length) {
+            if (activeMinerals.length) {
                 result += 4;
             }
             if (links.length < 2) {
@@ -151,7 +151,7 @@ function getIdealsInternal(roomName: string, directive: DirectiveConstant, threa
     function getIdealHarvesterPotencyPerMineral() {
         var result = 18;
         // HACK - stop harvesting if we already have more than 500,000 minerals stored in the room
-        if (room.storage && _.sum(room.storage.store) - room.storage.store[RESOURCE_ENERGY] > 500000) {
+        if (room.storage && room.storage.store.getUsedCapacity() - room.storage.store[RESOURCE_ENERGY] > 500000) {
             result = 0;
         }
         return result;
