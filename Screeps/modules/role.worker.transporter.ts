@@ -186,8 +186,9 @@ export function run(creep: Creep) {
             console.log('WARNING: no home room for creep ' + creep.name + ' (homeRoomName: ' + creep.memory.homeRoomName + ')');
             return;
         }
-        if (creep.room.name !== creep.memory.assignedRoomName) {
-            map.navigateToRoom(creep, creep.memory.assignedRoomName);
+        // transporters can only deliver to locations in their home room
+        if (creep.room.name !== homeRoom.name) {
+            map.navigateToRoom(creep, homeRoom.name);
             return;
         }
         // if creep is carrying any minerals, deliver them to storage
