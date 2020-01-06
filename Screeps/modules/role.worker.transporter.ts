@@ -1,5 +1,6 @@
 import * as map from './map';
 import * as util from './util';
+import { benchmark } from './util.benchmarking';
 import * as enums from './enums';
 
 export function run(creep: Creep) {
@@ -74,12 +75,12 @@ export function run(creep: Creep) {
             value: number;
         }
 
-        var droppedResources: Array<CollectTarget> = assignedRoom.find(FIND_DROPPED_RESOURCES).map(o => {
-            return { target: o, value: getDroppedResourcesValue(o) };
+        var droppedResources = assignedRoom.find(FIND_DROPPED_RESOURCES).map(o => {
+            return { target: o, value: getDroppedResourcesValue(o) } as CollectTarget;
         });
 
-        var tombstones: Array<CollectTarget> = assignedRoom.find(FIND_TOMBSTONES).map(o => {
-            return { target: o, value: getTombstoneValue(o) };
+        var tombstones = assignedRoom.find(FIND_TOMBSTONES).map(o => {
+            return { target: o, value: getTombstoneValue(o) } as CollectTarget;
         });
 
         const roomHasStorage = assignedRoom.find(FIND_STRUCTURES, { filter: o => util.isStorage(o) }).length > 0;
@@ -91,8 +92,8 @@ export function run(creep: Creep) {
         });
 
         const destinationLinks = util.findLinks(assignedRoom, enums.LINK_DESTINATION);
-        const links: Array<CollectTarget> = util.filter(destinationLinks, o => o.energy > 0).map(o => {
-            return { target: o, value: getLinkValue(o) };
+        const links = util.filter(destinationLinks, o => o.energy > 0).map(o => {
+            return { target: o, value: getLinkValue(o) } as CollectTarget;
         });
 
         const targets = util.filter(droppedResources.concat(tombstones).concat(stores).concat(links), o => o.value > -10000);

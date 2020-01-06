@@ -11,17 +11,24 @@ function runDefenseSystems() {
 }
 exports.runDefenseSystems = runDefenseSystems;
 function runAlarmSystem(room) {
-    if (!room.controller.safeMode && !!room.controller.safeModeAvailable && detectDangerousCreeps(room) && detectWallBreach(room)) {
-        console.log('WALL BREACH!');
-        room.controller.activateSafeMode();
+    const hostileCreeps = room.find(FIND_HOSTILE_CREEPS, {
+        filter: o => o.body.some(p => p.type == ATTACK || p.type == RANGED_ATTACK)
+    });
+    const walls = room.find(FIND_STRUCTURES, {
+        filter: o => util.isWall(o) || util.isRampart(o)
+    });
+    if (!room.controller.safeMode && hostileCreeps.length > 0 && (!walls.length || walls.some(o => o.hits < 1000))) {
+        const attacker = hostileCreeps[0].owner.username;
+        var message = 'Wall breach in room ' + room.name + '. Attacking player is ' + attacker + '.';
+        if (!!room.controller.safeModeAvailable) {
+            room.controller.activateSafeMode();
+            message += ' Activating safe mode.';
+            Game.notify(message);
+        }
+        else {
+            message += ' No safe mode is available.';
+            Game.notify(message);
+        }
     }
 }
-function detectDangerousCreeps(room) {
-    return room.find(FIND_HOSTILE_CREEPS, { filter: o => o.body.some(p => p.type == ATTACK || p.type == RANGED_ATTACK) }).length > 0;
-}
-function detectWallBreach(room) {
-    const walls = room.find(FIND_STRUCTURES, { filter: o => util.isWall(o) || util.isRampart(o) });
-    return !walls.length || walls.some(o => o.hits < 1000);
-}
-exports.detectWallBreach = detectWallBreach;
 //# sourceMappingURL=mobilization.js.map

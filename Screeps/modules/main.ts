@@ -1,5 +1,6 @@
 import * as spawnManager from './spawn';
 import * as modes from './util.modes';
+import * as benchmarking from './util.benchmarking';
 import * as battleManager from './manager.battle';
 import * as roleManager from './manager.roles';
 import * as mobilization from './mobilization';
@@ -7,6 +8,7 @@ import * as structureLink from './structure.link';
 import * as structureTower from './structure.tower';
 import * as builderAssignment from './assignment.builder';
 import * as transporterAssignment from './assignment.transporter';
+import { benchmark } from './util.benchmarking';
 
 export const loop = () => {
 
@@ -19,6 +21,8 @@ export const loop = () => {
     if (!Memory.remoteTowers) {
         Memory.remoteTowers = [];
     }
+
+    //benchmarking.initializeBenchmarking();
 
     for (let roomName in Game.rooms) {
         const room = Game.rooms[roomName];
@@ -39,13 +43,15 @@ export const loop = () => {
     structureTower.runAll();
     collectGarbage();
 
+    //benchmarking.calculateBenchmarks();
+
     function collectGarbage() {
-        for (var i in Memory.creeps) {
+        for (let i in Memory.creeps) {
             if (!Game.creeps[i]) {
                 delete Memory.creeps[i];
             }
         }
-        for (var i in Memory.flags) {
+        for (let i in Memory.flags) {
             if (!Game.flags[i]) {
                 delete Memory.flags[i];
             }

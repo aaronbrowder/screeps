@@ -19,6 +19,7 @@ exports.loop = () => {
     if (!Memory.remoteTowers) {
         Memory.remoteTowers = [];
     }
+    //benchmarking.initializeBenchmarking();
     for (let roomName in Game.rooms) {
         const room = Game.rooms[roomName];
         if (room && room.controller && room.controller.my) {
@@ -36,13 +37,14 @@ exports.loop = () => {
     structureLink.runAll();
     structureTower.runAll();
     collectGarbage();
+    //benchmarking.calculateBenchmarks();
     function collectGarbage() {
-        for (var i in Memory.creeps) {
+        for (let i in Memory.creeps) {
             if (!Game.creeps[i]) {
                 delete Memory.creeps[i];
             }
         }
-        for (var i in Memory.flags) {
+        for (let i in Memory.flags) {
             if (!Game.flags[i]) {
                 delete Memory.flags[i];
             }

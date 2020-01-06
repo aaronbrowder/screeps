@@ -1,4 +1,5 @@
 import * as enums from './enums';
+import { benchmark } from './util.benchmarking';
 
 export function getBestValue<T>(valueData: Array<ValueData<T>>): T {
     var best = null;
@@ -124,7 +125,7 @@ export function isAtMoveTarget(creep: Creep) {
     return false;
 }
 
-export function moveToMoveTarget(creep: Creep) {
+export function moveToMoveTarget(creep: Creep): boolean {
     if (isAtMoveTarget(creep)) {
         setMoveTarget(creep, null);
         return false;

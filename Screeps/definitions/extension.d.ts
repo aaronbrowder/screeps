@@ -102,12 +102,25 @@ interface RaidWave {
     targetStructureId?: Id<Structure>;
 }
 
+interface Benchmark {
+    averageCpuPerTick: number;
+    highestCpuPerTick: number;
+    //averageCpuPerEvent: number;
+    ticks: Array<BenchmarkTick>;
+}
+
+interface BenchmarkTick {
+    cpu: number;
+    eventCount: number;
+}
+
 interface Memory {
     sourceMetrics: Array<SourceMetrics>;
     remoteMiningMetrics: any;
     raidWaves: Array<RaidWave>;
     links: { [linkId: string]: LinkType };
     remoteTowers: Array<Id<StructureTower>>;
+    benchmarks: { [name: string]: Benchmark };
 }
 
 interface CreepMemory {

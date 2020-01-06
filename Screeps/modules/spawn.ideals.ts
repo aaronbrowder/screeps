@@ -150,8 +150,8 @@ function getIdealsInternal(roomName: string, directive: DirectiveConstant, threa
 
     function getIdealHarvesterPotencyPerMineral() {
         var result = 18;
-        // HACK - stop harvesting if we already have more than 500,000 minerals stored in the room
-        if (room.storage && room.storage.store.getUsedCapacity() - room.storage.store[RESOURCE_ENERGY] > 500000) {
+        // stop harvesting if we already have more than 250,000 minerals stored in the room
+        if (room.storage && room.storage.store.getUsedCapacity() - room.storage.store[RESOURCE_ENERGY] > 250000) {
             result = 0;
         }
         return result;

@@ -1,12 +1,13 @@
 import * as util from './util';
 import * as rooms from './rooms';
+import { benchmark } from './util.benchmarking';
 
 export type Route = {
     exit: ExitConstant;
     room: string;
 }[];
 
-export function navigateToRoom(creep: Creep, targetRoomName: string, waitOutside?: boolean) {
+export function navigateToRoom(creep: Creep, targetRoomName: string, waitOutside?: boolean): boolean {
     const flag = rooms.getFlag(targetRoomName);
     if (!flag) return false;
     util.setMoveTargetFlag(creep, flag, 100);

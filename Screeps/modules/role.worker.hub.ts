@@ -42,7 +42,7 @@ export function run(creep: Creep) {
     nonFullTowers = util.sortBy(nonFullTowers, o => o.energy);
 
     const nonFullSpawns = util.filter(structures, o => util.isSpawn(o) && o.energy < o.energyCapacity);
-    const readyHubLink = util.firstOrDefault(structures, o => util.isLink(o) && o.cooldown === 0 && o.energy < o.energyCapacity) as StructureLink;
+    const readyHubLink = util.firstOrDefault(structures, o => util.isLink(o) && o.energy < o.energyCapacity) as StructureLink;
 
     // 2. if tower, spawn, or link needs energy, deliver
     if (creep.store[RESOURCE_ENERGY] > 0) {

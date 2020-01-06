@@ -96,6 +96,7 @@
     <TypeScriptCompile Include="modules\structure.tower.ts" />
     <TypeScriptCompile Include="modules\cache.ts" />
     <TypeScriptCompile Include="modules\rooms.ts" />
+    <TypeScriptCompile Include="modules\util.benchmarking.ts" />
     <TypeScriptCompile Include="modules\util.modes.ts" />
     <TypeScriptCompile Include="modules\util.ts" />
   </ItemGroup>

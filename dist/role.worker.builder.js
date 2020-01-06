@@ -76,21 +76,11 @@ function run(creep) {
     }
     function deliver() {
         // make sure the builder is not right next to an energy source, blocking it from being used by other creeps
-        var nearbySource = creep.pos.findInRange(FIND_SOURCES, 1)[0];
-        if (nearbySource) {
-            const goals = [{ pos: nearbySource.pos, range: 2 }];
-            const fleeResult = PathFinder.search(creep.pos, goals, { flee: true });
-            creep.move(creep.pos.getDirectionTo(fleeResult.path[0]));
+        if (moveAwayFromSource())
             return;
-        }
         // if there are no harvesters in this room or no transporters, the builder should deliver to the spawn
-        var spawn = creep.pos.findClosestByPath(FIND_MY_SPAWNS);
-        var hasHarvesters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === enums.HARVESTER }).length;
-        var hasTransporters = !!room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === enums.TRANSPORTER }).length;
-        if (spawn && (!hasHarvesters || !hasTransporters)) {
-            if (util.deliverToSpawn(creep, spawn))
-                return;
-        }
+        if (checkForSpawnInNeed())
+            return;
         // deliver to assignment
         var assignment = Game.getObjectById(creep.memory.assignmentId);
         if (!assignment && creep.memory.assignmentId) {
@@ -117,14 +107,46 @@ function run(creep) {
             // no assignment -- either upgrade controller or build up walls depending on mode
             // (clear assignment id just in case the assignment was destroyed or the creep left the room)
             creep.memory.assignmentId = null;
+            if (tryBuildUpWalls())
+                return;
+            upgradeController(controller);
+        }
+        function tryBuildUpWalls() {
             if (modes.getWallBuildMode(creep.room)) {
                 const wall = findPreferredWall();
                 if (wall) {
                     buildUpWall(wall);
-                    return;
+                    return true;
                 }
             }
-            upgradeController(controller);
+            return false;
+        }
+        function moveAwayFromSource() {
+            var nearbySource = creep.pos.findInRange(FIND_SOURCES, 1)[0];
+            if (nearbySource) {
+                const goals = [{ pos: nearbySource.pos, range: 2 }];
+                const fleeResult = PathFinder.search(creep.pos, goals, { flee: true });
+                creep.move(creep.pos.getDirectionTo(fleeResult.path[0]));
+                return true;
+            }
+            return false;
+        }
+        function checkForSpawnInNeed() {
+            if (room.controller && room.controller.my) {
+                const spawnInNeed = cache.get('3882bc12-ca46-4228-b3d8-52668ef6d79e-' + room.name, 13, () => {
+                    const hasHarvesters = room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === enums.HARVESTER }).length > 0;
+                    const hasTransporters = room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === enums.TRANSPORTER }).length > 0;
+                    if (!hasHarvesters || !hasTransporters) {
+                        return room.find(FIND_MY_SPAWNS, { filter: o => o.energy < o.energyCapacity })[0];
+                    }
+                    return null;
+                });
+                if (spawnInNeed) {
+                    if (util.deliverToSpawn(creep, spawnInNeed))
+                        return true;
+                }
+            }
+            return false;
         }
         function upgradeController(target) {
             if (creep.memory.assignmentId === target.id && target.level > 1 && !builderAssignment.isDowngrading(target)) {
