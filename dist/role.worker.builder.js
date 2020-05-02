@@ -133,15 +133,19 @@ function run(creep) {
         }
         function checkForSpawnInNeed() {
             if (room.controller && room.controller.my) {
-                const spawnInNeed = cache.get('3882bc12-ca46-4228-b3d8-52668ef6d79e-' + room.name, 13, () => {
+                const spawnInNeedId = cache.get('3882bc12-ca46-4228-b3d8-52668ef6d79e-' + room.name, 13, () => {
                     const hasHarvesters = room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === enums.HARVESTER }).length > 0;
                     const hasTransporters = room.find(FIND_MY_CREEPS, { filter: o => o.memory.role === enums.TRANSPORTER }).length > 0;
                     if (!hasHarvesters || !hasTransporters) {
-                        return room.find(FIND_MY_SPAWNS, { filter: o => o.energy < o.energyCapacity })[0];
+                        const result = room.find(FIND_MY_SPAWNS, { filter: o => o.energy < o.energyCapacity })[0];
+                        if (result) {
+                            return result.id;
+                        }
                     }
                     return null;
                 });
-                if (spawnInNeed) {
+                if (spawnInNeedId) {
+                    const spawnInNeed = Game.getObjectById(spawnInNeedId);
                     if (util.deliverToSpawn(creep, spawnInNeed))
                         return true;
                 }

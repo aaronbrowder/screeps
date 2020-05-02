@@ -5,6 +5,7 @@ import * as idealsManager from './spawn.ideals';
 import * as spawnQueue from './spawn.queue';
 import * as raid from './spawn.raid';
 import * as bodies from './spawn.bodies';
+import * as bodyGenerator from './spawn.bodygenerator';
 import * as spawnMetrics from './spawn.metrics';
 
 interface OrderPartOptions {
@@ -131,9 +132,20 @@ export function getSourceOrder(roomName: string, sourceOrMineralId: string) {
 
     const harvesterPotency = bodies.getPotency(roomName, enums.HARVESTER, undefined, sourceOrMineralId);
 
-    const idealPotency = util.isSource(sourceOrMineral)
+    var idealPotency = util.isSource(sourceOrMineral)
         ? ideals.harvesterPotencyPerSource
         : ideals.harvesterPotencyPerMineral;
+
+    // make sure we aren't spawning more harvesters than can fit around a source
+    const room = Game.rooms[roomName];
+    if (room.controller && room.controller.my) {
+        const surroundingWalls = util.countSurroundingWalls(sourceOrMineral.pos);
+        const freeSpaces = 8 - surroundingWalls;
+        const d = bodies.getDefinition(enums.HARVESTER);
+        const harvesterSize = bodies.getMaxPotency(d, room, false);
+        const maxPotency = freeSpaces * harvesterSize;
+        idealPotency = Math.min(idealPotency, maxPotency);
+    }
 
     const order: SourceOrder = {
         roomName: roomName,
@@ -247,7 +259,7 @@ function assignRoomOrderToSpawns(spawns: StructureSpawn[], order: RoomOrder) {
             if (hubFlag) {
                 const hubSpawns = util.filter(spawns, (o: StructureSpawn) => o.pos.inRangeTo(hubFlag, 1));
                 if (hubSpawns.length) {
-                    const bodyResult = bodies.generateBody(order.hubPotency, hubSpawns[0].room, order.roomName, enums.HUB);
+                    const bodyResult = bodyGenerator.generateBody(order.hubPotency, hubSpawns[0].room, order.roomName, enums.HUB);
                     spawnQueue.addItemToQueue(hubSpawns[0], order.roomName, enums.HUB, null, null, bodyResult, null);
                 }
             }
@@ -272,14 +284,14 @@ function assignOrderPartToSpawns(spawns: StructureSpawn[], potency: number, room
     }
 
     const spawn = util.getBestValue(spawns.map(o => {
-        const bodyResult = bodies.generateBody(potency, o.room, roomName, role, opts.subRole, opts.assignmentId);
+        const bodyResult = bodyGenerator.generateBody(potency, o.room, roomName, role, opts.subRole, opts.assignmentId);
         const numberOfCreepsNeeded = opts.useMaxPotency ? 1 : Math.ceil(potency / bodyResult.potency);
         return getSpawnValue(o, roomName, numberOfCreepsNeeded, role, bodyResult, opts.meetupFlagName);
     }));
 
     if (!spawn) return;
 
-    const bodyResult = bodies.generateBody(potency, spawn.room, roomName, role, opts.subRole, opts.assignmentId);
+    const bodyResult = bodyGenerator.generateBody(potency, spawn.room, roomName, role, opts.subRole, opts.assignmentId);
 
     const remainingPotency = opts.useMaxPotency ? 0 : potency - bodyResult.potency;
 

@@ -72,6 +72,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="modules\assignment.transporter.ts" />
     <TypeScriptCompile Include="modules\manager.battle.ts" />
+    <TypeScriptCompile Include="modules\spawn.bodygenerator.ts" />
     <TypeScriptCompile Include="modules\spawn.metrics.ts" />
     <TypeScriptCompile Include="modules\manager.sources.ts" />
     <TypeScriptCompile Include="modules\manager.roles.ts" />

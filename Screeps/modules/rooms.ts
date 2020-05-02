@@ -3,27 +3,23 @@ import * as enums from './enums';
 
 export function getControlDirectives(): ControlDirective[] {
     return [
-        { roomName: 'W17S6', flagName: 'Colony1', directive: enums.DIRECTIVE_CLAIM },
-        { roomName: 'W17S7', flagName: 'Colony2', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
-        { roomName: 'W18S5', flagName: 'Colony3', directive: enums.DIRECTIVE_CLAIM },
-        { roomName: 'W18S6', flagName: 'Colony4', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
-        { roomName: 'W18S3', flagName: 'Colony5', directive: enums.DIRECTIVE_CLAIM },
-        { roomName: 'W18S4', flagName: 'Colony6', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
-        {
-            roomName: 'W16S6',
-            flagName: 'Lair1',
-            directive: enums.DIRECTIVE_NONE,
-            raidWaveMeetupFlagName: 'Meetup1',
-            raidDirective: {
-                maxPotency: 10,
-                automateTargets: false,
-                autoDeclareVictory: false,
-                raiderRole: enums.SLAYER,
-                targetStructureIds: [
-                    '5bbcac009099fc012e634aa7' as Id<Structure>
-                ]
-            }
-        }
+        { roomName: 'W9S4', flagName: 'Colony1', directive: enums.DIRECTIVE_CLAIM },
+        //{ roomName: 'W17S7', flagName: 'Colony2', directive: enums.DIRECTIVE_RESERVE_AND_HARVEST },
+        //{
+        //    roomName: 'W16S6',
+        //    flagName: 'Lair1',
+        //    directive: enums.DIRECTIVE_NONE,
+        //    raidWaveMeetupFlagName: 'Meetup1',
+        //    raidDirective: {
+        //        maxPotency: 10,
+        //        automateTargets: false,
+        //        autoDeclareVictory: false,
+        //        raiderRole: enums.SLAYER,
+        //        targetStructureIds: [
+        //            '5bbcac009099fc012e634aa7' as Id<Structure>
+        //        ]
+        //    }
+        //}
     ];
 }
 

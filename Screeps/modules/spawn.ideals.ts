@@ -3,6 +3,7 @@ import * as modes from './util.modes';
 import * as cache from './cache';
 import * as rooms from './rooms';
 import * as enums from './enums';
+import * as bodies from './spawn.bodies';
 import * as sourceManager from './manager.sources';
 
 export interface Ideals {
@@ -75,7 +76,7 @@ function getIdealsInternal(roomName: string, directive: DirectiveConstant, threa
             var result = 4;
             // if level is not high enough to build storage, consumption mode is not possible, so we 
             // need to make sure we have enough builders to upgrade and build walls.
-            if (level === 2) {
+            if (level === 2 && room.energyCapacityAvailable > 500) {
                 result = 10;
             }
             if (level === 3) {

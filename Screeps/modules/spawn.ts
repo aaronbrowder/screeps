@@ -5,6 +5,7 @@ import * as sourceManager from './manager.sources';
 import * as battleManager from './manager.battle';
 import * as spawnOrders from './spawn.orders';
 import * as bodies from './spawn.bodies';
+import * as bodyGenerator from './spawn.bodygenerator';
 import * as raid from './spawn.raid';
 import * as spawnQueue from './spawn.queue';
 
@@ -195,6 +196,6 @@ function getSpawnDirections(spawn: StructureSpawn, item: SpawnQueueItem) {
 }
 
 function generateBody(spawn: StructureSpawn, item: SpawnQueueItem) {
-    const result = bodies.generateBody(item.potency, spawn.room, item.assignedRoomName, item.role, item.subRole, item.assignmentId);
+    const result = bodyGenerator.generateBody(item.potency, spawn.room, item.assignedRoomName, item.role, item.subRole, item.assignmentId);
     return result && result.potency > 0 ? result.body : null;
 }
